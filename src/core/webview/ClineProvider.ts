@@ -1079,7 +1079,6 @@ export class ClineProvider
 		}
 	}
 
-
 	// Update activity timestamp for a specific subagent
 	async updateSubagentActivity(taskId: string) {
 		// Update the activity timestamp for the specified task
@@ -2136,6 +2135,24 @@ export class ClineProvider
 
 		// Clears task again, so we need to abortTask manually above.
 		await this.createTaskWithHistoryItem({ ...historyItem, rootTask, parentTask })
+	}
+
+	// Clear the current task without treating it as a subtask.
+	// This is used when the user cancels a task that is not a subtask.
+	public async clearTask(): Promise<void> {
+		if (this.clineStack.length > 0) {
+			const task = this.clineStack[this.clineStack.length - 1]
+			console.log(`[clearTask] clearing task ${task.taskId}.${task.instanceId}`)
+			await this.removeClineFromStack()
+		}
+	}
+
+	public resumeTask(taskId: string): void {
+		// Use the existing showTaskWithId method which handles both current and
+		// historical tasks.
+		this.showTaskWithId(taskId).catch((error) => {
+			this.log(`Failed to resume task ${taskId}: ${error.message}`)
+		})
 	}
 
 	async cancelAllSubagentsAndResumeParent() {
@@ -3382,7 +3399,6 @@ export class ClineProvider
 		return this.clineStack[this.clineStack.length - 1]
 	}
 
-
 	// When initializing a new task, (not from history but from a tool command
 	// new_task) there is no need to remove the previous task since the new
 	// task is a subtask of the previous one, and when it finishes it is removed
@@ -3462,8 +3478,6 @@ export class ClineProvider
 			...options,
 		})
 
-
-
 		// If the task is parallel, add it to the set for parallel execution
 		if (is_parallel) {
 			raceLog("ADD_CLINE_TO_SET", { taskId: task.taskId })
@@ -3475,9 +3489,6 @@ export class ClineProvider
 		}
 		return task
 	}
-
-
-
 
 	// Modes
 
