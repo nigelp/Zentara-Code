@@ -147,6 +147,7 @@ export const DEFAULT_OPTIMIZATION_CONFIG: ToolOptimizationConfig = {
 	alwaysFullDescriptionTools: new Set([
 		"glob",
 		"search_files",
+		"lsp_search_symbols",
 		"update_todo_list",
 		"list_files",
 		"list_code_definition_names",

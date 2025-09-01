@@ -4,8 +4,11 @@ export function getGetSymbolsToolDescription(args: ToolArgs): string {
 	return `## lsp_search_symbols - Finds symbols in the workspace with flexible filtering and hierarchical navigation.
 
 Description:
-This tool performs intelligent symbol search across your codebase, allowing you to find classes, methods, functions, variables, and other code constructs.
-It supports hierarchical symbol navigation, filtering by symbol types, and flexible matching patterns.
+**PRIMARY DISCOVERY TOOL**: This tool is one of the three core discovery tools (alongside \`glob\` and \`search_files\`) for exploring codebases. It performs intelligent, semantic symbol search across your workspace, allowing you to find classes, methods, functions, variables, and other code constructs with precision that text-based search cannot match.
+
+**SUPERIOR FOR SYMBOL SEARCHES**: When searching for a term that you know represents a symbol (class, function, method, variable, etc.), \`lsp_search_symbols\` is vastly superior to \`glob\` or \`search_files\` because it takes you directly to the **symbol definition** - the most important location - rather than all mentions of that term throughout the codebase. This semantic precision makes it the optimal choice for symbol-focused discovery.
+
+This tool leverages Language Server Protocol (LSP) capabilities to provide semantic understanding of your code structure, making it vastly superior to simple text searches for symbol discovery. It supports hierarchical symbol navigation, filtering by symbol types, and flexible matching patterns.
 
 The matching behavior is determined by the 'name_path' parameter:
 

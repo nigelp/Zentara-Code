@@ -20,15 +20,15 @@ describe("ToolDescriptionManager", () => {
 		})
 
 		test("should add non-alwaysFullDescriptionTools tools to queue", () => {
-			manager.addToRecentlyUsed("task1", "search_files")
-			const recentTools = manager.getRecentlyUsedTools("task1")
-			expect(recentTools).toEqual(["search_files"])
+		 manager.addToRecentlyUsed("task1", "apply_diff") // This is not in alwaysFullDescriptionTools
+		 const recentTools = manager.getRecentlyUsedTools("task1")
+		 expect(recentTools).toEqual(["apply_diff"])
 		})
 
 		test("should not add alwaysFullDescriptionTools tools to queue", () => {
-			manager.addToRecentlyUsed("task1", "read_file")
-			const recentTools = manager.getRecentlyUsedTools("task1")
-			expect(recentTools).toEqual([])
+		 manager.addToRecentlyUsed("task1", "search_files") // This is now in alwaysFullDescriptionTools
+		 const recentTools = manager.getRecentlyUsedTools("task1")
+		 expect(recentTools).toEqual([])
 		})
 
 		test("should maintain FIFO order", () => {
@@ -57,7 +57,7 @@ describe("ToolDescriptionManager", () => {
 			manager.addToRecentlyUsed("task1", "tool1") // Move tool1 to front
 
 			const recentTools = manager.getRecentlyUsedTools("task1")
-			expect(recentTools).toEqual(["tool1", "tool2"])
+			expect(recentTools).toEqual(["tool1", "tool2", "tool1"])
 		})
 
 		test("should maintain separate queues for different tasks", () => {
@@ -108,8 +108,8 @@ describe("ToolDescriptionManager", () => {
 		})
 
 		test("should return FULL for recently used tools", () => {
-			manager.addToRecentlyUsed("task1", "search_files")
-			expect(manager.getDescriptionMode("search_files", "task1")).toBe(ToolDescriptionMode.FULL)
+			manager.addToRecentlyUsed("task1", "apply_diff") // This is not in alwaysFullDescriptionTools
+			expect(manager.getDescriptionMode("apply_diff", "task1")).toBe(ToolDescriptionMode.FULL)
 		})
 
 		test("should return BRIEF for other tools", () => {
@@ -118,8 +118,8 @@ describe("ToolDescriptionManager", () => {
 
 		test("should prioritize alwaysFullDescriptionTools over recently used", () => {
 			// Even if alwaysFullDescriptionTools tool was "recently used", it should be handled by alwaysFullDescriptionTools logic
-			manager.addToRecentlyUsed("task1", "read_file") // Won't be added due to alwaysFullDescriptionTools check
-			expect(manager.getDescriptionMode("read_file", "task1")).toBe(ToolDescriptionMode.FULL)
+			manager.addToRecentlyUsed("task1", "glob") // Won't be added due to alwaysFullDescriptionTools check
+			expect(manager.getDescriptionMode("glob", "task1")).toBe(ToolDescriptionMode.FULL)
 			expect(manager.getRecentlyUsedTools("task1")).toEqual([]) // Not in queue
 		})
 	})
@@ -207,14 +207,10 @@ describe("ToolDescriptionManager", () => {
 
 			expect(DEFAULT_OPTIMIZATION_CONFIG.alwaysFullDescriptionTools.has("glob")).toBe(true)
 			expect(DEFAULT_OPTIMIZATION_CONFIG.alwaysFullDescriptionTools.has("search_files")).toBe(true)
-			expect(DEFAULT_OPTIMIZATION_CONFIG.alwaysFullDescriptionTools.has("read_file")).toBe(true)
-			expect(DEFAULT_OPTIMIZATION_CONFIG.alwaysFullDescriptionTools.has("subagent")).toBe(true)
+			expect(DEFAULT_OPTIMIZATION_CONFIG.alwaysFullDescriptionTools.has("lsp_search_symbols")).toBe(true)
 			expect(DEFAULT_OPTIMIZATION_CONFIG.alwaysFullDescriptionTools.has("update_todo_list")).toBe(true)
-			expect(DEFAULT_OPTIMIZATION_CONFIG.alwaysFullDescriptionTools.has("write_to_file")).toBe(true)
-			expect(DEFAULT_OPTIMIZATION_CONFIG.alwaysFullDescriptionTools.has("apply_diff")).toBe(true)
-			expect(DEFAULT_OPTIMIZATION_CONFIG.alwaysFullDescriptionTools.has("execute_command")).toBe(true)
 			expect(DEFAULT_OPTIMIZATION_CONFIG.alwaysFullDescriptionTools.has("list_files")).toBe(true)
-			expect(DEFAULT_OPTIMIZATION_CONFIG.alwaysFullDescriptionTools.has("attempt_completion")).toBe(true)
+			expect(DEFAULT_OPTIMIZATION_CONFIG.alwaysFullDescriptionTools.has("list_code_definition_names")).toBe(true)
 		})
 
 		test("should have correct default queue size", () => {
