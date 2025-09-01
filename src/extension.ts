@@ -206,6 +206,9 @@ export async function activate(context: vscode.ExtensionContext) {
 		"user-info": userInfoHandler,
 	})
 
+	// Set the CloudService in the provider now that it's initialized
+	provider.setCloudService(cloudService)
+
 	try {
 		if (cloudService.telemetryClient) {
 			TelemetryService.instance.register(cloudService.telemetryClient)

@@ -183,7 +183,8 @@ export class ClineProvider
 		ClineProvider.activeInstances.add(this)
 
 		this.mdmService = mdmService
-		this.cloudService = CloudService.instance
+		// CloudService may not be initialized yet - will be set later via setCloudService()
+		this.cloudService = CloudService.hasInstance() ? CloudService.instance : null
 		this.updateGlobalState("codebaseIndexModels", EMBEDDING_MODEL_PROFILES)
 
 		// Start health check monitoring
@@ -296,6 +297,15 @@ export class ClineProvider
 	}
 
 	/**
+	 * Set the CloudService instance after it's initialized
+	 */
+	public setCloudService(cloudService: CloudService) {
+		this.cloudService = cloudService
+		// Set up listener for settings updates
+		this.cloudService.on("settings-updated", this.handleCloudSettingsUpdate)
+	}
+
+	/**
 	 * Handle cloud settings updates
 	 */
 	private handleCloudSettingsUpdate = async () => {
@@ -311,7 +321,10 @@ export class ClineProvider
 	 */
 	private async syncCloudProfiles() {
 		try {
-			const settings = CloudService.instance.getOrganizationSettings()
+			if (!this.cloudService) {
+				return
+			}
+			const settings = this.cloudService.getOrganizationSettings()
 
 			if (!settings?.providerProfiles) {
 				return
@@ -1295,8 +1308,8 @@ export class ClineProvider
 		this.clearWebviewResources()
 
 		// Clean up cloud service event listener
-		if (CloudService.hasInstance()) {
-			CloudService.instance?.off("settings-updated", this.handleCloudSettingsUpdate)
+		if (this.cloudService) {
+			this.cloudService?.off("settings-updated", this.handleCloudSettingsUpdate)
 		}
 
 		while (this.disposables.length) {
@@ -2968,7 +2981,7 @@ export class ClineProvider
 		let organizationAllowList = ORGANIZATION_ALLOW_ALL
 
 		try {
-			organizationAllowList = (await CloudService.instance?.getAllowList()) ?? (ORGANIZATION_ALLOW_ALL as any)
+			organizationAllowList = (await this.cloudService?.getAllowList()) ?? (ORGANIZATION_ALLOW_ALL as any)
 		} catch (error) {
 			console.error(
 				`[getState] failed to get organization allow list: ${error instanceof Error ? error.message : String(error)}`,
@@ -2978,7 +2991,7 @@ export class ClineProvider
 		let cloudUserInfo: CloudUserInfo | null = null
 
 		try {
-			cloudUserInfo = await CloudService.instance?.getUserInfo()
+			cloudUserInfo = await this.cloudService?.getUserInfo()
 		} catch (error) {
 			console.error(
 				`[getState] failed to get cloud user info: ${error instanceof Error ? error.message : String(error)}`,
@@ -2988,7 +3001,7 @@ export class ClineProvider
 		let cloudIsAuthenticated: boolean = false
 
 		try {
-			cloudIsAuthenticated = (await CloudService.instance?.isAuthenticated()) ?? false
+			cloudIsAuthenticated = (await this.cloudService?.isAuthenticated()) ?? false
 		} catch (error) {
 			console.error(
 				`[getState] failed to get cloud authentication state: ${error instanceof Error ? error.message : String(error)}`,
@@ -2998,7 +3011,7 @@ export class ClineProvider
 		let sharingEnabled: boolean = false
 
 		try {
-			sharingEnabled = (await CloudService.instance?.canShareTask()) ?? false
+			sharingEnabled = (await this.cloudService?.canShareTask()) ?? false
 		} catch (error) {
 			console.error(
 				`[getState] failed to get sharing enabled state: ${error instanceof Error ? error.message : String(error)}`,
@@ -3008,8 +3021,8 @@ export class ClineProvider
 		let organizationSettingsVersion: number = -1
 
 		try {
-			if (CloudService.hasInstance()) {
-				const settings = CloudService.instance?.getOrganizationSettings()
+			if (this.cloudService) {
+				const settings = this.cloudService?.getOrganizationSettings()
 				organizationSettingsVersion = settings?.version ?? -1
 			}
 		} catch (error) {
@@ -3133,7 +3146,7 @@ export class ClineProvider
 			// Add remoteControlEnabled setting - get from cloud settings
 			remoteControlEnabled: (() => {
 				try {
-					const cloudSettings = CloudService.instance.getUserSettings()
+					const cloudSettings = this.cloudService?.getUserSettings()
 					return cloudSettings?.settings?.extensionBridgeEnabled ?? false
 				} catch (error) {
 					console.error(
@@ -3257,9 +3270,9 @@ export class ClineProvider
 	}
 
 	public async remoteControlEnabled(enabled: boolean) {
-		const userInfo = CloudService.instance.getUserInfo()
+		const userInfo = this.cloudService?.getUserInfo()
 
-		const config = await CloudService.instance.cloudAPI?.bridgeConfig().catch(() => undefined)
+		const config = await this.cloudService?.cloudAPI?.bridgeConfig().catch(() => undefined)
 
 		if (!config) {
 			this.log("[ClineProvider#remoteControlEnabled] Failed to get bridge config")
@@ -3526,8 +3539,8 @@ export class ClineProvider
 		let cloudIsAuthenticated: boolean | undefined
 
 		try {
-			if (CloudService.hasInstance()) {
-				cloudIsAuthenticated = CloudService.instance.isAuthenticated()
+			if (this.cloudService) {
+				cloudIsAuthenticated = this.cloudService?.isAuthenticated() ?? false
 			}
 		} catch (error) {
 			// Silently handle errors to avoid breaking telemetry collection.
