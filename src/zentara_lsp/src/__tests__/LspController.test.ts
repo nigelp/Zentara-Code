@@ -18,7 +18,7 @@ jest.mock("../controller/getDocumentSymbols")
 jest.mock("../controller/getHoverInfo")
 jest.mock("../controller/rename")
 jest.mock("../controller/getCompletions")
-jest.mock("../controller/get_symbols")
+jest.mock("../controller/search_symbols")
 jest.mock("../controller/insertAfterSymbol")
 jest.mock("../logging")
 
@@ -28,7 +28,7 @@ import { getDocumentSymbols } from "../controller/getDocumentSymbols"
 import { getHoverInfo } from "../controller/getHoverInfo"
 import { rename } from "../controller/rename"
 import { getCompletions } from "../controller/getCompletions"
-import { getSymbols } from "../controller/get_symbols"
+import { getSymbols } from "../controller/search_symbols"
 import { insertAfterSymbol } from "../controller/insertAfterSymbol"
 import { logInfo, logError } from "../logging"
 

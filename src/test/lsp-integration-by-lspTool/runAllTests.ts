@@ -74,7 +74,7 @@ export async function runAllLspTests(): Promise<void> {
 		//{ name: 'get_document_highlights', fn: testGetDocumentHighlights },
 		//{ name: 'get_workspace_symbols', fn: testGetWorkspaceSymbols },
 		//{ name: 'get_symbol_code_snippet', fn: testGetSymbolCodeSnippet },
-		//{ name: 'get_symbols', fn: testGetSymbols },
+		//{ name: 'search_symbols', fn: testGetSymbols },
 		//{ name: 'get_symbols_overview', fn: testGetSymbolsOverview },
 		{ name: "insert_after_symbol", fn: testInsertAfterSymbol },
 		{ name: "insert_before_symbol", fn: testInsertBeforeSymbol },

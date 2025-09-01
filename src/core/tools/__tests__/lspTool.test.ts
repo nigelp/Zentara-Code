@@ -594,15 +594,15 @@ describe("lspTool", () => {
 			expect(mockPushToolResult).toHaveBeenCalledWith(JSON.stringify(mockResult, null, 2))
 		})
 
-		it("should handle get_symbols operation", async () => {
+		it("should handle search_symbols operation", async () => {
 			const mockResult = { success: true, symbols: [{ name: "myFunction", kind: 12 }] }
-			mockLspController.getSymbols.mockResolvedValue(mockResult)
+			mockLspController.searchSymbols.mockResolvedValue(mockResult)
 
 			const block: LspToolUse = {
 				type: "tool_use",
 				name: "lsp",
 				params: {
-					lsp_operation: "get_symbols",
+					lsp_operation: "search_symbols",
 					_text: '{"name_path": "myFunction", "relative_path": "src/"}',
 				},
 				partial: false,

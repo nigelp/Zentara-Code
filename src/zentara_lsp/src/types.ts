@@ -471,6 +471,7 @@ export const GetSymbolsParamsSchema = z.object({
 	exclude_kinds: z.array(z.number()).optional(),
 	substring_matching: z.boolean().optional(),
 	max_answer_chars: z.number().optional(),
+	case_sensitive: z.boolean().optional(),
 })
 
 export type GetSymbolsParams = z.infer<typeof GetSymbolsParamsSchema>

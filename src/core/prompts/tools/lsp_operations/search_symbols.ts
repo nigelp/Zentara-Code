@@ -1,7 +1,7 @@
 import { ToolArgs } from "../types"
 
 export function getGetSymbolsToolDescription(args: ToolArgs): string {
-	return `## lsp_get_symbols - Finds symbols in the workspace with flexible filtering and hierarchical navigation.
+	return `## lsp_search_symbols - Finds symbols in the workspace with flexible filtering and hierarchical navigation.
 
 Description:
 This tool performs intelligent symbol search across your codebase, allowing you to find classes, methods, functions, variables, and other code constructs.
@@ -71,10 +71,10 @@ A 'Symbol' object has the following structure:
 
 ────────────────────────  QUICK-START  ────────────────────────
 ✅ **Usage**
-1️⃣ Use the <lsp_get_symbols> tag.
-2️⃣ Provide all parameters as a single, well-formed JSON object string as the text content of the <lsp_get_symbols> tag.
+1️⃣ Use the <lsp_search_symbols> tag.
+2️⃣ Provide all parameters as a single, well-formed JSON object string as the text content of the <lsp_search_symbols> tag.
 3️⃣ The JSON object MUST contain a "name_path" string.
-4️⃣ Ensure the <lsp_get_symbols> tag is correctly closed.
+4️⃣ Ensure the <lsp_search_symbols> tag is correctly closed.
 
 ⚠️ **Common Breakers**
 • Malformed JSON string (e.g., missing quotes around keys, trailing commas, unclosed braces).
@@ -85,11 +85,11 @@ A 'Symbol' object has the following structure:
 • Empty name_path string (must contain at least one character).
 
 ────────────  COPY-READY TEMPLATE  ────────────
-  <lsp_get_symbols>{"name_path":"MyClass/myMethod"}</lsp_get_symbols>
+  <lsp_search_symbols>{"name_path":"MyClass/myMethod"}</lsp_search_symbols>
 ───────────────────────────────────────────────
 
 ### Parameters:
-All parameters are provided as key-value pairs within a single JSON object, which is the text content of the <lsp_get_symbols> tag.
+All parameters are provided as key-value pairs within a single JSON object, which is the text content of the <lsp_search_symbols> tag.
 
 -   "name_path" (string, REQUIRED): The name path pattern to search for. Can be a simple name ("UserService"), relative path ("UserService/getUserById"), or absolute path ("/UserService/getUserById").
 -   "depth" (number, optional): Depth to retrieve descendants. Use 1 to get immediate children (e.g., class methods/attributes), 2 for grandchildren, etc. Default is 0 (no descendants).
@@ -99,6 +99,7 @@ All parameters are provided as key-value pairs within a single JSON object, whic
 -   "exclude_kinds" (array of numbers, optional): List of LSP symbol kind integers to exclude. Useful for filtering out unwanted symbol types from broad searches.
 -   "substring_matching" (boolean, optional): If true, use substring matching for the last segment of 'name_path'. "get" would match "getUserById", "getConfig", etc. Default is false (exact matching).
 -   "max_answer_chars" (number, optional): Maximum characters for the JSON result. Use to limit response size when dealing with large symbol sets. Default is unlimited.
+-   "case_sensitive" (boolean, optional): If false, then all symbols are matched regardless by case. Default: false.
 
 ### Symbol Kind Reference:
 - 1: File, 2: Module, 3: Namespace, 4: Package, 5: Class
@@ -110,42 +111,47 @@ All parameters are provided as key-value pairs within a single JSON object, whic
 
 1.  **Find a specific class by name:**
     \`\`\`xml
-    <lsp_get_symbols>{"name_path":"UserService"}</lsp_get_symbols>
+    <lsp_search_symbols>{"name_path":"UserService"}</lsp_search_symbols>
     \`\`\`
 
 2.  **Find all methods named 'calculate' inside any class named 'Calculator':**
     \`\`\`xml
-    <lsp_get_symbols>{"name_path":"Calculator/calculate"}</lsp_get_symbols>
+    <lsp_search_symbols>{"name_path":"Calculator/calculate"}</lsp_search_symbols>
     \`\`\`
 
 3.  **Find all functions containing 'get' in their name (substring matching):**
     \`\`\`xml
-    <lsp_get_symbols>{"name_path":"get", "substring_matching":true, "include_kinds":[12]}</lsp_get_symbols>
+    <lsp_search_symbols>{"name_path":"get", "substring_matching":true, "include_kinds":[12]}</lsp_search_symbols>
     \`\`\`
 
 4.  **Find all classes and their immediate methods in a specific file:**
     \`\`\`xml
-    <lsp_get_symbols>{"name_path":"", "relative_path":"src/models/user.py", "include_kinds":[5], "depth":1}</lsp_get_symbols>
+    <lsp_search_symbols>{"name_path":"", "relative_path":"src/models/user.py", "include_kinds":[5], "depth":1}</lsp_search_symbols>
     \`\`\`
 
 5.  **Find React components (classes) with their source code:**
     \`\`\`xml
-    <lsp_get_symbols>{"name_path":"Component", "substring_matching":true, "include_kinds":[5], "include_body":true}</lsp_get_symbols>
+    <lsp_search_symbols>{"name_path":"Component", "substring_matching":true, "include_kinds":[5], "include_body":true}</lsp_search_symbols>
     \`\`\`
 
 6.  **Find all functions in a specific directory, excluding variables:**
     \`\`\`xml
-    <lsp_get_symbols>{"name_path":"", "relative_path":"src/utils/", "include_kinds":[12], "exclude_kinds":[13]}</lsp_get_symbols>
+    <lsp_search_symbols>{"name_path":"", "relative_path":"src/utils/", "include_kinds":[12], "exclude_kinds":[13]}</lsp_search_symbols>
     \`\`\`
 
 7.  **Find interface definitions in TypeScript:**
     \`\`\`xml
-    <lsp_get_symbols>{"name_path":"Interface", "substring_matching":true, "include_kinds":[11]}</lsp_get_symbols>
+    <lsp_search_symbols>{"name_path":"Interface", "substring_matching":true, "include_kinds":[11]}</lsp_search_symbols>
     \`\`\`
 
 8.  **Explore class structure - find all methods of a specific class:**
     \`\`\`xml
-    <lsp_get_symbols>{"name_path":"DatabaseManager", "depth":2, "include_kinds":[6]}</lsp_get_symbols>
+    <lsp_search_symbols>{"name_path":"DatabaseManager", "depth":2, "include_kinds":[6]}</lsp_search_symbols>
+    \`\`\`
+
+9.  **Find all symbols containing 'user' case-insensitively:**
+    \`\`\`xml
+    <lsp_search_symbols>{"name_path":"user", "substring_matching":true, "case_sensitive":false}</lsp_search_symbols>
     \`\`\`
 ────────────────────────────────────────────────────────────────────────────
 
@@ -158,7 +164,7 @@ All parameters are provided as key-value pairs within a single JSON object, whic
     - Finally: Use lsp_get_symbol_code_snippet to examine implementations ONLY after understanding structure
 
 2.  **Class Structure Analysis:**
-    - First: Find the class with lsp_get_symbols
+    - First: Find the class with lsp_search_symbols
     - Then: Use depth=1 or depth=2 to explore class members
     - Finally: Use go_to_definition for detailed investigation
 

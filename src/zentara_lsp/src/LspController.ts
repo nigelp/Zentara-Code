@@ -62,7 +62,7 @@ import { getTypeDefinition as getTypeDefinitionLogic } from "./controller/getTyp
 import { getDeclaration as getDeclarationLogic } from "./controller/getDeclaration"
 import { getDocumentHighlights as getDocumentHighlightsLogic } from "./controller/getDocumentHighlights"
 import { getWorkspaceSymbols as getWorkspaceSymbolsLogic } from "./controller/getWorkspaceSymbols"
-import { getSymbols as getSymbolsLogic } from "./controller/get_symbols"
+import { getSymbols as searchSymbolsLogic } from "./controller/search_symbols"
 import { createSymbolCodeSnippetController, SymbolCodeSnippetController } from "./controller/getSymbolCodeSnippet"
 import { getSymbolChildren as getSymbolChildrenLogic } from "./controller/getSymbolChildren"
 import { insertAfterSymbol as insertAfterSymbolLogic } from "./controller/insertAfterSymbol"
@@ -330,13 +330,16 @@ class LspController implements ILspController {
 		}
 	}
 
-	public async getSymbols(params: GetSymbolsParams): Promise<Symbol[]> {
+	public async getSymbols(params: GetSymbolsParams): Promise<{success: boolean, symbols?: string, error?: string}> {
 		logInfo(`getSymbols called with params: ${stringifySafe(params)}`)
 		try {
-			return await getSymbolsLogic(params)
+			return await searchSymbolsLogic(params)
 		} catch (error) {
 			logError("Error in getSymbols", error)
-			throw error
+			return {
+				success: false,
+				error: error instanceof Error ? error.message : String(error)
+			}
 		}
 	}
 }

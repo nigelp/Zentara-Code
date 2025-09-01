@@ -64,7 +64,7 @@ export async function getDocumentSymbols(
 				success: true,
 				symbols: await formatAsFlattedTable(noChildrenSymbols, textDocument, final_include_hover)
 			}
-		}
+		}``
 
 		if (return_children === "auto") {
 			const totalLines = countLines(fullSymbols)

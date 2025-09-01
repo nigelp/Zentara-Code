@@ -87,7 +87,7 @@ export const toolNames = [
 	"lsp_get_workspace_symbols",
 	"lsp_get_symbol_code_snippet",
 	"lsp_get_symbol_children",
-	"lsp_get_symbols",
+	"lsp_search_symbols",
 	"lsp_get_symbols_overview",
 	"lsp_insert_after_symbol",
 	"lsp_insert_before_symbol",

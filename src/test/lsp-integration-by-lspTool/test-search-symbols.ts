@@ -11,13 +11,13 @@ import {
 import * as vscode from "vscode"
 
 export async function testGetSymbols(): Promise<TestResult> {
-	const tool = "get_symbols"
+	const tool = "search_symbols"
 
 	try {
 		// Create a comprehensive test TypeScript file with various symbol types
 		const testContent = `
 /**
- * Test file for get_symbols functionality
+ * Test file for search_symbols functionality
  * This file contains various TypeScript constructs to test symbol detection and filtering
  */
 
@@ -219,7 +219,7 @@ userCache.set(1, createUser('Test User', 'test@example.com'));
 			mockPushToolResult(result)
 		}
 
-		// Test multiple scenarios for get_symbols operation
+		// Test multiple scenarios for search_symbols operation
 		const testScenarios = [
 			{
 				name: "Search for User symbols",
@@ -284,7 +284,7 @@ userCache.set(1, createUser('Test User', 'test@example.com'));
 					partial: false,
 					name: "lsp" as const,
 					params: {
-						lsp_operation: "get_symbols",
+						lsp_operation: "search_symbols",
 						_text: JSON.stringify(scenario.params),
 					},
 				}
@@ -464,7 +464,7 @@ userCache.set(1, createUser('Test User', 'test@example.com'));
 	}
 }
 
-// Helper function to analyze get_symbols results
+// Helper function to analyze search_symbols results
 function analyzeGetSymbolsResult(scenario: any, resultData: any): any {
 	const scenarioName = scenario.name
 	const params = scenario.params
@@ -483,12 +483,12 @@ function analyzeGetSymbolsResult(scenario: any, resultData: any): any {
 	if (resultData.success === true) {
 		const symbols = resultData.data
 
-		// For get_symbols, we expect an array of Symbol objects
+		// For search_symbols, we expect an array of Symbol objects
 		if (!Array.isArray(symbols)) {
 			return {
 				scenario: scenarioName,
 				passed: false,
-				error: "get_symbols should return an array of symbols",
+				error: "search_symbols should return an array of symbols",
 				symbols,
 				resultData,
 			}

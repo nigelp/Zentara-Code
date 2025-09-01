@@ -284,6 +284,69 @@ async function performLanguageServerWait(
 }
 
 /**
+ * Wait for workspace symbol providers to be ready by actually testing them
+ * @param maxWaitTime Maximum time to wait in milliseconds (default: 10000)
+ */
+export async function waitForWorkspaceSymbolProvider(maxWaitTime: number = 10000): Promise<void> {
+	const logger = LSPWaitLogger.getInstance()
+	const startTime = Date.now()
+	const operationTimeout = Math.min(3000, maxWaitTime / 3)
+	
+	// Initial stabilization wait
+	await new Promise((resolve) => setTimeout(resolve, 500))
+	
+	let retryCount = 0
+	const maxRetries = Math.max(10, Math.floor(maxWaitTime / 2000))
+	const retryDelay = Math.min(1500, maxWaitTime / maxRetries)
+	let consecutiveSuccesses = 0
+	const requiredSuccesses = 5
+	
+	// Test queries to verify workspace symbol provider is working
+	const testQueries = ["function", "class", "interface", "const", "let", "define", "def"]
+
+	while (Date.now() - startTime < maxWaitTime && retryCount < maxRetries) {
+		try {
+			// Test workspace symbol provider with a simple query
+			const testQuery = testQueries[retryCount % testQueries.length]
+			const workspaceSymbolsPromise = vscode.commands.executeCommand<vscode.SymbolInformation[]>(
+				"vscode.executeWorkspaceSymbolProvider",
+				testQuery
+			)
+			
+			const symbols = await withTimeout(workspaceSymbolsPromise, operationTimeout)
+			
+			if (symbols && symbols.length > 0) {
+				consecutiveSuccesses++
+				logger.log("info", `Workspace symbol provider check ${consecutiveSuccesses}/${requiredSuccesses} successful (query: "${testQuery}", found: ${symbols.length} symbols)`)
+				
+				if (consecutiveSuccesses >= requiredSuccesses) {
+					// Final stabilization
+					await new Promise((resolve) => setTimeout(resolve, 200))
+					logger.log("info", `Workspace symbol provider ready after ${Date.now() - startTime}ms`)
+					return
+				}
+			} else {
+				consecutiveSuccesses = 0
+				logger.log("warn", `Workspace symbol provider returned undefined for query "${testQuery}"`)
+			}
+		} catch (error) {
+			consecutiveSuccesses = 0
+			if (retryCount % 2 === 0) {
+				logger.log("warn", `Workspace symbol provider not ready, attempt ${retryCount + 1}/${maxRetries}`, {
+					error: error instanceof Error ? error.message : String(error),
+				})
+			}
+		}
+		
+		// Wait before retry
+		await new Promise((resolve) => setTimeout(resolve, retryDelay))
+		retryCount++
+	}
+	
+	logger.log("warn", `Workspace symbol provider may not be fully ready after ${maxWaitTime}ms`)
+}
+
+/**
  * Wait for Language Servers to be ready for all workspace folders
  * @param maxWaitTime Maximum time to wait in milliseconds
  */

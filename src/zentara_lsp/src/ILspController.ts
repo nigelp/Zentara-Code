@@ -71,5 +71,5 @@ export interface ILspController {
 	getWorkspaceSymbols(params: GetWorkspaceSymbolsParams): Promise<WorkspaceSymbol[]>
 	getSymbolCodeSnippet(params: GetSymbolCodeSnippetParams): Promise<CodeSnippet | null>
 	getSymbolChildren(params: GetSymbolChildrenParams): Promise<{ success: false; error: string } | { success: true; children: string }>
-	getSymbols(params: GetSymbolsParams): Promise<Symbol[]>
+	getSymbols(params: GetSymbolsParams): Promise<{success: boolean, symbols?: string, error?: string}>
 }

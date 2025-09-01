@@ -169,7 +169,8 @@ export async function getSubagentDescription(discoveredAgents: AgentDiscoveryRes
 	  **Choose the optimal discovery tool for subagents based on task requirements:**
 	  - **File structure exploration**: Use 'glob' with patterns like '**/*.{js,ts}' or '**/test/**/*'
 	  - **Content-based discovery**: Use 'search_files' for patterns like 'TODO', 'function\\s+\\w+', or specific code constructs
-	  - **Performance consideration**: Both tools are efficient for their intended use cases
+	  - **Code structure exploration**: Use 'lsp_get_symbols' to understand code architecture, find classes/functions/interfaces, and explore symbol relationships without reading files
+	  - **Performance consideration**: All three tools are efficient for their intended use cases and complement each other
 	  - **MANDATORY LSP WORKFLOW**: After finding files with either tool, subagents MUST use LSP tools for analysis. DO NOT read full files.
 	  - Use \`lsp_get_document_symbols\` to understand file structure.
 	  - **MANDATORY**: Use \`lsp_find_usages\` to analyze dependencies and understand how code is connected.
@@ -420,6 +421,17 @@ ${agentsList}
 	  {
 	    "description": "Analyze test coverage",
 	    "message": "First use 'glob' with pattern '**/*.{test,spec}.{js,ts,jsx,tsx}' to find test files, then use 'search_files' with pattern 'describe\\\\(|it\\\\(|test\\\\(' to analyze test patterns. Use \`lsp_get_document_symbols\` on representative test files. Report: 1) Test file organization, 2) Test framework patterns, 3) Coverage gaps by module. SCOPE: Testing analysis only."
+	  }
+	  </subagent>
+	  \`\`\`
+
+	  ### Example 12: CODE STRUCTURE DISCOVERY - Using lsp_get_symbols as Primary Tool
+	  **When you need to understand code architecture without reading files:**
+	  \`\`\`
+	  <subagent>
+	  {
+	    "description": "Map codebase architecture",
+	    "message": "Use \`lsp_get_symbols\` on key files (src/index.ts, src/main.ts, src/app.ts) to understand the overall code architecture. Identify main classes, interfaces, and functions. Use \`lsp_find_usages\` on core symbols to understand relationships. Report: 1) Main architectural components, 2) Key interfaces and their implementations, 3) Core function relationships. SCOPE: High-level architecture analysis only."
 	  }
 	  </subagent>
 	  \`\`\`
