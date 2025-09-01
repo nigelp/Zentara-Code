@@ -33,7 +33,7 @@ When NOT to use either:
 Parameters:
 - pattern: (required) The glob pattern to match files against. Uses standard glob syntax.
 - path: (optional) The directory to search in (relative to ${args.cwd}). If not provided, searches from the current workspace root. IMPORTANT: Omit this field to use the default directory. DO NOT enter "undefined" or "null" - simply omit it.
-- head_limit: (optional) The maximum number of file paths to return. Defaults to 20, with a maximum of 100.
+- head_limit: (optional) The maximum number of file paths to return. Defaults to 100, with a maximum of 500.
 
 Pattern syntax:
 - * - Matches any characters except path separators

@@ -127,8 +127,8 @@ export async function globTool(
 			const sortedFiles = filesWithStats.map((f) => f.file)
 
 			// Define limits
-			const MAX_RESULTS = 100
-			const DEFAULT_HEAD_LIMIT = 20
+			const MAX_RESULTS = 500
+			const DEFAULT_HEAD_LIMIT = 100
 
 			// Apply head_limit with proper validation
 			const requestedLimit = head_limit === undefined ? DEFAULT_HEAD_LIMIT : head_limit

@@ -459,7 +459,7 @@ describe("regexSearchFilesAdvanced", () => {
 
 			const result = await regexSearchFilesAdvanced("/test/cwd", options)
 
-			// With our new implementation, head_limit is capped at MAX_RESULTS (100)
+			// With our new implementation, head_limit is capped at MAX_RESULTS (2000)
 			// and the test should verify the limit message is shown
 			expect(result).toContain("Showing first 5 of")
 			expect(result).toContain("as requested by head_limit")

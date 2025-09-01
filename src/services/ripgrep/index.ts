@@ -83,8 +83,8 @@ interface SearchLineResult {
 	column?: number
 }
 // Constants
-const MAX_RESULTS = 200
-const DEFAULT_HEAD_LIMIT = 100
+const MAX_RESULTS = 2000
+const DEFAULT_HEAD_LIMIT = 200
 const MAX_LINE_LENGTH = 500
 
 /**

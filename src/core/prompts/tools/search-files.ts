@@ -68,7 +68,7 @@ All parameters are provided as key-value pairs within a single JSON object, whic
 - "multiline" (boolean, optional): Enable multiline mode where . matches newlines and patterns can span lines. Default: false.
   - Example: \`"multiline": true\`
 
-- "head_limit" (number, optional): Limit output to first N lines/entries. Works across all output modes. Defaults to 100 if not specified. Maximum allowed value is 100 (values above 100 will be automatically capped).
+- "head_limit" (number, optional): Limit output to first N lines/entries. Works across all output modes. Defaults to 200 if not specified. Maximum allowed value is 2000 (values above 2000 will be automatically capped).
   - Example: \`"head_limit": 50\`
 
 ### Examples:
@@ -136,7 +136,7 @@ Uses Rust regex syntax (similar to PCRE):
 4. Add context (-C/-A/-B) only when needed to understand matches
 5. Escape regex metacharacters properly
 6. Use multiline mode only when pattern spans lines
-7. Use head_limit to control output size (defaults to 100, max 100)
+7. Use head_limit to control output size (defaults to 200, max 2000)
 
 Usage:
 <search_files>
