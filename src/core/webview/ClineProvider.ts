@@ -29,20 +29,18 @@ import {
 	type TerminalActionId,
 	type TerminalActionPromptType,
 	type HistoryItem,
-	type CloudUserInfo,
-	type CreateTaskOptions,
+	type ClineAsk,
 	RooCodeEventName,
 	requestyDefaultModelId,
 	openRouterDefaultModelId,
 	glamaDefaultModelId,
 	DEFAULT_TERMINAL_OUTPUT_CHARACTER_LIMIT,
 	DEFAULT_WRITE_DELAY_MS,
-	ORGANIZATION_ALLOW_ALL,
-	DEFAULT_MODES,
 } from "@roo-code/types"
 import { TelemetryService } from "@roo-code/telemetry"
-import { CloudService, BridgeOrchestrator, getRooCodeApiUrl } from "@roo-code/cloud"
+import { type CloudUserInfo, CloudService, ORGANIZATION_ALLOW_ALL, getRooCodeApiUrl } from "@roo-code/cloud"
 
+import { safeWriteJson } from "../../utils/safeWriteJson"
 import { Package } from "../../shared/package"
 import { findLast } from "../../shared/array"
 import { supportPrompt } from "../../shared/support-prompt"
@@ -91,15 +89,47 @@ import { webviewMessageHandler } from "./webviewMessageHandler"
 import { getNonce } from "./getNonce"
 import { getUri } from "./getUri"
 
+// Define SubagentInfo interface
+interface SubagentInfo {
+	taskId: string
+	description: string
+	status: "running" | "completed" | "failed"
+	lastActivity?: number
+	askType?: string
+	subagent_type?: string
+	askText?: string
+	toolCall?: {
+		toolName: string
+		toolInput: any
+		isPartial?: boolean
+	}
+}
+
 /**
  * https://github.com/microsoft/vscode-webview-ui-toolkit-samples/blob/main/default/weather-webview/src/providers/WeatherViewProvider.ts
  * https://github.com/KumarVariable/vscode-extension-sidebar-html/blob/master/src/customSidebarViewProvider.ts
  */
 
+// Race condition debugging
+const DEBUG_RACE = process.env.DEBUG_RACE === "true" || false
+const raceLog = (context: string, data: any = {}) => {
+	if (!DEBUG_RACE) return
+	const timestamp = new Date().toISOString()
+	const hrTime = process.hrtime.bigint()
+	console.log(`[RACE ${timestamp}] [${hrTime}] ${context}:`, JSON.stringify(data))
+}
+
+export type ClineProviderEvents = {
+	clineCreated: [cline: Task]
+}
+
 export class ClineProvider
-	extends EventEmitter<TaskProviderEvents>
+	extends EventEmitter
 	implements vscode.WebviewViewProvider, TelemetryPropertiesProvider, TaskProviderLike
 {
+	override on(eventName: keyof TaskProviderEvents, listener: (...args: any[]) => void): this {
+		return super.on(eventName, listener)
+	}
 	// Used in package.json as the view's id. This value cannot be changed due
 	// to how VSCode caches views based on their id, and updating the id would
 	// break existing instances of the extension.
@@ -110,6 +140,16 @@ export class ClineProvider
 	private webviewDisposables: vscode.Disposable[] = []
 	private view?: vscode.WebviewView | vscode.WebviewPanel
 	private clineStack: Task[] = []
+	private clineSet: Set<Task> = new Set()
+	private parallelTaskMessages: Map<string, string> = new Map() // taskId -> message
+	private parallelTasksState: SubagentInfo[] = []
+
+	// Task Registry for O(1) lookup
+	private taskRegistry: Map<string, Task> = new Map()
+	private taskCleanupHandlers: Map<string, () => void> = new Map()
+	// Changed from FIFO queue to Set for parallel ask processing
+	private askSet: Map<string, { task: Task; timestamp: number }> = new Map() // taskId -> ask info
+	private processingAsks: Set<string> = new Set() // Currently processing ask taskIds
 	private codeIndexStatusSubscription?: vscode.Disposable
 	private currentWorkspaceManager?: CodeIndexManager
 	private _workspaceTracker?: WorkspaceTracker // workSpaceTracker read-only for access outside this class
@@ -120,12 +160,15 @@ export class ClineProvider
 	private taskEventListeners: WeakMap<Task, Array<() => void>> = new WeakMap()
 
 	private recentTasksCache?: string[]
+	private cloudService?: CloudService | null
 
 	public isViewLaunched = false
 	public settingsImportedAt?: number
-	public readonly latestAnnouncementId = "aug-25-2025-grok-code-fast" // Update for Grok Code Fast announcement
+	public readonly latestAnnouncementId = "aug-20-2025-stealth-model" // Update for stealth model announcement
 	public readonly providerSettingsManager: ProviderSettingsManager
 	public readonly customModesManager: CustomModesManager
+	private updating_state = false
+	private stateUpdatePromiseResolve: ((value: unknown) => void) | null = null
 
 	constructor(
 		readonly context: vscode.ExtensionContext,
@@ -139,7 +182,11 @@ export class ClineProvider
 		ClineProvider.activeInstances.add(this)
 
 		this.mdmService = mdmService
+		this.cloudService = CloudService.getInstance()
 		this.updateGlobalState("codebaseIndexModels", EMBEDDING_MODEL_PROFILES)
+
+		// Start health check monitoring
+		this.startHealthCheck()
 
 		// Start configuration loading (which might trigger indexing) in the background.
 		// Don't await, allowing activation to continue immediately.
@@ -156,15 +203,7 @@ export class ClineProvider
 			await this.postStateToWebview()
 		})
 
-		// Initialize MCP Hub through the singleton manager
-		McpServerManager.getInstance(this.context, this)
-			.then((hub) => {
-				this.mcpHub = hub
-				this.mcpHub.registerClient()
-			})
-			.catch((error) => {
-				this.log(`Failed to initialize MCP Hub: ${error}`)
-			})
+		// MCP initialization moved to resolveWebviewView to ensure webview is ready
 
 		this.marketplaceManager = new MarketplaceManager(this.context, this.customModesManager)
 
@@ -242,13 +281,13 @@ export class ClineProvider
 	private async initializeCloudProfileSync() {
 		try {
 			// Check if authenticated and sync profiles
-			if (CloudService.hasInstance() && CloudService.instance.isAuthenticated()) {
+			if (this.cloudService && (await this.cloudService.isAuthenticated())) {
 				await this.syncCloudProfiles()
 			}
 
 			// Set up listener for future updates
-			if (CloudService.hasInstance()) {
-				CloudService.instance.on("settings-updated", this.handleCloudSettingsUpdate)
+			if (this.cloudService) {
+				this.cloudService.on("settings-updated", this.handleCloudSettingsUpdate)
 			}
 		} catch (error) {
 			this.log(`Error in initializeCloudProfileSync: ${error}`)
@@ -267,29 +306,28 @@ export class ClineProvider
 	}
 
 	/**
-	 * Synchronize cloud profiles with local profiles.
+	 * Synchronize cloud profiles with local profiles
 	 */
 	private async syncCloudProfiles() {
 		try {
-			const settings = CloudService.instance.getOrganizationSettings()
-
+			if (!this.cloudService) return
+			const settings = this.cloudService.getOrganizationSettings()
 			if (!settings?.providerProfiles) {
 				return
 			}
 
 			const currentApiConfigName = this.getGlobalState("currentApiConfigName")
-
 			const result = await this.providerSettingsManager.syncCloudProfiles(
 				settings.providerProfiles,
 				currentApiConfigName,
 			)
 
 			if (result.hasChanges) {
-				// Update list.
+				// Update list
 				await this.updateGlobalState("listApiConfigMeta", await this.providerSettingsManager.listConfig())
 
 				if (result.activeProfileChanged && result.activeProfileId) {
-					// Reload full settings for new active profile.
+					// Reload full settings for new active profile
 					const profile = await this.providerSettingsManager.getProfile({
 						id: result.activeProfileId,
 					})
@@ -305,12 +343,13 @@ export class ClineProvider
 
 	// Adds a new Task instance to clineStack, marking the start of a new task.
 	// The instance is pushed to the top of the stack (LIFO order).
-	// When the task is completed, the top instance is removed, reactivating the
-	// previous task.
+	// When the task is completed, the top instance is removed, reactivating the previous task.
 	async addClineToStack(task: Task) {
-		// Add this cline instance into the stack that represents the order of
-		// all the called tasks.
+		console.log(`[subtasks] adding task ${task.taskId}.${task.instanceId} to stack`)
+
+		// Add this cline instance into the stack that represents the order of all the called tasks.
 		this.clineStack.push(task)
+		this.registerTask(task) // Register in dictionary
 		task.emit(RooCodeEventName.TaskFocused)
 
 		// Perform special setup provider specific tasks.
@@ -342,6 +381,24 @@ export class ClineProvider
 		}
 	}
 
+	// New method: Add Cline to Set for parallel execution
+	async addClineToSet(cline: Task) {
+		console.log(`[SubAgentManager] adding task ${cline.taskId}.${cline.instanceId} to set`)
+
+		// Add to set for parallel execution
+		this.clineSet.add(cline)
+		this.registerTask(cline) // Register in dictionary
+
+		// Delay to allow task state to stabilize before proceeding
+		await delay(500)
+
+		// Ensure getState() resolves correctly
+		const state = await this.getState()
+		if (!state || typeof state.mode !== "string") {
+			throw new Error("Failed to retrieve current mode")
+		}
+	}
+
 	// Removes and destroys the top Cline instance (the current finished task),
 	// activating the previous one (resuming the parent task).
 	async removeClineFromStack() {
@@ -353,7 +410,8 @@ export class ClineProvider
 		let task = this.clineStack.pop()
 
 		if (task) {
-			task.emit(RooCodeEventName.TaskUnfocused)
+			console.log(`[subtasks] removing task ${task.taskId}.${task.instanceId} from stack`)
+			this.unregisterTask(task.taskId) // Unregister from dictionary
 
 			try {
 				// Abort the running task and set isAbandoned to true so
@@ -379,6 +437,43 @@ export class ClineProvider
 		}
 	}
 
+	// New method: Remove Cline from Set
+	protected async removeClineFromSet(cline: Task | undefined) {
+		if (!cline) return
+
+		const taskId = cline.taskId // Store taskId before potential cleanup
+		console.log(`[SubAgentManager] removing specific task ${taskId}.${cline.instanceId} from set`)
+		this.clineSet.delete(cline)
+		this.unregisterTask(taskId) // Unregister from dictionary
+
+		// Don't remove from parallelTasksState here - let it be cleared all at once
+		// when all subagents complete in finishSubTask
+		// This keeps the subagent stack visible until the parent task resumes
+
+		try {
+			// Check if task is already being aborted to avoid double-abort
+			if (!cline.abort) {
+				await cline.abortTask(true)
+			} else {
+				console.log(`[SubAgentManager] task ${taskId} already aborted, skipping abortTask call`)
+			}
+		} catch (e) {
+			console.log(`[SubAgentManager] error aborting task ${taskId}: ${e}`)
+		}
+
+		// Make sure no reference kept, once promises end it will be
+		// garbage collected.
+		cline = undefined
+	}
+
+	// New method: Remove all tasks from Set
+	protected async removeAllClinesFromSet() {
+		console.log(`[SubAgentManager] removing all tasks from set`)
+		for (const cline of this.clineSet) {
+			await this.removeClineFromSet(cline)
+		}
+	}
+
 	getTaskStackSize(): number {
 		return this.clineStack.length
 	}
@@ -387,18 +482,837 @@ export class ClineProvider
 		return this.clineStack.map((cline) => cline.taskId)
 	}
 
-	// Remove the current task/cline instance (at the top of the stack), so this
-	// task is finished and resume the previous task/cline instance (if it
-	// exists).
-	// This is used when a subtask is finished and the parent task needs to be
-	// resumed.
-	async finishSubTask(lastMessage: string) {
-		// Remove the last cline instance from the stack (this is the finished
-		// subtask).
+	// Task Registry Methods for O(1) lookup
+
+	// Register task when created
+	private registerTask(task: Task): void {
+		this.taskRegistry.set(task.taskId, task)
+
+		// Store cleanup function reference for later removal
+		const cleanupHandler = () => {
+			this.unregisterTask(task.taskId)
+		}
+
+		// Listen for task disposal to clean up registry
+		task.once("disposed", cleanupHandler)
+
+		// Store handler reference for potential cleanup
+		this.taskCleanupHandlers.set(task.taskId, cleanupHandler)
+
+		// Listen for message events if this is a parallel task
+		if (task.isParallel) {
+			// Check for any existing ask messages that might have been created before registration
+			const existingAsk = task.clineMessages
+				.slice()
+				.reverse()
+				.find((msg) => msg.type === "ask" && !msg.partial)
+
+			if (existingAsk) {
+				// Handle existing ask message asynchronously
+				;(async () => {
+					const shouldAutoApprove = await this.shouldAutoApproveAsk(existingAsk)
+
+					if (shouldAutoApprove) {
+						// Auto-approve immediately without updating UI
+						let toolName = undefined
+						try {
+							toolName = existingAsk.text ? JSON.parse(existingAsk.text).tool : undefined
+						} catch (e) {
+							//console.error(`[AUTO_APPROVAL_DEBUG] Failed to parse tool for task ${task.taskId}:`, e)
+						}
+						raceLog("AUTO_APPROVING_EXISTING_SUBAGENT_TOOL", {
+							taskId: task.taskId,
+							askType: existingAsk.ask,
+							tool: toolName,
+						})
+
+						// Schedule auto-approval after a brief delay to ensure ask is properly set up
+						setTimeout(() => {
+							task.handleWebviewAskResponse("yesButtonClicked")
+						}, 50)
+					} else {
+						// Only update UI for tools that require manual approval
+
+						await this.updateSubagentAsk(task.taskId, existingAsk.ask, existingAsk.text)
+					}
+				})()
+			}
+
+			// Set up listener for future messages
+			task.on("message" as any, async ({ action, message }: { action: any; message: any }) => {
+				if ((action === "created" || action === "updated") && message.type === "ask") {
+					// Check if this specific ask (tool) should be auto-approved
+					const shouldAutoApprove = await this.shouldAutoApproveAsk(message)
+
+					if (shouldAutoApprove) {
+						// Auto-approve immediately without updating UI
+						let toolName = undefined
+						try {
+							toolName = message.text ? JSON.parse(message.text).tool : undefined
+						} catch (e) {
+							console.error(`[AUTO_APPROVAL_DEBUG] Failed to parse tool for task ${task.taskId}:`, e)
+						}
+						raceLog("AUTO_APPROVING_SUBAGENT_TOOL", {
+							taskId: task.taskId,
+							askType: message.ask,
+							tool: toolName,
+						})
+
+						// Update tool call for auto-approved tools
+						if (message.ask === "tool" && message.text) {
+							try {
+								const toolData = JSON.parse(message.text)
+
+								if (toolData && toolData.tool && !message.partial) {
+									this.updateSubagentToolCall(task.taskId, {
+										toolName: toolData.tool,
+										toolInput: toolData,
+										isPartial: message.partial,
+									}).catch(() => {})
+								}
+							} catch (e) {
+								console.error(
+									`[TOOL_DISPLAY_DEBUG] Auto-approval - Failed to parse tool for task ${task.taskId}:`,
+									e,
+								)
+							}
+						}
+						// Schedule auto-approval after a brief delay to ensure ask is properly set up
+						setTimeout(() => {
+							task.handleWebviewAskResponse("yesButtonClicked")
+						}, 50)
+					} else {
+						// Only update UI for tools that require manual approval
+
+						await this.updateSubagentAsk(task.taskId, message.ask, message.text)
+
+						// If this is a tool ask, also update the tool call
+						if (message.ask === "tool" && message.text) {
+							/* 							console.log(
+								`[TOOL_DISPLAY_DEBUG] Manual approval - Parsing tool from ask text for task ${task.taskId}:`,
+								message.text?.substring(0, 200),
+							) */
+							try {
+								const toolData = JSON.parse(message.text)
+								// console.log(
+								// 	`[TOOL_DISPLAY_DEBUG] Manual approval - Parsed tool data for task ${task.taskId}:`,
+								// 	{
+								// 		tool: toolData.tool,
+								// 		path: toolData.path,
+								// 		keys: Object.keys(toolData),
+								// 	},
+								// )
+								if (toolData && toolData.tool && !message.partial) {
+									await this.updateSubagentToolCall(task.taskId, {
+										toolName: toolData.tool,
+										toolInput: toolData,
+										isPartial: message.partial,
+									})
+								}
+							} catch (e) {
+								console.error(
+									`[TOOL_DISPLAY_DEBUG] Manual approval - Failed to parse tool for task ${task.taskId}:`,
+									e,
+								)
+							}
+						}
+					}
+				} else if (action === "created" && message.type === "say") {
+					// Clear ask state when task responds (but keep tool call)
+					await this.updateSubagentAsk(task.taskId, undefined, undefined)
+				}
+			})
+
+			// Also listen for ask response events
+			task.on("taskAskResponded" as any, async () => {
+				// Clear ask state when task receives a response
+				await this.updateSubagentAsk(task.taskId, undefined, undefined)
+			})
+		}
+
+		this.log(`[TaskRegistry] Registered task ${task.taskId}, total: ${this.taskRegistry.size}`)
+		raceLog("REGISTER_TASK", {
+			taskId: task.taskId,
+			isParallel: task.isParallel,
+			totalTasks: this.taskRegistry.size,
+			stackSize: this.clineStack.length,
+			setSize: this.clineSet.size,
+		})
+	}
+
+	// Unregister task when disposed
+	private unregisterTask(taskId: string): void {
+		this.taskRegistry.delete(taskId)
+
+		// Clean up event handler
+		const handler = this.taskCleanupHandlers.get(taskId)
+		if (handler) {
+			this.taskCleanupHandlers.delete(taskId)
+		}
+
+		// Also remove from ask set if present
+		this.removeFromAskSet(taskId)
+
+		this.log(`[TaskRegistry] Unregistered task ${taskId}, remaining tasks: ${this.taskRegistry.size}`)
+	}
+
+	// Find task by ID with O(1) lookup
+	findTaskById(taskId: string): Task | undefined {
+		return this.taskRegistry.get(taskId)
+	}
+
+	// Get all active tasks
+	getAllActiveTasks(): Task[] {
+		// Return all tasks from the registry
+		return Array.from(this.taskRegistry.values())
+	}
+
+	// Ask Queue Methods for sequential processing
+
+	// Add ask request to set for parallel processing
+	async addAskRequest(task: Task) {
+		raceLog("ADD_ASK_REQUEST_START", {
+			taskId: task.taskId,
+			askSetSize: this.askSet.size,
+			isProcessing: this.processingAsks.has(task.taskId),
+			existingAsks: Array.from(this.askSet.keys()),
+		})
+
+		// Prevent duplicate entries
+		if (this.askSet.has(task.taskId)) {
+			this.log(`Task ${task.taskId} already has pending ask`)
+			raceLog("ADD_ASK_REQUEST_DUPLICATE", { taskId: task.taskId })
+			return
+		}
+
+		// Add to ask set
+		this.askSet.set(task.taskId, { task, timestamp: Date.now() })
+
+		raceLog("ADD_ASK_REQUEST_ADDED", {
+			taskId: task.taskId,
+			newAskSetSize: this.askSet.size,
+			willProcess: !this.processingAsks.has(task.taskId),
+		})
+
+		// Process this specific ask immediately if not already processing it
+		if (!this.processingAsks.has(task.taskId)) {
+			// Process this ask in parallel with others
+			raceLog("ADD_ASK_REQUEST_WILL_PROCESS", { taskId: task.taskId })
+			// Random delay between 50-200ms to stagger ask processing
+			const randomDelay = Math.floor(Math.random() * 150) + 50
+			await delay(randomDelay)
+			this.processAsk(task.taskId)
+		} else {
+			raceLog("ADD_ASK_REQUEST_ALREADY_PROCESSING", { taskId: task.taskId })
+		}
+	}
+
+	// Process a specific ask in parallel with others
+	private async processAsk(taskId: string) {
+		// Check if already processing this task
+		if (this.processingAsks.has(taskId)) {
+			raceLog("PROCESS_ASK_ALREADY_PROCESSING", { taskId })
+			return
+		}
+
+		// Get ask info
+		const askInfo = this.askSet.get(taskId)
+		if (!askInfo) {
+			raceLog("PROCESS_ASK_NOT_FOUND", { taskId })
+			return
+		}
+
+		const { task, timestamp } = askInfo
+		const startTime = Date.now()
+
+		// Mark as processing
+		this.processingAsks.add(taskId)
+		raceLog("PROCESS_ASK_START", {
+			taskId,
+			askSetSize: this.askSet.size,
+			processingCount: this.processingAsks.size,
+		})
+
+		try {
+			// Check if task is still valid
+			if (!this.taskRegistry.has(taskId)) {
+				this.log(`Task ${taskId} no longer exists, removing from asks`)
+				this.askSet.delete(taskId)
+				return
+			}
+
+			// Log processing
+			this.log(`[AskSet] Processing ask for task ${taskId}, ${this.askSet.size} asks pending`)
+
+			// For parallel tasks, update only the subagent state
+			if (task.isParallel) {
+				// Find the ask message that needs approval
+				const askMessage = task.clineMessages
+					.slice()
+					.reverse()
+					.find((msg) => msg.type === "ask" && !msg.partial)
+
+				if (askMessage) {
+					// Check if this ask should be auto-approved
+					const shouldAutoApprove = await this.shouldAutoApproveAsk(askMessage)
+
+					if (shouldAutoApprove) {
+						console.log(`[AUTO_APPROVAL] Auto-approving ask for task ${taskId}`)
+						// Auto-approve without updating UI
+						task.handleWebviewAskResponse("yesButtonClicked")
+						// Remove from set since it's been handled
+						this.askSet.delete(taskId)
+						return
+					} else {
+						console.log(`[AUTO_APPROVAL] Showing UI for task ${taskId}`)
+						await this.updateSubagentAsk(taskId, askMessage.ask, askMessage.text)
+					}
+				}
+			} else {
+				// For non-parallel tasks, update the full state
+				await this.postStateToWebview(task)
+			}
+
+			// Note: We don't wait for response here since asks process in parallel
+			// The task's handleWebviewAskResponse will be called when user responds
+			// and we'll remove it from the set then
+
+			const processingTime = Date.now() - startTime
+			this.log(`[AskSet] Setup ask UI for task ${taskId} in ${processingTime}ms`)
+		} catch (error) {
+			this.log(`Error processing ask for task ${taskId}: ${error}`)
+			raceLog("PROCESS_ASK_ERROR", { taskId, error: String(error) })
+			// Remove from set on error
+			this.askSet.delete(taskId)
+		} finally {
+			// Remove from processing set
+			this.processingAsks.delete(taskId)
+			raceLog("PROCESS_ASK_COMPLETE", {
+				taskId,
+				askSetSize: this.askSet.size,
+				processingCount: this.processingAsks.size,
+			})
+		}
+	}
+
+	// Wait for task's ask to complete (response received or timeout)
+	private async waitForAskToComplete(task: Task): Promise<boolean> {
+		const checkInterval = 100
+		const maxWaitTime = 60 * 60 * 1000 // 60 minutes
+		const startTime = Date.now()
+		let isTimeout = false
+
+		// Wait until either:
+		// 1. Task receives a response (askResponse is set)
+		// 2. Task is no longer in the registry (disposed)
+		// 3. Timeout is reached
+		while (true) {
+			// Check if task was disposed
+			if (!this.taskRegistry.has(task.taskId)) {
+				this.log(`Task ${task.taskId} was disposed while waiting`)
+				break
+			}
+
+			// Check if task received response
+			if (task.hasAskResponse) {
+				break
+			} else {
+				this.log(`Task ${task.taskId} does not have response yet`)
+			}
+
+			// Check timeout
+			if (Date.now() - startTime > maxWaitTime) {
+				this.log(`Ask timeout for task ${task.taskId}`)
+				isTimeout = true
+				break
+			}
+
+			// Check if task is still waiting (has pending ask)
+			const hasPendingAsk = task.clineMessages.some(
+				(m) => m.type === "ask" && m.taskId === task.taskId && !task.hasAskResponse,
+			)
+
+			if (!hasPendingAsk) {
+				// Task no longer has a pending ask
+				break
+			}
+
+			await new Promise((resolve) => setTimeout(resolve, checkInterval))
+		}
+
+		return isTimeout
+	}
+
+	// Remove task from ask set (new parallel system)
+	removeFromAskSet(taskId: string) {
+		raceLog("REMOVE_FROM_ASK_SET_BEFORE", {
+			taskId,
+			askSetSize: this.askSet.size,
+			askSet: Array.from(this.askSet.keys()),
+		})
+
+		const removed = this.askSet.delete(taskId)
+
+		raceLog("REMOVE_FROM_ASK_SET_AFTER", {
+			taskId,
+			removed,
+			askSetSize: this.askSet.size,
+			askSet: Array.from(this.askSet.keys()),
+		})
+
+		// Also remove from processing set if present
+		this.processingAsks.delete(taskId)
+
+		return removed
+	}
+
+	// Monitoring and Diagnostics
+
+	// Ask processing metrics
+	private askMetrics = {
+		totalAsks: 0,
+		avgProcessingTime: 0,
+		maxProcessingTime: 0,
+		timeouts: 0,
+	}
+
+	// Log task registry state
+	public logTaskRegistry() {
+		this.log(`[TaskRegistry] Active tasks: ${this.taskRegistry.size}`)
+		this.log(`[TaskRegistry] Stack tasks: ${this.clineStack.length}`)
+		this.log(`[TaskRegistry] Set tasks: ${this.clineSet.size}`)
+		this.log(`[TaskRegistry] Ask set: ${this.askSet.size}`)
+
+		// Log detailed state for debugging
+		if (process.env.DEBUG_TASK_REGISTRY) {
+			for (const [taskId, task] of this.taskRegistry) {
+				const hasPendingAsk = task.clineMessages.some((m) => m.type === "ask" && !task.hasAskResponse)
+				this.log(`  Task ${taskId}: hasPendingAsk=${hasPendingAsk}`)
+			}
+		}
+	}
+
+	// Start periodic health check
+	private startHealthCheck() {
+		const healthCheckInterval = setInterval(() => {
+			// Check for orphaned tasks
+			for (const [taskId, task] of this.taskRegistry) {
+				if (!this.clineStack.includes(task) && !this.clineSet.has(task)) {
+					this.log(`[HealthCheck] WARNING: Orphaned task found: ${taskId}`)
+				}
+			}
+
+			// Check for stuck asks in Set
+			const now = Date.now()
+			for (const [taskId, item] of this.askSet) {
+				const waitTime = now - item.timestamp
+				if (waitTime > 60000) {
+					// 1 minute
+					this.log(`[HealthCheck] WARNING: Ask in Set pending for ${waitTime}ms: ${taskId}`)
+				}
+			}
+
+			// Log metrics periodically
+			if (this.askMetrics.totalAsks > 0) {
+				this.log(
+					`[AskMetrics] Total: ${this.askMetrics.totalAsks}, 
+					Avg: ${this.askMetrics.avgProcessingTime.toFixed(0)}ms, 
+					Max: ${this.askMetrics.maxProcessingTime}ms, 
+					Timeouts: ${this.askMetrics.timeouts} ,
+					number of tasks in clineSet: ${this.clineSet.size} ,
+					number of tasks in clineStack: ${this.clineStack.length} ,
+					number of tasks in taskRegistry: ${this.taskRegistry.size} ,
+					number of asks in askSet: ${this.askSet.size} ,
+					number of asks processing: ${this.processingAsks.size} ,
+					number of messages return from subagent so far: ${this.parallelTaskMessages.size}
+					`,
+				)
+			}
+		}, 30000) // Every 30 seconds
+
+		// Store interval for cleanup
+		this.disposables.push({
+			dispose: () => clearInterval(healthCheckInterval),
+		})
+	}
+
+	// Update ask metrics
+	private updateAskMetrics(processingTime: number, isTimeout: boolean) {
+		this.askMetrics.totalAsks++
+		if (isTimeout) {
+			this.askMetrics.timeouts++
+		}
+		this.askMetrics.maxProcessingTime = Math.max(this.askMetrics.maxProcessingTime, processingTime)
+		this.askMetrics.avgProcessingTime =
+			(this.askMetrics.avgProcessingTime * (this.askMetrics.totalAsks - 1) + processingTime) /
+			this.askMetrics.totalAsks
+	}
+
+	// Get current task metrics
+	public getTaskMetrics() {
+		return {
+			totalAsks: this.askMetrics.totalAsks,
+			avgProcessingTime: this.askMetrics.avgProcessingTime,
+			maxProcessingTime: this.askMetrics.maxProcessingTime,
+			timeouts: this.askMetrics.timeouts,
+		}
+	}
+
+	// Get current ask set status
+	public getAskSetStatus() {
+		// Get asks from Set
+		const askSetTasks = Array.from(this.askSet.entries()).map(([taskId, item]) => ({
+			taskId,
+			timestamp: item.timestamp,
+			waitTime: Date.now() - item.timestamp,
+			isProcessing: this.processingAsks.has(taskId),
+		}))
+
+		return {
+			// Set-based system
+			askSetSize: this.askSet.size,
+			processingCount: this.processingAsks.size,
+			askSetTasks,
+			totalPendingAsks: this.askSet.size,
+		}
+	}
+
+	public pauseAllStreamingExcept(taskToExclude?: Task) {
+		for (const task of this.taskRegistry.values()) {
+			if (taskToExclude && task.taskId === taskToExclude.taskId) {
+				continue
+			}
+			task.isStreamingPaused = true
+		}
+	}
+
+	public resumeAllStreaming() {
+		for (const task of this.taskRegistry.values()) {
+			task.isStreamingPaused = false
+		}
+	}
+	// remove the current task/cline instance (at the top of the stack), so this task is finished
+	// and resume the previous task/cline instance (if it exists)
+	// this is used when a sub task is finished and the parent task needs to be resumed
+	async finishSubTask(lastMessage: string, cline: Task | undefined = undefined, cancelledByUser: boolean = false) {
+		console.log(`[subtasks] finishing subtask ${lastMessage} (cancelledByUser: ${cancelledByUser})`)
+
+		if (!cline) {
+			// Fallback to old behavior if no cline provided
+			await this.removeClineFromStack()
+			await this.getCurrentTask()?.resumePausedTask(lastMessage)
+			return
+		}
+
+		if (cline.isParallel) {
+			// For parallel tasks (subagents), store the message and remove from set
+			const parentTask = cline.parentTask
+			// Only store message if not cancelled (for cancelled tasks, we'll use a different message)
+			if (!cancelledByUser) {
+				this.parallelTaskMessages.set(cline.taskId, lastMessage)
+			}
+
+			// Update parallelTasks status to completed and clear streaming text
+			this.parallelTasksState = this.parallelTasksState.map((task) =>
+				task.taskId === cline.taskId
+					? { ...task, status: "completed" as const, streamingText: undefined }
+					: task,
+			)
+
+			// Send targeted update for parallelTasks only
+			await this.postMessageToWebview({
+				type: "parallelTasksUpdate",
+				payload: this.parallelTasksState,
+			})
+
+			await this.removeClineFromSet(cline)
+
+			// Only resume the parent task if all parallel tasks are finished (clineSet is empty)
+			if (this.clineSet.size === 0) {
+				let messageToParent: string
+
+				if (cancelledByUser) {
+					// If cancelled by user, send a special message to parent
+					messageToParent =
+						"All subagent tasks have been cancelled by user request. Please ask the user what to do next. Do not try to resume, repeat the task."
+				} else {
+					// Normal completion - concatenate all parallel task messages
+					messageToParent = Array.from(this.parallelTaskMessages.values()).join("\n\n")
+				}
+
+				// Clear the stored messages
+				this.parallelTaskMessages.clear()
+
+				// Clear parallelTasks from webview before resuming parent task
+				this.parallelTasksState = []
+				await this.postMessageToWebview({
+					type: "parallelTasksUpdate",
+					payload: [],
+				})
+
+				// Resume parent with the appropriate message
+				await parentTask?.resumePausedTask(messageToParent, false)
+			}
+		} else {
+			// For sequential tasks (new_task), remove from stack and resume current task
+			await this.removeClineFromStack()
+			// resume the last cline instance in the stack (if it exists - this is the 'parent' calling task)
+			await this.getCurrentTask()?.resumePausedTask(lastMessage, true)
+		}
+	}
+
+	// Clear the current task without treating it as a subtask
+	// This is used when the user cancels a task that is not a subtask
+	async clearTask() {
 		await this.removeClineFromStack()
-		// Resume the last cline instance in the stack (if it exists - this is
-		// the 'parent' calling task).
-		await this.getCurrentTask()?.resumePausedTask(lastMessage)
+	}
+
+	resumeTask(taskId: string): void {
+		// Use the existing showTaskWithId method which handles both current and historical tasks
+		this.showTaskWithId(taskId).catch((error) => {
+			this.log(`Failed to resume task ${taskId}: ${error.message}`)
+		})
+	}
+
+	getRecentTasks(): string[] {
+		if (this.recentTasksCache) {
+			return this.recentTasksCache
+		}
+
+		const history = this.getGlobalState("taskHistory") ?? []
+		const workspaceTasks: HistoryItem[] = []
+
+		for (const item of history) {
+			if (!item.ts || !item.task || item.workspace !== this.cwd) {
+				continue
+			}
+
+			workspaceTasks.push(item)
+		}
+
+		if (workspaceTasks.length === 0) {
+			this.recentTasksCache = []
+			return this.recentTasksCache
+		}
+
+		workspaceTasks.sort((a, b) => b.ts - a.ts)
+		let recentTaskIds: string[] = []
+
+		if (workspaceTasks.length >= 100) {
+			// If we have at least 100 tasks, return tasks from the last 7 days.
+			const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000
+
+			for (const item of workspaceTasks) {
+				// Stop when we hit tasks older than 7 days.
+				if (item.ts < sevenDaysAgo) {
+					break
+				}
+
+				recentTaskIds.push(item.id)
+			}
+		} else {
+			// Otherwise, return the most recent 100 tasks (or all if less than 100).
+			recentTaskIds = workspaceTasks.slice(0, Math.min(100, workspaceTasks.length)).map((item) => item.id)
+		}
+
+		this.recentTasksCache = recentTaskIds
+		return this.recentTasksCache
+	}
+
+	// Update activity timestamp for a specific subagent
+	async updateSubagentActivity(taskId: string) {
+		// Update the activity timestamp for the specified task
+		this.parallelTasksState = this.parallelTasksState.map((task) =>
+			task.taskId === taskId ? { ...task, lastActivity: Date.now() } : task,
+		)
+
+		// Send targeted update for parallelTasks only
+		await this.postMessageToWebview({
+			type: "parallelTasksUpdate",
+			payload: this.parallelTasksState,
+		})
+	}
+
+	// Update ask state for a specific subagent
+	async updateSubagentAsk(taskId: string, askType?: string, askText?: string) {
+		// console.log(`[TOOL_DISPLAY_DEBUG] updateSubagentAsk called for task ${taskId} with:`, {
+		// 	askType,
+		// 	hasAskText: !!askText,
+		// 	askTextLength: askText?.length,
+		// })
+		// Update the ask state for the specified task
+		this.parallelTasksState = this.parallelTasksState.map((task) => {
+			if (task.taskId !== taskId) {
+				return task
+			}
+
+			// Keep existing tool call - it will be updated separately by updateSubagentToolCall
+			const updatedTask = {
+				...task,
+				askType,
+				askText,
+				streamingText: undefined,
+				lastActivity: Date.now(),
+			}
+			// console.log(
+			// 	`[TOOL_DISPLAY_DEBUG] Updated task ${taskId} ask state, toolCall preserved:`,
+			// 	updatedTask.toolCall,
+			// )
+			return updatedTask
+		})
+
+		// Send targeted update for parallelTasks only
+		await this.postMessageToWebview({
+			type: "parallelTasksUpdate",
+			payload: this.parallelTasksState,
+		})
+	}
+
+	// Update tool call for a specific subagent
+	async updateSubagentToolCall(
+		taskId: string,
+		toolCall: { toolName: string; toolInput: any; isPartial?: boolean } | undefined,
+	) {
+		//console.log(`[TOOL_DISPLAY_DEBUG] updateSubagentToolCall called for task ${taskId} with:`, toolCall)
+		this.parallelTasksState = this.parallelTasksState.map((task) => {
+			if (task.taskId !== taskId) {
+				return task
+			}
+			// Keep the tool call for display even after ask is cleared
+			const updatedTask = { ...task, toolCall, lastActivity: Date.now() }
+			//console.log(`[TOOL_DISPLAY_DEBUG] Updated task ${taskId} state with toolCall:`, updatedTask.toolCall)
+			return updatedTask
+		})
+
+		// Send targeted update for parallelTasks only
+		await this.postMessageToWebview({
+			type: "parallelTasksUpdate",
+			payload: this.parallelTasksState,
+		})
+	}
+
+	// Check if an ask should be auto-approved based on global settings
+	private async shouldAutoApproveAsk(askMessage: ClineMessage): Promise<boolean> {
+		const state = await this.getState()
+		const {
+			autoApprovalEnabled,
+			alwaysAllowReadOnly,
+			alwaysAllowReadOnlyOutsideWorkspace,
+			alwaysAllowWrite,
+			alwaysAllowWriteOutsideWorkspace,
+			alwaysAllowWriteProtected,
+			alwaysAllowExecute,
+			alwaysAllowBrowser,
+			alwaysAllowMcp,
+			alwaysAllowUpdateTodoList,
+			alwaysAllowModeSwitch,
+			alwaysAllowSubtasks,
+			alwaysAllowDebug,
+			alwaysAllowLsp,
+			allowedCommands,
+		} = state
+
+		// console.log(`[AUTO_APPROVAL_DEBUG] shouldAutoApproveAsk called with:`, {
+		// 	autoApprovalEnabled,
+		// 	askType: askMessage.ask,
+		// 	messageType: askMessage.type,
+		// 	alwaysAllowReadOnly,
+		// 	alwaysAllowReadOnlyOutsideWorkspace,
+		// })
+
+		if (!autoApprovalEnabled || askMessage.type !== "ask") {
+			return false
+		}
+
+		// Check different ask types
+		if (askMessage.ask === "browser_action_launch") {
+			return alwaysAllowBrowser ?? false
+		}
+
+		if (askMessage.ask === "command") {
+			if (!(alwaysAllowExecute ?? false)) {
+				return false
+			}
+			// Check if command is in allowed list
+			if (allowedCommands && allowedCommands.length > 0) {
+				const command = askMessage.text || ""
+				return allowedCommands.some((allowed: string) => command.startsWith(allowed))
+			}
+			return true
+		}
+
+		if (askMessage.ask === "tool") {
+			let tool: any = {}
+			try {
+				tool = JSON.parse(askMessage.text || "{}")
+			} catch (error) {
+				console.log(`[AUTO_APPROVAL_DEBUG] Failed to parse tool JSON:`, error)
+				return false
+			}
+
+			// Check for read-only tools
+			if (
+				tool.tool === "readFile" ||
+				tool.tool === "listFiles" ||
+				tool.tool === "listFilesTopLevel" ||
+				tool.tool === "listFilesRecursive" ||
+				tool.tool === "listCodeDefinitionNames" ||
+				tool.tool === "searchFiles" ||
+				tool.tool === "codebaseSearch" ||
+				tool.tool === "glob"
+			) {
+				const isOutsideWorkspace = !!tool.isOutsideWorkspace
+				const result =
+					(alwaysAllowReadOnly ?? false) &&
+					(!isOutsideWorkspace || (alwaysAllowReadOnlyOutsideWorkspace ?? false))
+
+				return result
+			}
+
+			// Check for write tools
+			if (
+				tool.tool === "writeToFile" ||
+				tool.tool === "editedExistingFile" ||
+				tool.tool === "newFileCreated" ||
+				tool.tool === "appliedDiff"
+			) {
+				const isOutsideWorkspace = !!tool.isOutsideWorkspace
+				const isProtected = askMessage.isProtected
+				return (
+					(alwaysAllowWrite ?? false) &&
+					(!isOutsideWorkspace || (alwaysAllowWriteOutsideWorkspace ?? false)) &&
+					(!isProtected || (alwaysAllowWriteProtected ?? false))
+				)
+			}
+
+			// Check for mode switch
+			if (tool.tool === "switchMode") {
+				return alwaysAllowModeSwitch ?? false
+			}
+
+			// Check for subtasks
+			if (tool.tool === "newTask" || tool.tool === "finishTask") {
+				return alwaysAllowSubtasks ?? false
+			}
+
+			// Auto-approve updateTodoList for all tasks (master and subagents)
+			// This is a safe internal operation that only updates task state
+			if (tool.tool === "updateTodoList") {
+				return alwaysAllowUpdateTodoList ?? false
+			}
+
+			// Check for debug tools
+			if (tool.tool === "debug") {
+				return alwaysAllowDebug ?? false
+			}
+
+			// Check for LSP tools
+			if (tool.tool === "lsp") {
+				return alwaysAllowLsp ?? false
+			}
+		}
+
+		return false
 	}
 
 	/*
@@ -422,8 +1336,8 @@ export class ClineProvider
 		while (this.clineStack.length > 0) {
 			await this.removeClineFromStack()
 		}
-
-		this.log("Cleared all tasks")
+		await this.removeAllClinesFromSet()
+		this.log("Cleared task")
 
 		if (this.view && "dispose" in this.view) {
 			this.view.dispose()
@@ -434,7 +1348,7 @@ export class ClineProvider
 
 		// Clean up cloud service event listener
 		if (CloudService.hasInstance()) {
-			CloudService.instance.off("settings-updated", this.handleCloudSettingsUpdate)
+			CloudService.instance?.off("settings-updated", this.handleCloudSettingsUpdate)
 		}
 
 		while (this.disposables.length) {
@@ -559,13 +1473,29 @@ export class ClineProvider
 	}
 
 	async resolveWebviewView(webviewView: vscode.WebviewView | vscode.WebviewPanel) {
-		this.view = webviewView
-		const inTabMode = "onDidChangeViewState" in webviewView
+		this.log("Resolving webview view")
 
+		this.view = webviewView
+
+		// Set panel reference according to webview type
+		const inTabMode = "onDidChangeViewState" in webviewView
 		if (inTabMode) {
 			setPanel(webviewView, "tab")
 		} else if ("onDidChangeVisibility" in webviewView) {
 			setPanel(webviewView, "sidebar")
+		}
+
+		// Initialize MCP Hub only once when webview is ready
+		if (!this.mcpHub) {
+			McpServerManager.getInstance(this.context, this)
+				.then((hub) => {
+					this.mcpHub = hub
+					this.mcpHub.registerClient()
+					this.log("MCP Hub initialized successfully after webview ready")
+				})
+				.catch((error) => {
+					this.log(`Failed to initialize MCP Hub: ${error}`)
+				})
 		}
 
 		// Initialize out-of-scope variables that need to receive persistent
@@ -685,19 +1615,105 @@ export class ClineProvider
 
 		// If the extension is starting a new session, clear previous task state.
 		await this.removeClineFromStack()
+
+		this.log("Webview view resolved")
+	}
+
+	// When initializing a new task, (not from history but from a tool command
+	// new_task) there is no need to remove the previous task since the new
+	// task is a subtask of the previous one, and when it finishes it is removed
+	// from the stack and the caller is resumed in this way we can have a chain
+	// of tasks, each one being a sub task of the previous one until the main
+	// task is finished.
+	public async createTask(
+		text?: string,
+		images?: string[],
+		parentTask?: Task,
+		options: Partial<
+			Pick<
+				TaskOptions,
+				| "enableDiff"
+				| "enableCheckpoints"
+				| "fuzzyMatchThreshold"
+				| "consecutiveMistakeLimit"
+				| "experiments"
+				| "initialTodos"
+			>
+		> = {},
+		is_parallel: boolean = false, // New parameter to indicate parallel execution
+	) {
+		raceLog("INIT_CLINE_WITH_TASK", {
+			hasTask: !!text,
+			hasImages: !!images,
+			parentTaskId: parentTask?.taskId,
+			is_parallel,
+			stackSize: this.clineStack.length,
+			setSize: this.clineSet.size,
+			task: text,
+		})
+
+		const {
+			apiConfiguration,
+			organizationAllowList,
+			diffEnabled: enableDiff,
+			enableCheckpoints,
+			fuzzyMatchThreshold,
+			experiments,
+			cloudUserInfo,
+			remoteControlEnabled,
+		} = await this.getState()
+
+		if (!ProfileValidator.isProfileAllowed(apiConfiguration, organizationAllowList)) {
+			throw new OrganizationAllowListViolationError(t("common:errors.violated_organization_allowlist"))
+		}
+
+		const cline = new Task({
+			provider: this,
+			apiConfiguration,
+			enableDiff,
+			enableCheckpoints,
+			fuzzyMatchThreshold,
+			consecutiveMistakeLimit: apiConfiguration.consecutiveMistakeLimit,
+			task: text,
+			images,
+			experiments,
+			rootTask: this.clineStack.length > 0 ? this.clineStack[0] : undefined,
+			parentTask,
+			taskNumber: this.clineStack.length + 1,
+			isParallel: is_parallel,
+			onCreated: this.taskCreationCallback,
+			enableTaskBridge: isRemoteControlEnabled(cloudUserInfo, remoteControlEnabled),
+			initialTodos: options.initialTodos,
+			...options,
+		})
+		// If the task is parallel, add it to the set for parallel execution
+		if (is_parallel) {
+			raceLog("ADD_CLINE_TO_SET", { taskId: cline.taskId })
+			await this.addClineToSet(cline)
+		} else {
+			// Otherwise, add it to the stack for sequential execution
+			raceLog("ADD_CLINE_TO_STACK", { taskId: cline.taskId })
+			await this.addClineToStack(cline)
+		}
+
+		this.log(
+			`[subtasks] ${cline.parentTask ? "child" : "parent"} task ${cline.taskId}.${cline.instanceId} instantiated`,
+		)
+
+		return cline
 	}
 
 	public async createTaskWithHistoryItem(historyItem: HistoryItem & { rootTask?: Task; parentTask?: Task }) {
 		await this.removeClineFromStack()
 
-		// If the history item has a saved mode, restore it and its associated API configuration.
+		// If the history item has a saved mode, restore it and its associated API configuration
 		if (historyItem.mode) {
 			// Validate that the mode still exists
 			const customModes = await this.customModesManager.getCustomModes()
 			const modeExists = getModeBySlug(historyItem.mode, customModes) !== undefined
 
 			if (!modeExists) {
-				// Mode no longer exists, fall back to default mode.
+				// Mode no longer exists, fall back to default mode
 				this.log(
 					`Mode '${historyItem.mode}' from history no longer exists. Falling back to default mode '${defaultModeSlug}'.`,
 				)
@@ -769,7 +1785,18 @@ export class ClineProvider
 	}
 
 	public async postMessageToWebview(message: ExtensionMessage) {
-		await this.view?.webview.postMessage(message)
+		while (!this.view) {
+			this.log(
+				`Warning: Attempting to post message to webview but view is not available. Message type: ${message.type}`,
+			)
+			await delay(200)
+		}
+		raceLog("POST_MESSAGE_TO_WEBVIEW", {
+			messageType: message.type,
+			message: message,
+			askSet: Array.from(this.askSet.keys()),
+		})
+		await this.view.webview.postMessage(message)
 	}
 
 	private async getHMRHtmlContent(webview: vscode.Webview): Promise<string> {
@@ -1141,9 +2168,208 @@ export class ClineProvider
 		}
 
 		await this.postStateToWebview()
+	}
 
-		if (providerSettings.apiProvider) {
-			this.emit(RooCodeEventName.ProviderProfileChanged, { name, provider: providerSettings.apiProvider })
+	// Task Management
+
+	async clearAllPendingTasksAndAsks() {
+		console.log(`[SubAgentManager] Clearing all pending tasks and asks before starting new subagents`)
+
+		// Clear all running subagents
+		if (this.clineSet.size > 0) {
+			console.log(`[SubAgentManager] Disposing ${this.clineSet.size} remaining tasks from clineSet`)
+			for (const task of this.clineSet) {
+				try {
+					task.dispose() // Use dispose instead of abort for cleanup
+				} catch (error) {
+					console.error(`[SubAgentManager] Error disposing task ${task.taskId}:`, error)
+				}
+			}
+			this.clineSet.clear()
+		}
+
+		// Clear processing asks
+		if (this.processingAsks.size > 0) {
+			console.log(`[SubAgentManager] Clearing ${this.processingAsks.size} processing asks`)
+			this.processingAsks.clear()
+		}
+
+		// Clear parallel tasks state
+		this.parallelTasksState = []
+		await this.postMessageToWebview({
+			type: "parallelTasksUpdate",
+			payload: [],
+		})
+	}
+
+	async cancelTask() {
+		// Cancel all running subagents first
+		if (this.clineSet.size > 0) {
+			console.log(`[SubAgentManager] Cancelling all ${this.clineSet.size} running subagents.`)
+			for (const subagent of this.clineSet) {
+				await subagent.abortTask()
+			}
+			this.clineSet.clear()
+			this.parallelTasksState = []
+			await this.postMessageToWebview({
+				type: "parallelTasksUpdate",
+				payload: [],
+			})
+		}
+
+		const cline = this.getCurrentTask()
+
+		if (!cline) {
+			return
+		}
+
+		console.log(`[subtasks] cancelling task ${cline.taskId}.${cline.instanceId}`)
+
+		const { historyItem } = await this.getTaskWithId(cline.taskId)
+		// Preserve parent and root task information for history item.
+		const rootTask = cline.rootTask
+		const parentTask = cline.parentTask
+
+		cline.abortTask()
+
+		await pWaitFor(
+			() =>
+				this.getCurrentTask()! === undefined ||
+				this.getCurrentTask()!.isStreaming === false ||
+				this.getCurrentTask()!.didFinishAbortingStream ||
+				// If only the first chunk is processed, then there's no
+				// need to wait for graceful abort (closes edits, browser,
+				// etc).
+				this.getCurrentTask()!.isWaitingForFirstChunk,
+			{
+				timeout: 10_000, // Increased from 3s to 10s to allow more time for graceful cleanup
+			},
+		).catch((error) => {
+			console.error("[CANCEL_ERROR] Failed to abort task within timeout:", error)
+			console.error("[CANCEL_ERROR] Current task state:", {
+				hasCurrentCline: !!this.getCurrentTask(),
+				isStreaming: this.getCurrentTask()?.isStreaming,
+				didFinishAbortingStream: this.getCurrentTask()?.didFinishAbortingStream,
+				isWaitingForFirstChunk: this.getCurrentTask()?.isWaitingForFirstChunk,
+			})
+		})
+
+		if (this.getCurrentTask()) {
+			// 'abandoned' will prevent this Cline instance from affecting
+			// future Cline instances. This may happen if its hanging on a
+			// streaming request.
+			this.getCurrentTask()!.abandoned = true
+		}
+
+		// Clears task again, so we need to abortTask manually above.
+		await this.createTaskWithHistoryItem({ ...historyItem, rootTask, parentTask })
+	}
+
+	async cancelAllSubagentsAndResumeParent() {
+		console.log(`[CANCEL_SUBAGENT_DEBUG] ClineProvider: cancelAllSubagentsAndResumeParent called`)
+		console.log(`[CANCEL_SUBAGENT_DEBUG] ClineProvider: Current clineSet size: ${this.clineSet.size}`)
+		console.log(
+			`[CANCEL_SUBAGENT_DEBUG] ClineProvider: Current parallelTasksState length: ${this.parallelTasksState.length}`,
+		)
+		console.log(
+			`[CANCEL_SUBAGENT_DEBUG] ClineProvider: ClineSet contents:`,
+			Array.from(this.clineSet).map((c) => ({ taskId: c.taskId, instanceId: c.instanceId, abort: c.abort })),
+		)
+
+		console.log(`[SubAgentManager] Cancelling all subagents and resuming parent task`)
+
+		// Cancel all running subagents by calling finishSubTask for each
+		if (this.clineSet.size > 0) {
+			console.log(`[SubAgentManager] Cancelling ${this.clineSet.size} running subagents`)
+
+			// Create a copy of the set since finishSubTask will modify it
+			const subagentsArray = Array.from(this.clineSet)
+
+			// First, immediately mark all subagents as aborted to stop any ongoing operations
+			for (const subagent of subagentsArray) {
+				try {
+					console.log(
+						`[SubAgentManager] Setting abort flag for subagent ${subagent.taskId}.${subagent.instanceId}`,
+					)
+					// Set abort flag to stop any running operations immediately
+					subagent.abort = true
+					subagent.abandoned = true
+				} catch (e: any) {
+					console.error(
+						`[SubAgentManager] Error setting abort flag for subagent ${subagent.taskId}: ${e.message}`,
+					)
+				}
+			}
+
+			// Now finish each subagent cleanly - PARALLEL EXECUTION for better performance
+			const cleanupPromises = subagentsArray.map(async (subagent) => {
+				try {
+					console.log(
+						`[SubAgentManager] Finishing cancelled subagent ${subagent.taskId}.${subagent.instanceId}`,
+					)
+					// Call finishSubTask with empty message and cancelledByUser = true
+					// This will automatically handle:
+					// - NOT storing messages in parallelTaskMessages (since cancelled)
+					// - Updating parallelTasksState to completed
+					// - Removing from clineSet
+					// - Resuming parent with cancellation message when all are done
+					await this.finishSubTask("", subagent, true)
+					return { success: true, taskId: subagent.taskId }
+				} catch (e: any) {
+					console.error(
+						`[SubAgentManager] Error finishing cancelled subagent ${subagent.taskId}: ${e.message}`,
+					)
+					// Ensure subagent is removed from clineSet even if finishSubTask fails
+					try {
+						this.clineSet.delete(subagent)
+					} catch (cleanupError) {
+						console.error(`Failed to remove ${subagent.taskId} from clineSet:`, cleanupError)
+					}
+					return { success: false, taskId: subagent.taskId, error: e.message }
+				}
+			})
+
+			// Add timeout protection to prevent hanging cancellations
+			const CANCELLATION_TIMEOUT = 5000 // 5 seconds
+			const timeoutPromise = new Promise((_, reject) =>
+				setTimeout(() => reject(new Error("Cancellation timeout")), CANCELLATION_TIMEOUT),
+			)
+
+			try {
+				// Wait for all cleanups to complete in parallel with timeout protection
+				const results = await Promise.race([Promise.allSettled(cleanupPromises), timeoutPromise])
+
+				// Log summary of cleanup results
+				const successful = (results as PromiseSettledResult<any>[]).filter(
+					(r) => r.status === "fulfilled" && r.value.success,
+				).length
+				const failed = subagentsArray.length - successful
+				console.log(`[SubAgentManager] Cleanup summary: ${successful} successful, ${failed} failed`)
+			} catch (error) {
+				console.error(`[SubAgentManager] Cancellation timeout or error:`, error)
+				// Force cleanup even if timeout occurred
+				// Ensure clineSet is cleared and parent is resumed
+				const currentParentTask = subagentsArray[0]?.parentTask
+				subagentsArray.forEach((subagent) => {
+					try {
+						this.clineSet.delete(subagent)
+					} catch (e) {
+						console.error(`Force cleanup error for ${subagent.taskId}:`, e)
+					}
+				})
+
+				if (this.clineSet.size === 0) {
+					this.parallelTasksState = []
+					if (currentParentTask) {
+						await currentParentTask.resumePausedTask(
+							"All subagent tasks have been cancelled by user request (with timeout). Please ask the user what to do next. Do not try to resume, repeat the task.",
+							false,
+						)
+					}
+				}
+			}
+		} else {
+			console.log(`[SubAgentManager] No subagents to cancel`)
 		}
 	}
 
@@ -1159,14 +2385,14 @@ export class ClineProvider
 		// Get platform-specific application data directory
 		let mcpServersDir: string
 		if (process.platform === "win32") {
-			// Windows: %APPDATA%\Roo-Code\MCP
-			mcpServersDir = path.join(os.homedir(), "AppData", "Roaming", "Roo-Code", "MCP")
+			// Windows: %APPDATA%\roo-code\MCP
+			mcpServersDir = path.join(os.homedir(), "AppData", "Roaming", "roo-code", "MCP")
 		} else if (process.platform === "darwin") {
 			// macOS: ~/Documents/Cline/MCP
 			mcpServersDir = path.join(os.homedir(), "Documents", "Cline", "MCP")
 		} else {
 			// Linux: ~/.local/share/Cline/MCP
-			mcpServersDir = path.join(os.homedir(), ".local", "share", "Roo-Code", "MCP")
+			mcpServersDir = path.join(os.homedir(), ".local", "share", "roo-code", "MCP")
 		}
 
 		try {
@@ -1297,6 +2523,12 @@ export class ClineProvider
 
 		// if we tried to get a task that doesn't exist, remove it from state
 		// FIXME: this seems to happen sometimes when the json file doesnt save to disk for some reason
+		console.error(
+			`[CRITICAL] Task ${id} exists in UI history but file is missing. This indicates a file saving failure.`,
+		)
+		console.error(
+			`[CRITICAL] Expected file: ${historyItem ? path.join(await (await import("../../utils/storage")).getTaskDirectoryPath(this.contextProxy.globalStorageUri.fsPath, id), GlobalFileNames.apiConversationHistory) : "unknown"}`,
+		)
 		await this.deleteTaskFromState(id)
 		throw new Error("Task not found")
 	}
@@ -1373,6 +2605,80 @@ export class ClineProvider
 		} catch (error) {
 			// If task is not found, just remove it from state
 			if (error instanceof Error && error.message === "Task not found") {
+				// Comprehensive logging for debugging "task not found" issue
+				console.error(
+					`[deleteTaskWithId] Task not found error occurred. Starting comprehensive debug logging...`,
+				)
+				console.error(`[deleteTaskWithId] Target task ID to find: "${id}"`)
+
+				// Log current task from getCurrentTask()
+				const currentTask = this.getCurrentTask()
+				console.error(`[deleteTaskWithId] Current task from getCurrentTask():`, {
+					taskId: currentTask?.taskId || "undefined",
+					hasTask: !!currentTask,
+					taskObject: currentTask
+						? {
+								id: currentTask.taskId,
+								// Task properties that are available
+								toString: currentTask.toString?.() || "no toString method",
+							}
+						: "undefined",
+				})
+
+				// Log clineStack (task stack) information
+				console.error(`[deleteTaskWithId] ClineStack information:`, {
+					stackLength: this.clineStack.length,
+					taskIds: this.clineStack.map((task) => task.taskId),
+					tasks: this.clineStack.map((task) => ({
+						taskId: task.taskId,
+						// Available Task properties
+						toString: task.toString?.() || "no toString method",
+					})),
+				})
+
+				// Log task history from global state
+				const taskHistory = this.getGlobalState("taskHistory") ?? []
+				console.error(`[deleteTaskWithId] TaskHistory from global state:`, {
+					historyLength: taskHistory.length,
+					taskIds: taskHistory.map((task: any) => task.id),
+					tasks: taskHistory.map((task: any) => ({
+						id: task.id,
+						name: task.name,
+						ts: task.ts,
+						dirName: task.dirName,
+					})),
+				})
+
+				// Check if target ID exists in any of the collections
+				const inClineStack = this.clineStack.some((task) => task.taskId === id)
+				const inTaskHistory = taskHistory.some((task: any) => task.id === id)
+				const isCurrentTask = currentTask?.taskId === id
+
+				console.error(`[deleteTaskWithId] Target ID "${id}" existence check:`, {
+					inClineStack,
+					inTaskHistory,
+					isCurrentTask,
+					targetIdType: typeof id,
+					targetIdLength: id ? id.length : "undefined",
+				})
+
+				// Log additional debugging info
+				console.error(`[deleteTaskWithId] Additional context:`, {
+					cwd: this.cwd,
+					globalStorageUri: this.contextProxy?.globalStorageUri?.fsPath,
+					stackTrace: error.stack,
+				})
+
+				// Log the original error details
+				console.error(`[deleteTaskWithId] Original error details:`, {
+					errorMessage: error.message,
+					errorName: error.name,
+					errorStack: error.stack,
+					errorConstructor: error.constructor.name,
+				})
+
+				console.error(`[deleteTaskWithId] Debug logging completed. Proceeding to delete task from state...`)
+
 				await this.deleteTaskFromState(id)
 				return
 			}
@@ -1388,9 +2694,48 @@ export class ClineProvider
 		await this.postStateToWebview()
 	}
 
-	async postStateToWebview() {
-		const state = await this.getStateToPostToWebview()
-		this.postMessageToWebview({ type: "state", state })
+	public resolveStateUpdate(): void {
+		if (this.stateUpdatePromiseResolve) {
+			this.stateUpdatePromiseResolve(true)
+		}
+	}
+
+	async postStateToWebview(task?: Task) {
+		raceLog("POST_STATE_TO_WEBVIEW", {
+			taskId: task?.taskId,
+			isProvidedTask: !!task,
+			currentAskSet: Array.from(this.askSet.keys()),
+		})
+		while (this.updating_state) {
+			const delay = 500
+			await new Promise((resolve) => setTimeout(resolve, delay))
+		}
+		this.updating_state = true
+
+		try {
+			const state = await this.getStateToPostToWebview(task)
+
+			raceLog("STATE_TO_POST", {
+				activeTaskId: state.activeTaskId || "noActiveTask",
+				messageCount: state.clineMessages?.length || 0,
+				messages: state.clineMessages,
+				hasCurrentTaskItem: !!state.currentTaskItem,
+			})
+
+			const promise = new Promise((resolve) => {
+				this.stateUpdatePromiseResolve = resolve
+			})
+
+			await this.postMessageToWebview({ type: "state", state })
+
+			// Wait indefinitely for confirmation from webview
+			await promise
+		} catch (error) {
+			this.log(`postStateToWebview error: ${error.message}`)
+		} finally {
+			this.updating_state = false
+			this.stateUpdatePromiseResolve = null
+		}
 
 		// Check MDM compliance and send user to account tab if not compliant
 		// Only redirect if there's an actual MDM policy requiring authentication
@@ -1508,7 +2853,7 @@ export class ClineProvider
 		}
 	}
 
-	async getStateToPostToWebview() {
+	async getStateToPostToWebview(task?: Task) {
 		const {
 			apiConfiguration,
 			lastShownAnnouncementId,
@@ -1526,6 +2871,8 @@ export class ClineProvider
 			alwaysAllowModeSwitch,
 			alwaysAllowSubtasks,
 			alwaysAllowUpdateTodoList,
+			alwaysAllowDebug,
+			alwaysAllowLsp,
 			allowedMaxRequests,
 			allowedMaxCost,
 			autoCondenseContext,
@@ -1625,16 +2972,20 @@ export class ClineProvider
 			alwaysAllowModeSwitch: alwaysAllowModeSwitch ?? false,
 			alwaysAllowSubtasks: alwaysAllowSubtasks ?? false,
 			alwaysAllowUpdateTodoList: alwaysAllowUpdateTodoList ?? false,
+			alwaysAllowDebug: alwaysAllowDebug ?? false,
+			alwaysAllowLsp: alwaysAllowLsp ?? false,
 			allowedMaxRequests,
 			allowedMaxCost,
 			autoCondenseContext: autoCondenseContext ?? true,
 			autoCondenseContextPercent: autoCondenseContextPercent ?? 100,
 			uriScheme: vscode.env.uriScheme,
-			currentTaskItem: this.getCurrentTask()?.taskId
-				? (taskHistory || []).find((item: HistoryItem) => item.id === this.getCurrentTask()?.taskId)
+			// Use the provided task or fall back to current stack task
+			currentTaskItem: (task || this.getCurrentTask())?.taskId
+				? (taskHistory || []).find((item: HistoryItem) => item.id === (task || this.getCurrentTask())?.taskId)
 				: undefined,
-			clineMessages: this.getCurrentTask()?.clineMessages || [],
-			currentTaskTodos: this.getCurrentTask()?.todoList || [],
+			clineMessages: (task || this.getCurrentTask())?.clineMessages || [],
+			currentTaskTodos: (task || this.getCurrentTask())?.todoList || [],
+			activeTaskId: (task || this.getCurrentTask())?.taskId, // NEW: Include the active task ID
 			taskHistory: (taskHistory || [])
 				.filter((item: HistoryItem) => item.ts && item.task)
 				.sort((a: HistoryItem, b: HistoryItem) => b.ts - a.ts),
@@ -1728,9 +3079,8 @@ export class ClineProvider
 			includeDiagnosticMessages: includeDiagnosticMessages ?? true,
 			maxDiagnosticMessages: maxDiagnosticMessages ?? 50,
 			includeTaskHistoryInEnhance: includeTaskHistoryInEnhance ?? true,
-			remoteControlEnabled,
-			openRouterImageApiKey,
-			openRouterImageGenerationSelectedModel,
+			remoteControlEnabled: remoteControlEnabled ?? false,
+			parallelTasks: this.parallelTasksState,
 		}
 	}
 
@@ -1758,7 +3108,7 @@ export class ClineProvider
 		let organizationAllowList = ORGANIZATION_ALLOW_ALL
 
 		try {
-			organizationAllowList = await CloudService.instance.getAllowList()
+			organizationAllowList = (await CloudService.instance?.getAllowList()) ?? (ORGANIZATION_ALLOW_ALL as any)
 		} catch (error) {
 			console.error(
 				`[getState] failed to get organization allow list: ${error instanceof Error ? error.message : String(error)}`,
@@ -1768,7 +3118,7 @@ export class ClineProvider
 		let cloudUserInfo: CloudUserInfo | null = null
 
 		try {
-			cloudUserInfo = CloudService.instance.getUserInfo()
+			cloudUserInfo = await CloudService.instance?.getUserInfo()
 		} catch (error) {
 			console.error(
 				`[getState] failed to get cloud user info: ${error instanceof Error ? error.message : String(error)}`,
@@ -1778,7 +3128,7 @@ export class ClineProvider
 		let cloudIsAuthenticated: boolean = false
 
 		try {
-			cloudIsAuthenticated = CloudService.instance.isAuthenticated()
+			cloudIsAuthenticated = (await CloudService.instance?.isAuthenticated()) ?? false
 		} catch (error) {
 			console.error(
 				`[getState] failed to get cloud authentication state: ${error instanceof Error ? error.message : String(error)}`,
@@ -1788,7 +3138,7 @@ export class ClineProvider
 		let sharingEnabled: boolean = false
 
 		try {
-			sharingEnabled = await CloudService.instance.canShareTask()
+			sharingEnabled = (await CloudService.instance?.canShareTask()) ?? false
 		} catch (error) {
 			console.error(
 				`[getState] failed to get sharing enabled state: ${error instanceof Error ? error.message : String(error)}`,
@@ -1799,7 +3149,7 @@ export class ClineProvider
 
 		try {
 			if (CloudService.hasInstance()) {
-				const settings = CloudService.instance.getOrganizationSettings()
+				const settings = CloudService.instance?.getOrganizationSettings()
 				organizationSettingsVersion = settings?.version ?? -1
 			}
 		} catch (error) {
@@ -1826,6 +3176,8 @@ export class ClineProvider
 			alwaysAllowSubtasks: stateValues.alwaysAllowSubtasks ?? false,
 			alwaysAllowFollowupQuestions: stateValues.alwaysAllowFollowupQuestions ?? false,
 			alwaysAllowUpdateTodoList: stateValues.alwaysAllowUpdateTodoList ?? false,
+			alwaysAllowDebug: stateValues.alwaysAllowDebug ?? false,
+			alwaysAllowLsp: stateValues.alwaysAllowLsp ?? false,
 			followupAutoApproveTimeoutMs: stateValues.followupAutoApproveTimeoutMs ?? 60000,
 			diagnosticsEnabled: stateValues.diagnosticsEnabled ?? true,
 			allowedMaxRequests: stateValues.allowedMaxRequests,
