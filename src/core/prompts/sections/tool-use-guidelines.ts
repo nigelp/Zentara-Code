@@ -32,6 +32,7 @@ export function getToolUseGuidelinesSection(codeIndexManager?: CodeIndexManager)
 
 	guidelinesList.push(
 		`${itemNumber++}. **MANDATORY LSP-CENTRIC WORKFLOW FOR CODE ANALYSIS**: For any task that requires understanding, analyzing, or modifying code, you MUST adopt an LSP-centric workflow. This is not a suggestion—it is a requirement for efficient and accurate operation.
+	 - **Step 0: Symbol Discovery (FIRST CHOICE)**: When users ask about any term that might be a symbol (class, function, method, variable, interface, type, etc.), use \`lsp_search_symbols\` FIRST. It takes you directly to the symbol definition (the most important location) with semantic precision that text-based search cannot match.
 	 - **Step 1: Understand Structure**: Use \`lsp_get_document_symbols\` to get a high-level overview of the code in a file. This is the most token-efficient way to understand a file's architecture.
 	 - **Step 2: MANDATORY DEPENDENCY ANALYSIS**: Use \`lsp_find_usages\` to understand how symbols are used across the codebase BEFORE making any changes.
 	 - **Step 3: MANDATORY FUNCTION RELATIONSHIP ANALYSIS**: Use \`lsp_get_call_hierarchy\` to understand function call relationships and execution flows.
@@ -43,9 +44,16 @@ export function getToolUseGuidelinesSection(codeIndexManager?: CodeIndexManager)
 	 **CRITICAL: MANDATORY LSP TOOL USAGE ENFORCEMENT**
 	 You are REQUIRED to use these LSP tools in the following scenarios:
 	 
+	 **\`lsp_search_symbols\` is MANDATORY when:**
+	 - **SYMBOL DISCOVERY**: When users ask about any term that might be a symbol (class, function, method, variable, interface, type, component, service, etc.)
+	 - **CODEBASE EXPLORATION**: Finding symbol definitions when exploring unfamiliar code
+	 - **CODE UNDERSTANDING**: Locating the primary definition of code entities before analysis
+	 - **REFACTORING PREPARATION**: Finding symbols before making changes to understand their scope
+	 - **API DISCOVERY**: Discovering available classes, functions, and interfaces in a codebase
+	 
 	 **\`lsp_find_usages\` is MANDATORY when:**
 	 - **DEBUGGING**: Investigating bugs, errors, or unexpected behavior to understand symbol usage
-	 - **ERROR INVESTIGATION**: Tracing how problematic code is used across the codebase  
+	 - **ERROR INVESTIGATION**: Tracing how problematic code is used across the codebase
 	 - **CODEBASE EXPLORATION**: Understanding how functions, variables, or classes are used
 	 - Modifying, renaming, or deleting ANY symbol
 	 - Changing function signatures or parameters

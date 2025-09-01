@@ -166,11 +166,12 @@ export async function getSubagentDescription(discoveredAgents: AgentDiscoveryRes
 	  □ The scopes are mutually exclusive (no overlap)
 	  
 	  ## 🚀 EFFICIENCY TIPS
-	  **Choose the optimal discovery tool for subagents based on task requirements:**
-	  - **File structure exploration**: Use 'glob' with patterns like '**/*.{js,ts}' or '**/test/**/*' when you need to find files by their names or paths
-	  - **Content-based discovery**: Use 'search_files' for patterns like 'TODO', 'function\\s+\\w+', or specific code constructs when you need to find all mentions/usages of a term throughout the codebase
-	  - **Symbol-focused discovery**: Use 'lsp_search_symbols' when searching for terms you know represent symbols (classes, functions, methods, variables) - it takes you directly to the **symbol definition** (the most important location) rather than all mentions like 'search_files' does
-	  - **Performance consideration**: All three tools are efficient for their intended use cases, but 'lsp_search_symbols' is superior for symbol-specific searches
+	  **Choose the optimal discovery tool for subagents - SYMBOL SEARCH FIRST:**
+	  - **FIRST CHOICE - Symbol-focused discovery**: Use 'lsp_search_symbols' as your **primary discovery tool** when users ask about any term that might be a symbol (classes, functions, methods, variables, interfaces, types, etc.). It takes you directly to the **symbol definition** (the most important location) rather than all mentions. **Always try this first when users ask about code entities.**
+	  - **Alternative choices (equal ranking)**: When 'lsp_search_symbols' doesn't find relevant results, choose between:
+	    - **Content-based discovery**: Use 'search_files' when you need to find all mentions/usages of a term throughout the codebase (not just definitions). Good for patterns like 'TODO', 'function\\s+\\w+', or specific code constructs.
+	    - **File structure exploration**: Use 'glob' with patterns like '**/*.{js,ts}' or '**/test/**/*' when you need to find files by their names or paths, or when working with file organization tasks.
+	  - **Performance consideration**: 'lsp_search_symbols' is the most efficient for symbol searches because it provides semantic precision that text-based search cannot match
 	  - **MANDATORY LSP WORKFLOW**: After finding files with either tool, subagents MUST use LSP tools for analysis. DO NOT read full files.
 	  - Use \`lsp_get_document_symbols\` to understand file structure.
 	  - **MANDATORY**: Use \`lsp_find_usages\` to analyze dependencies and understand how code is connected.

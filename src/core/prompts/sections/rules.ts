@@ -58,7 +58,7 @@ export function getRulesSection(
 		codeIndexManager.isInitialized
 
 	const codebaseSearchRule = isCodebaseSearchAvailable
-		? "- **MANDATORY REQUIREMENT: You MUST use the 'subagent' tool FIRST for ANY task that involves understanding existing code, searching for functionality, analyzing files. The subagent tool is NOT optional - it is REQUIRED for complex tasks.** Subagents should choose appropriate discovery tools: glob for file patterns, search_files for content patterns when finding all mentions, and lsp_search_symbols when searching for symbol definitions (classes, functions, methods, variables) - which takes you directly to the most important location.\n"
+		? "- **MANDATORY REQUIREMENT: You MUST use the 'subagent' tool FIRST for ANY task that involves understanding existing code, searching for functionality, analyzing files. The subagent tool is NOT optional - it is REQUIRED for complex tasks.** Subagents should prioritize discovery tools with symbol search first: **lsp_search_symbols as FIRST CHOICE** when users ask about any term that might be a symbol (classes, functions, methods, variables, interfaces, types, etc.) - it takes you directly to the symbol definition (most important location). Alternative choices: search_files for content patterns when finding all mentions, and glob for file patterns.\n"
 		: ""
 
 	return `====

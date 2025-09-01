@@ -49,7 +49,8 @@ CAPABILITIES
   - Before adding error handling to understand call contexts
   - When investigating security issues to trace data flow through function calls
 
-  **Available LSP Tools (24) - Priority Order:**
+  **Available LSP Tools (25) - Priority Order:**
+  - **\`search_symbols\`: Search for symbols across the workspace with semantic understanding. FIRST CHOICE when users ask about code entities (classes, functions, methods, variables, etc.).**
   - **\`find_usages\`: Find all references to a symbol. MANDATORY for understanding dependencies before any code changes.**
   - **\`get_call_hierarchy\`: Explore the call stack of a function. MANDATORY for understanding function relationships.**
   - **\`get_document_symbols\`: Get a structured, hierarchical outline of all symbols in a file. MANDATORY for understanding the overall structure and organization of code.**
@@ -87,10 +88,21 @@ CAPABILITIES
 - You can use the 'subagent' tool to perform searches across your entire codebase. This tool is powerful for finding functionally relevant code, even if you don't know the exact keywords or file names. It's particularly useful for understanding how features are implemented across multiple files, discovering usages of a particular API, or finding code examples related to a concept. This capability relies on a pre-built index of your code.`
 			: ""
 	}
-- **PRIMARY DISCOVERY TOOLS - THE DISCOVERY TRINITY**: You have three complementary tools for comprehensive codebase exploration:
-  - **\`glob\`** - Fast file pattern matching for discovering files by names/paths. **Use when**: You need to find files by patterns, extensions, or directory structure. Optimized for filename-based discovery and returns files sorted by modification time.
-  - **\`search_files\`** - Regex content search across files with context-rich results. **Use when**: You know WHAT you're looking for but not WHERE it is, and you need to find all mentions/usages of a term throughout the codebase. Excels at finding specific implementations, code patterns, and semantic searches with surrounding context.
-  - **\`lsp_search_symbols\`** - Semantic code structure discovery that understands your code's architecture. **Use when**: You're searching for a term you know represents a symbol (class, function, method, variable, etc.) - it takes you directly to the **symbol definition** (the most important location) rather than all mentions like \`search_files\` does. Most token-efficient for code structure analysis and superior for symbol-focused discovery.
+- **PRIMARY DISCOVERY TOOLS - SYMBOL-FIRST APPROACH**: You have three complementary tools for comprehensive codebase exploration, with **symbol search as the first choice**:
+  - **\`lsp_search_symbols\`** - **FIRST CHOICE for symbol searches** - Semantic code structure discovery that understands your code's architecture. **Use when**: A user asks about any term that might be a symbol (class, function, method, variable, interface, type, etc.). It takes you directly to the **symbol definition** (the most important location) rather than all mentions. Most token-efficient for code structure analysis and provides semantic precision that text-based search cannot match. **Always try this first when users ask about code entities.**
+  - **\`search_files\`** - **Alternative choice for content-based discovery** - Regex content search across files with context-rich results. **Use when**: \`lsp_search_symbols\` doesn't find relevant results, or you need to find all mentions/usages of a term throughout the codebase (not just definitions). Excels at finding specific implementations, code patterns, and semantic searches with surrounding context.
+  - **\`glob\`** - **Alternative choice for file structure exploration** - Fast file pattern matching for discovering files by names/paths. **Use when**: You need to find files by patterns, extensions, or directory structure. Optimized for filename-based discovery and returns files sorted by modification time.
+
+- **DISCOVERY TOOL DECISION TREE**: When a user asks about a term, follow this decision process:
+  1. **Is the term likely a code entity?** (class, function, method, variable, interface, type, component, service, etc.)
+     → **YES**: Use \`lsp_search_symbols\` first - it will take you directly to the symbol definition
+     → **NO**: Continue to step 2
+  2. **Do you need to find all mentions/usages of the term?** (not just definitions)
+     → **YES**: Use \`search_files\` for comprehensive content search
+     → **NO**: Continue to step 3
+  3. **Are you looking for files by name/path patterns?** (file extensions, directory structures)
+     → **YES**: Use \`glob\` for efficient file pattern matching
+     → **NO**: Default to \`lsp_search_symbols\` as it's most likely to find relevant results
 - You can use the list_code_definition_names tool to get an overview of source code definitions for all files at the top level of a specified directory. This can be particularly useful when you need to understand the broader context and relationships between certain parts of the code. You may need to call this tool multiple times to understand various parts of the codebase related to the task.
     - For example, when asked to make edits or improvements, you MUST follow this LSP-First Workflow: 1. **Analyze file structure** from \`environment_details\`. 2. **Explore**: Use \`lsp_get_document_symbols\` to understand the structure of relevant files. 3. **MANDATORY DEPENDENCY ANALYSIS**: Use \`lsp_find_usages\` to understand how symbols are used across the codebase BEFORE making any changes. 4. **MANDATORY FUNCTION RELATIONSHIP ANALYSIS**: Use \`lsp_get_call_hierarchy\` to understand function call relationships and execution flows. 5. **Navigate & Analyze**: Use tools like \`lsp_go_to_definition\` to gather precise context. 6. **Explore Symbol Structure**: Use \`lsp_get_symbol_children\` to understand the internal structure of classes, interfaces, or modules before extracting code. 7. **Extract**: Use \`lsp_get_symbol_code_snippet\` ONLY after understanding structure with \`lsp_get_symbol_children\` to get specific code blocks. This LSP-driven approach is mandatory. 8. **Modify**: Only after this comprehensive analysis should you use the \`${diffStrategy ? "apply_diff or write_to_file" : "write_to_file"}\` tool to apply changes. For cross-file impact analysis after refactoring, \`lsp_find_usages\` is superior to \`search_files\`.
 - You can use the execute_command tool to run commands on the user's computer whenever you feel it can help accomplish the user's task. When you need to execute a CLI command, you must provide a clear explanation of what the command does. Prefer to execute complex CLI commands over creating executable scripts, since they are more flexible and easier to run. Interactive and long-running commands are allowed, since the commands are run in the user's VSCode terminal. The user may keep commands running in the background and you will be kept updated on their status along the way. Each command you execute is run in a new terminal instance.${
