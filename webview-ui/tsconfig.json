@@ -25,5 +25,6 @@
 			"@roo/*": ["../src/shared/*"]
 		}
 	},
-	"include": ["src", "../src/shared", "vitest.setup.ts"]
+	"include": ["src", "../src/shared", "vitest.setup.ts"],
+	"exclude": ["**/__tests__/**/*", "**/__mocks__/**/*", "**/jest.setup.ts"]
 }

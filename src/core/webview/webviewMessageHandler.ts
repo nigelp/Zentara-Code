@@ -17,6 +17,15 @@ import { TelemetryService } from "@roo-code/telemetry"
 
 import { type ApiMessage } from "../task-persistence/apiMessages"
 
+// Race condition debugging
+const DEBUG_RACE = process.env.DEBUG_RACE === "true" || false
+const raceLog = (context: string, data: any = {}) => {
+	if (!DEBUG_RACE) return
+	const timestamp = new Date().toISOString()
+	const hrTime = process.hrtime.bigint()
+	console.log(`[RACE ${timestamp}] [${hrTime}] [HANDLER] ${context}:`, JSON.stringify(data))
+}
+
 import { ClineProvider } from "./ClineProvider"
 import { changeLanguage, t } from "../../i18n"
 import { Package } from "../../shared/package"
@@ -354,12 +363,62 @@ export const webviewMessageHandler = async (
 			await updateGlobalState("alwaysAllowSubtasks", message.bool)
 			await provider.postStateToWebview()
 			break
+		case "alwaysAllowDebug":
+			await updateGlobalState("alwaysAllowDebug", message.bool)
+			await provider.postStateToWebview()
+			break
+		case "alwaysAllowLsp":
+			await updateGlobalState("alwaysAllowLsp", message.bool)
+			await provider.postStateToWebview()
+			break
 		case "alwaysAllowUpdateTodoList":
 			await updateGlobalState("alwaysAllowUpdateTodoList", message.bool)
 			await provider.postStateToWebview()
 			break
 		case "askResponse":
-			provider.getCurrentTask()?.handleWebviewAskResponse(message.askResponse!, message.text, message.images)
+			raceLog("ASK_RESPONSE_RECEIVED", {
+				askResponse: message.askResponse,
+				hasTaskId: !!message.taskId,
+				taskId: message.taskId,
+				hasText: !!message.text,
+				hasImages: !!message.images,
+				message: message,
+			})
+
+			// Use taskId if provided, otherwise fall back to current behavior
+			let targetTask = undefined
+
+			if (message.taskId) {
+				// New behavior: Route by task ID
+				targetTask = provider.findTaskById(message.taskId)
+
+				if (!targetTask) {
+					provider.log(`Warning: askResponse received for unknown task ID: ${message.taskId}`)
+					raceLog("ASK_RESPONSE_TASK_NOT_FOUND", { taskId: message.taskId })
+				}
+			} else {
+				// Backward compatibility: Use current task
+				targetTask = provider.getCurrentCline()
+				raceLog("ASK_RESPONSE_USING_CURRENT_TASK", {
+					currentTaskId: targetTask?.taskId,
+				})
+			}
+
+			if (targetTask) {
+				raceLog("ASK_RESPONSE_ROUTING", {
+					targetTaskId: targetTask.taskId,
+					askResponse: message.askResponse,
+				})
+				targetTask.handleWebviewAskResponse(message.askResponse!, message.text, message.images)
+
+				// Clear the ask state for parallel tasks
+				if (targetTask.isParallel) {
+					await provider.updateSubagentAsk(targetTask.taskId, undefined, undefined)
+				}
+			} else {
+				provider.log("Error: No task found to handle askResponse")
+				raceLog("ASK_RESPONSE_NO_TARGET_TASK", {})
+			}
 			break
 		case "autoCondenseContext":
 			await updateGlobalState("autoCondenseContext", message.bool)
@@ -411,7 +470,7 @@ export const webviewMessageHandler = async (
 			break
 		case "shareCurrentTask":
 			const shareTaskId = provider.getCurrentTask()?.taskId
-			const clineMessages = provider.getCurrentTask()?.clineMessages
+			const clineMessages = provider.getCurrentTask()?.clineMessages || []
 
 			if (!shareTaskId) {
 				vscode.window.showErrorMessage(t("common:errors.share_no_active_task"))
@@ -420,6 +479,10 @@ export const webviewMessageHandler = async (
 
 			try {
 				const visibility = message.visibility || "organization"
+				if (!CloudService.instance) {
+					vscode.window.showErrorMessage(t("common:errors.share_auth_required"))
+					break
+				}
 				const result = await CloudService.instance.shareTask(shareTaskId, visibility, clineMessages)
 
 				if (result.success && result.shareUrl) {
@@ -777,7 +840,52 @@ export const webviewMessageHandler = async (
 			break
 		}
 		case "cancelTask":
-			await provider.cancelTask()
+			// Handle task cancellation with optional taskId - run non-blocking to prevent UI freeze
+			if (message.taskId) {
+				const taskToCancel = provider.findTaskById(message.taskId)
+				if (taskToCancel && taskToCancel.isParallel) {
+					// Run cancellation in background to prevent blocking message handler
+					taskToCancel.abortTask().catch((error) => {
+						provider.log(`Error during task cancellation (ID: ${message.taskId}): ${error.message}`)
+						console.error("[CANCEL_ERROR] Task abort failed:", error)
+					})
+				} else {
+					provider.log(`Warning: cancelTask received for unknown task ID: ${message.taskId}`)
+					// Fallback to provider cancellation in background
+					provider.cancelTask().catch((error) => {
+						provider.log(`Error during fallback task cancellation: ${error.message}`)
+						console.error("[CANCEL_ERROR] Provider cancel failed:", error)
+					})
+				}
+			} else {
+				// Backward compatibility - run in background
+				provider.cancelTask().catch((error) => {
+					provider.log(`Error during task cancellation: ${error.message}`)
+					console.error("[CANCEL_ERROR] Provider cancel failed:", error)
+				})
+			}
+
+			break
+		case "cancelAllSubagents":
+			console.log("[CANCEL_SUBAGENT_DEBUG] webviewMessageHandler: Received cancelAllSubagents message")
+			console.log("[CANCEL_SUBAGENT_DEBUG] webviewMessageHandler: Message object:", message)
+			console.log(
+				"[CANCEL_SUBAGENT_DEBUG] webviewMessageHandler: About to call provider.cancelAllSubagentsAndResumeParent()",
+			)
+
+			try {
+				// Cancel all subagent tasks and resume parent
+				await provider.cancelAllSubagentsAndResumeParent()
+				console.log(
+					"[CANCEL_SUBAGENT_DEBUG] webviewMessageHandler: cancelAllSubagentsAndResumeParent completed successfully",
+				)
+			} catch (error) {
+				console.error(
+					"[CANCEL_SUBAGENT_DEBUG] webviewMessageHandler: Error in cancelAllSubagentsAndResumeParent:",
+					error,
+				)
+				throw error
+			}
 			break
 		case "allowedCommands": {
 			// Validate and sanitize the commands array
@@ -2036,7 +2144,10 @@ export const webviewMessageHandler = async (
 		case "rooCloudSignIn": {
 			try {
 				TelemetryService.instance.captureEvent(TelemetryEventName.AUTHENTICATION_INITIATED)
-				await CloudService.instance.login()
+				if (CloudService.instance) {
+					await CloudService.instance.dispose()
+				}
+				CloudService.createInstance(provider.context, provider)
 			} catch (error) {
 				provider.log(`AuthService#login failed: ${error}`)
 				vscode.window.showErrorMessage("Sign in failed.")
@@ -2046,7 +2157,9 @@ export const webviewMessageHandler = async (
 		}
 		case "rooCloudSignOut": {
 			try {
-				await CloudService.instance.logout()
+				if (CloudService.instance) {
+					await CloudService.instance.dispose()
+				}
 				await provider.postStateToWebview()
 				provider.postMessageToWebview({ type: "authenticatedUser", userInfo: undefined })
 			} catch (error) {
@@ -2671,5 +2784,264 @@ export const webviewMessageHandler = async (
 			vscode.window.showWarningMessage(t("common:mdm.info.organization_requires_auth"))
 			break
 		}
+		case "logToDebugConsole":
+			if (vscode.debug.activeDebugConsole) {
+				const { logLevel, logMessage, logData } = message
+				const prefix = `[WEBVIEW ${logLevel?.toUpperCase() || "LOG"}]`
+				let fullMessage = `${prefix} ${logMessage}`
+				if (logData) {
+					// logData is already a JSON string
+					fullMessage += `\nData: ${logData}`
+				}
+				vscode.debug.activeDebugConsole.appendLine(fullMessage)
+			}
+			break
+		case "gCliCheckAuth": {
+			try {
+				provider.log("Checking G CLI authentication status...")
+
+				// Import the OAuth manager
+				const { GCliOAuthManager } = await import("../../api/providers/g-cli/oauth-manager")
+				const oauthManager = new GCliOAuthManager()
+
+				// Check if we have existing valid credentials (without triggering OAuth flow)
+				const credentials = oauthManager.loadCredentials()
+
+				if (credentials && credentials.access_token) {
+					// Validate the token
+					const isValid = await oauthManager.validateToken(credentials.access_token)
+
+					if (isValid) {
+						// Get project ID
+						const projectId = await oauthManager.getProjectId(credentials.access_token)
+
+						provider.log("G CLI authentication check: valid credentials found")
+						await provider.postMessageToWebview({
+							type: "gCliAuthStatus",
+							success: true,
+							userEmail: "authenticated",
+							projectId: projectId || "auto-detected",
+						})
+					} else {
+						provider.log("G CLI authentication check: credentials expired")
+						await provider.postMessageToWebview({
+							type: "gCliAuthStatus",
+							success: false,
+						})
+					}
+				} else {
+					provider.log("G CLI authentication check: no credentials found")
+					await provider.postMessageToWebview({
+						type: "gCliAuthStatus",
+						success: false,
+					})
+				}
+			} catch (error) {
+				provider.log(`Error checking G CLI auth: ${error}`)
+				await provider.postMessageToWebview({
+					type: "gCliAuthStatus",
+					success: false,
+				})
+			}
+			break
+		}
+		case "gCliAuthenticate": {
+			try {
+				provider.log("Starting G CLI authentication flow...")
+
+				// Import the OAuth manager
+				const { GCliOAuthManager } = await import("../../api/providers/g-cli/oauth-manager")
+				const oauthManager = new GCliOAuthManager()
+
+				// Start OAuth flow - this will trigger the browser if no valid credentials exist
+				const accessToken = await oauthManager.getAccessToken()
+
+				if (accessToken) {
+					// Get project ID
+					const projectId = await oauthManager.getProjectId(accessToken)
+
+					provider.log("G CLI authentication successful")
+					await provider.postMessageToWebview({
+						type: "gCliAuthResult",
+						success: true,
+						userEmail: "authenticated",
+						projectId: projectId || "auto-detected",
+					})
+				} else {
+					provider.log("G CLI authentication failed: no access token")
+					await provider.postMessageToWebview({
+						type: "gCliAuthResult",
+						success: false,
+						error: "Failed to obtain access token",
+					})
+				}
+			} catch (error) {
+				provider.log(`Error during G CLI authentication: ${error}`)
+				await provider.postMessageToWebview({
+					type: "gCliAuthResult",
+					success: false,
+					error: error instanceof Error ? error.message : "Authentication failed",
+				})
+			}
+			break
+		}
+		case "gCliReauthenticate": {
+			try {
+				provider.log("Starting G CLI re-authentication flow...")
+
+				// Import the OAuth manager
+				const { GCliOAuthManager } = await import("../../api/providers/g-cli/oauth-manager")
+				const oauthManager = new GCliOAuthManager()
+
+				// Clear existing credentials by deleting the file
+				const fs = await import("fs")
+				const path = await import("path")
+				const os = await import("os")
+
+				const credentialsPath = path.join(os.homedir(), ".gemini", "oauth_creds.json")
+				try {
+					await fs.promises.unlink(credentialsPath)
+					provider.log("Cleared existing G CLI credentials")
+				} catch (error) {
+					// File might not exist, which is fine
+					provider.log("No existing credentials to clear")
+				}
+
+				// Start fresh OAuth flow
+				const accessToken = await oauthManager.getAccessToken()
+
+				if (accessToken) {
+					// Get project ID
+					const projectId = await oauthManager.getProjectId(accessToken)
+
+					provider.log("G CLI re-authentication successful")
+					await provider.postMessageToWebview({
+						type: "gCliAuthResult",
+						success: true,
+						userEmail: "authenticated",
+						projectId: projectId || "auto-detected",
+					})
+				} else {
+					provider.log("G CLI re-authentication failed: no access token")
+					await provider.postMessageToWebview({
+						type: "gCliAuthResult",
+						success: false,
+						error: "Failed to obtain access token",
+					})
+				}
+			} catch (error) {
+				provider.log(`Error during G CLI re-authentication: ${error}`)
+				await provider.postMessageToWebview({
+					type: "gCliAuthResult",
+					success: false,
+					error: error instanceof Error ? error.message : "Re-authentication failed",
+				})
+			}
+			break
+		}
+		case "claudeMaxCheckAuth": {
+			try {
+				provider.log("Checking Claude Max authentication status...")
+
+				// Get the current API configuration
+				const { apiConfiguration } = await provider.getState()
+				if (apiConfiguration.apiProvider === "claude-max") {
+					const { ClaudeMaxHandler } = await import("../../api/providers/claude-max")
+					// Extract options from the full configuration
+					const { apiProvider, ...options } = apiConfiguration
+					const handler = new ClaudeMaxHandler(options)
+					const isAuthenticated = handler.isAuthenticated()
+
+					provider.log(
+						`Claude Max authentication check: ${isAuthenticated ? "authenticated" : "not authenticated"}`,
+					)
+					await provider.postMessageToWebview({
+						type: "claudeMaxAuthStatus",
+						success: isAuthenticated,
+					})
+				} else {
+					await provider.postMessageToWebview({
+						type: "claudeMaxAuthStatus",
+						success: false,
+					})
+				}
+			} catch (error) {
+				provider.log(`Error checking Claude Max auth: ${error}`)
+				await provider.postMessageToWebview({
+					type: "claudeMaxAuthStatus",
+					success: false,
+				})
+			}
+			break
+		}
+		case "claudeMaxStartAuth": {
+			try {
+				provider.log("Starting Claude Max authentication flow...")
+
+				// Get the current API configuration
+				const { apiConfiguration } = await provider.getState()
+				const { apiProvider, ...options } = apiConfiguration
+
+				const { ClaudeMaxHandler } = await import("../../api/providers/claude-max")
+				const handler = new ClaudeMaxHandler(options)
+
+				// Get the authorization URL
+				const { url, verifier } = await handler.getAuthorizationUrl()
+
+				// Open the URL in the browser
+				await vscode.env.openExternal(vscode.Uri.parse(url))
+
+				// Send back the verifier so the UI can store it
+				await provider.postMessageToWebview({
+					type: "claudeMaxAuthStarted",
+					verifier,
+				})
+
+				provider.log("Claude Max authorization URL opened in browser")
+			} catch (error) {
+				provider.log(`Error starting Claude Max authentication: ${error}`)
+				await provider.postMessageToWebview({
+					type: "claudeMaxAuthError",
+					error: error instanceof Error ? error.message : "Failed to start authentication",
+				})
+			}
+			break
+		}
+		case "claudeMaxExchangeCode": {
+			try {
+				const { code, verifier } = message as any
+				provider.log("Exchanging Claude Max authorization code for tokens...")
+
+				// Get the current API configuration
+				const { apiConfiguration } = await provider.getState()
+				const { apiProvider, ...options } = apiConfiguration
+
+				const { ClaudeMaxHandler } = await import("../../api/providers/claude-max")
+				const handler = new ClaudeMaxHandler(options)
+
+				// Exchange the code for tokens
+				await handler.exchangeCodeForTokens(code, verifier)
+
+				provider.log("Claude Max authentication successful")
+				await provider.postMessageToWebview({
+					type: "claudeMaxAuthResult",
+					success: true,
+				})
+
+				// Refresh the provider state
+				await provider.postStateToWebview()
+			} catch (error) {
+				provider.log(`Error exchanging Claude Max code: ${error}`)
+				await provider.postMessageToWebview({
+					type: "claudeMaxAuthResult",
+					success: false,
+					error: error instanceof Error ? error.message : "Failed to exchange code",
+				})
+			}
+			break
+		}
+		case "stateUpdateComplete":
+			provider.resolveStateUpdate()
+			break
 	}
 }

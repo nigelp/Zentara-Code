@@ -127,6 +127,8 @@ const SettingsView = forwardRef<SettingsViewRef, SettingsViewProps>(({ onDone, t
 		language,
 		alwaysAllowBrowser,
 		alwaysAllowExecute,
+		alwaysAllowDebug,
+		alwaysAllowLsp,
 		alwaysAllowMcp,
 		alwaysAllowModeSwitch,
 		alwaysAllowSubtasks,
@@ -301,6 +303,8 @@ const SettingsView = forwardRef<SettingsViewRef, SettingsViewProps>(({ onDone, t
 			vscode.postMessage({ type: "alwaysAllowWriteOutsideWorkspace", bool: alwaysAllowWriteOutsideWorkspace })
 			vscode.postMessage({ type: "alwaysAllowWriteProtected", bool: alwaysAllowWriteProtected })
 			vscode.postMessage({ type: "alwaysAllowExecute", bool: alwaysAllowExecute })
+			vscode.postMessage({ type: "alwaysAllowDebug", bool: alwaysAllowDebug })
+			vscode.postMessage({ type: "alwaysAllowLsp", bool: alwaysAllowLsp })
 			vscode.postMessage({ type: "alwaysAllowBrowser", bool: alwaysAllowBrowser })
 			vscode.postMessage({ type: "alwaysAllowMcp", bool: alwaysAllowMcp })
 			vscode.postMessage({ type: "allowedCommands", commands: allowedCommands ?? [] })
@@ -644,6 +648,8 @@ const SettingsView = forwardRef<SettingsViewRef, SettingsViewProps>(({ onDone, t
 							alwaysAllowModeSwitch={alwaysAllowModeSwitch}
 							alwaysAllowSubtasks={alwaysAllowSubtasks}
 							alwaysAllowExecute={alwaysAllowExecute}
+							alwaysAllowDebug={alwaysAllowDebug}
+							alwaysAllowLsp={alwaysAllowLsp}
 							alwaysAllowFollowupQuestions={alwaysAllowFollowupQuestions}
 							alwaysAllowUpdateTodoList={alwaysAllowUpdateTodoList}
 							followupAutoApproveTimeoutMs={followupAutoApproveTimeoutMs}

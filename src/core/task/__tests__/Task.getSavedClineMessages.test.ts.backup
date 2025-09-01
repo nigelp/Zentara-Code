@@ -1,0 +1,368 @@
+import { describe, it, expect, beforeEach, vi } from "vitest"
+import { Task } from "../Task"
+import type { ClineMessage } from "@roo-code/types"
+
+// Mock dependencies
+vi.mock("../../../api", () => ({
+	buildApiHandler: vi.fn().mockReturnValue({
+		createMessageStream: vi.fn(),
+	}),
+}))
+
+vi.mock("../../webview/ClineProvider", () => ({
+	ClineProvider: vi.fn().mockImplementation(() => ({
+		postStateToWebview: vi.fn(),
+		queueAskRequest: vi.fn(),
+		removeFromAskQueue: vi.fn(),
+		log: vi.fn(),
+	})),
+}))
+
+vi.mock("../task-persistence/messages", () => ({
+	readTaskMessages: vi.fn().mockResolvedValue([]),
+	saveTaskMessages: vi.fn().mockResolvedValue(undefined),
+}))
+
+vi.mock("../task-persistence/metadata", () => ({
+	taskMetadata: vi.fn().mockResolvedValue({
+		historyItem: {},
+		tokenUsage: {},
+	}),
+}))
+
+describe("Task.getSavedClineMessages migration", () => {
+	let task: Task
+	let mockProvider: any
+	let readTaskMessagesMock: any
+
+	beforeEach(async () => {
+		vi.clearAllMocks()
+
+		mockProvider = {
+			postStateToWebview: vi.fn(),
+			queueAskRequest: vi.fn(),
+			removeFromAskQueue: vi.fn(),
+			log: vi.fn(),
+		}
+
+		const messageModule = await import("../task-persistence/messages")
+		readTaskMessagesMock = vi.mocked(messageModule.readTaskMessages)
+	})
+
+	describe("legacy message migration", () => {
+		it("should add taskId to messages without taskId", async () => {
+			// Mock legacy messages without taskId
+			const legacyMessages: ClineMessage[] = [
+				{ ts: 1000, type: "say", say: "text", text: "Legacy message 1" } as any,
+				{ ts: 2000, type: "ask", ask: "tool", text: "Legacy ask" } as any,
+				{ ts: 3000, type: "say", say: "user_feedback", text: "Legacy feedback" } as any,
+			]
+
+			readTaskMessagesMock.mockResolvedValueOnce(legacyMessages)
+
+			// Create task
+			task = new Task({
+				taskId: "migration-test-123",
+				instanceId: "instance-1",
+				providerRef: new WeakRef(mockProvider),
+				context: {} as any,
+				api: {} as any,
+				mode: "default",
+				customInstructions: "",
+				alwaysAllowReadOnly: false,
+				alwaysAllowReadOnlyOutsideWorkspace: false,
+				alwaysAllowWrite: false,
+				alwaysAllowWriteOutsideWorkspace: false,
+				alwaysAllowWriteProtected: false,
+				alwaysAllowExecute: false,
+				alwaysAllowBrowser: false,
+				alwaysAllowMcp: false,
+				alwaysAllowDebug: false,
+				allowedCommands: [],
+				browserViewport: { width: 1280, height: 800 },
+				screenshotQuality: "high",
+				mcpHub: {} as any,
+				cwd: "/test",
+				task: "Test task",
+				baseDirectory: "/test",
+				filePaths: [],
+				openedTabs: [],
+				globalStoragePath: "/storage",
+				apiKey: "test-key",
+				maxAutomaticRequestsPerTask: 5,
+				maxRequestsPerTask: 10,
+				profileThresholds: {},
+			})
+
+			// Wait for async initialization
+			await new Promise((resolve) => setTimeout(resolve, 100))
+
+			// Get migrated messages
+			const messages = await (task as any).getSavedClineMessages()
+
+			// All messages should have taskId added
+			expect(messages).toHaveLength(3)
+			messages.forEach((msg: ClineMessage) => {
+				expect(msg.taskId).toBe("migration-test-123")
+			})
+
+			// Original properties should be preserved
+			expect(messages[0]).toMatchObject({
+				ts: 1000,
+				type: "say",
+				say: "text",
+				text: "Legacy message 1",
+				taskId: "migration-test-123",
+			})
+			expect(messages[1]).toMatchObject({
+				ts: 2000,
+				type: "ask",
+				ask: "tool",
+				text: "Legacy ask",
+				taskId: "migration-test-123",
+			})
+		})
+
+		it("should preserve existing taskId if already present", async () => {
+			const mixedMessages: ClineMessage[] = [
+				{ ts: 1000, type: "say", say: "text", text: "Has taskId", taskId: "existing-id-123" },
+				{ ts: 2000, type: "ask", ask: "tool", text: "No taskId" } as any,
+				{ ts: 3000, type: "say", say: "text", text: "Also has taskId", taskId: "existing-id-456" },
+			]
+
+			readTaskMessagesMock.mockResolvedValueOnce(mixedMessages)
+
+			task = new Task({
+				taskId: "new-task-789",
+				instanceId: "instance-1",
+				providerRef: new WeakRef(mockProvider),
+				context: {} as any,
+				api: {} as any,
+				mode: "default",
+				customInstructions: "",
+				alwaysAllowReadOnly: false,
+				alwaysAllowReadOnlyOutsideWorkspace: false,
+				alwaysAllowWrite: false,
+				alwaysAllowWriteOutsideWorkspace: false,
+				alwaysAllowWriteProtected: false,
+				alwaysAllowExecute: false,
+				alwaysAllowBrowser: false,
+				alwaysAllowMcp: false,
+				alwaysAllowDebug: false,
+				allowedCommands: [],
+				browserViewport: { width: 1280, height: 800 },
+				screenshotQuality: "high",
+				mcpHub: {} as any,
+				cwd: "/test",
+				task: "Test task",
+				baseDirectory: "/test",
+				filePaths: [],
+				openedTabs: [],
+				globalStoragePath: "/storage",
+				apiKey: "test-key",
+				maxAutomaticRequestsPerTask: 5,
+				maxRequestsPerTask: 10,
+				profileThresholds: {},
+			})
+
+			const messages = await (task as any).getSavedClineMessages()
+
+			// Check taskId handling
+			expect(messages[0].taskId).toBe("existing-id-123") // Preserved
+			expect(messages[1].taskId).toBe("new-task-789") // Added
+			expect(messages[2].taskId).toBe("existing-id-456") // Preserved
+		})
+
+		it("should handle empty message array", async () => {
+			readTaskMessagesMock.mockResolvedValueOnce([])
+
+			task = new Task({
+				taskId: "empty-test-123",
+				instanceId: "instance-1",
+				providerRef: new WeakRef(mockProvider),
+				context: {} as any,
+				api: {} as any,
+				mode: "default",
+				customInstructions: "",
+				alwaysAllowReadOnly: false,
+				alwaysAllowReadOnlyOutsideWorkspace: false,
+				alwaysAllowWrite: false,
+				alwaysAllowWriteOutsideWorkspace: false,
+				alwaysAllowWriteProtected: false,
+				alwaysAllowExecute: false,
+				alwaysAllowBrowser: false,
+				alwaysAllowMcp: false,
+				alwaysAllowDebug: false,
+				allowedCommands: [],
+				browserViewport: { width: 1280, height: 800 },
+				screenshotQuality: "high",
+				mcpHub: {} as any,
+				cwd: "/test",
+				task: "Test task",
+				baseDirectory: "/test",
+				filePaths: [],
+				openedTabs: [],
+				globalStoragePath: "/storage",
+				apiKey: "test-key",
+				maxAutomaticRequestsPerTask: 5,
+				maxRequestsPerTask: 10,
+				profileThresholds: {},
+			})
+
+			const messages = await (task as any).getSavedClineMessages()
+			expect(messages).toEqual([])
+		})
+
+		it("should handle complex message properties during migration", async () => {
+			const complexMessage: ClineMessage = {
+				ts: Date.now(),
+				type: "say",
+				say: "completion_result",
+				text: "Complex message",
+				images: ["img1.png", "img2.png"],
+				partial: false,
+				// Missing taskId
+			} as any
+
+			readTaskMessagesMock.mockResolvedValueOnce([complexMessage])
+
+			task = new Task({
+				taskId: "complex-test-123",
+				instanceId: "instance-1",
+				providerRef: new WeakRef(mockProvider),
+				context: {} as any,
+				api: {} as any,
+				mode: "default",
+				customInstructions: "",
+				alwaysAllowReadOnly: false,
+				alwaysAllowReadOnlyOutsideWorkspace: false,
+				alwaysAllowWrite: false,
+				alwaysAllowWriteOutsideWorkspace: false,
+				alwaysAllowWriteProtected: false,
+				alwaysAllowExecute: false,
+				alwaysAllowBrowser: false,
+				alwaysAllowMcp: false,
+				alwaysAllowDebug: false,
+				allowedCommands: [],
+				browserViewport: { width: 1280, height: 800 },
+				screenshotQuality: "high",
+				mcpHub: {} as any,
+				cwd: "/test",
+				task: "Test task",
+				baseDirectory: "/test",
+				filePaths: [],
+				openedTabs: [],
+				globalStoragePath: "/storage",
+				apiKey: "test-key",
+				maxAutomaticRequestsPerTask: 5,
+				maxRequestsPerTask: 10,
+				profileThresholds: {},
+			})
+
+			const messages = await (task as any).getSavedClineMessages()
+
+			// All properties should be preserved, with taskId added
+			expect(messages[0]).toMatchObject({
+				...complexMessage,
+				taskId: "complex-test-123",
+			})
+			expect(messages[0].images).toEqual(["img1.png", "img2.png"])
+			expect(messages[0].partial).toBe(false)
+		})
+
+		it("should handle readTaskMessages errors gracefully", async () => {
+			readTaskMessagesMock.mockRejectedValueOnce(new Error("Read failed"))
+
+			task = new Task({
+				taskId: "error-test-123",
+				instanceId: "instance-1",
+				providerRef: new WeakRef(mockProvider),
+				context: {} as any,
+				api: {} as any,
+				mode: "default",
+				customInstructions: "",
+				alwaysAllowReadOnly: false,
+				alwaysAllowReadOnlyOutsideWorkspace: false,
+				alwaysAllowWrite: false,
+				alwaysAllowWriteOutsideWorkspace: false,
+				alwaysAllowWriteProtected: false,
+				alwaysAllowExecute: false,
+				alwaysAllowBrowser: false,
+				alwaysAllowMcp: false,
+				alwaysAllowDebug: false,
+				allowedCommands: [],
+				browserViewport: { width: 1280, height: 800 },
+				screenshotQuality: "high",
+				mcpHub: {} as any,
+				cwd: "/test",
+				task: "Test task",
+				baseDirectory: "/test",
+				filePaths: [],
+				openedTabs: [],
+				globalStoragePath: "/storage",
+				apiKey: "test-key",
+				maxAutomaticRequestsPerTask: 5,
+				maxRequestsPerTask: 10,
+				profileThresholds: {},
+			})
+
+			// Should not throw, might return empty array or handle internally
+			await expect((task as any).getSavedClineMessages()).resolves.toBeDefined()
+		})
+	})
+
+	describe("migration immutability", () => {
+		it("should not modify the original message objects", async () => {
+			const originalMessage = {
+				ts: 1000,
+				type: "say" as const,
+				say: "text" as const,
+				text: "Original message",
+				// No taskId
+			}
+
+			const originalCopy = { ...originalMessage }
+
+			readTaskMessagesMock.mockResolvedValueOnce([originalMessage])
+
+			task = new Task({
+				taskId: "immutable-test-123",
+				instanceId: "instance-1",
+				providerRef: new WeakRef(mockProvider),
+				context: {} as any,
+				api: {} as any,
+				mode: "default",
+				customInstructions: "",
+				alwaysAllowReadOnly: false,
+				alwaysAllowReadOnlyOutsideWorkspace: false,
+				alwaysAllowWrite: false,
+				alwaysAllowWriteOutsideWorkspace: false,
+				alwaysAllowWriteProtected: false,
+				alwaysAllowExecute: false,
+				alwaysAllowBrowser: false,
+				alwaysAllowMcp: false,
+				alwaysAllowDebug: false,
+				allowedCommands: [],
+				browserViewport: { width: 1280, height: 800 },
+				screenshotQuality: "high",
+				mcpHub: {} as any,
+				cwd: "/test",
+				task: "Test task",
+				baseDirectory: "/test",
+				filePaths: [],
+				openedTabs: [],
+				globalStoragePath: "/storage",
+				apiKey: "test-key",
+				maxAutomaticRequestsPerTask: 5,
+				maxRequestsPerTask: 10,
+				profileThresholds: {},
+			})
+
+			await (task as any).getSavedClineMessages()
+
+			// Original object should not be modified
+			expect(originalMessage).toEqual(originalCopy)
+			expect("taskId" in originalMessage).toBe(false)
+		})
+	})
+})

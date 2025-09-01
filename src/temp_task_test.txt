@@ -1,0 +1,6 @@
+		// Create task with mocked dependencies
+		task = new Task({
+			provider: mockProviderInstance,
+			apiConfiguration: {} as any,
+			task: 'Test task',
+		})

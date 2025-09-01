@@ -25,7 +25,21 @@ export class PostHogTelemetryClient extends BaseTelemetryClient {
 			debug,
 		)
 
-		this.client = new PostHog(process.env.POSTHOG_API_KEY || "", { host: "https://us.i.posthog.com" })
+		const apiKey = process.env.POSTHOG_API_KEY
+		if (!apiKey) {
+			// If no API key is provided, create a dummy client that does nothing
+			// This prevents the extension from crashing during initialization
+			this.telemetryEnabled = false
+			// Create a minimal mock client to prevent errors
+			this.client = {
+				capture: () => {},
+				optIn: () => {},
+				optOut: () => {},
+				shutdown: async () => {},
+			} as unknown as PostHog
+		} else {
+			this.client = new PostHog(apiKey, { host: "https://us.i.posthog.com" })
+		}
 	}
 
 	/**
@@ -54,11 +68,14 @@ export class PostHogTelemetryClient extends BaseTelemetryClient {
 			console.info(`[PostHogTelemetryClient#capture] ${event.event}`)
 		}
 
-		this.client.capture({
-			distinctId: this.distinctId,
-			event: event.event,
-			properties: await this.getEventProperties(event),
-		})
+		// Only capture if we have a real client (with API key)
+		if (this.client && typeof this.client.capture === "function") {
+			this.client.capture({
+				distinctId: this.distinctId,
+				event: event.event,
+				properties: await this.getEventProperties(event),
+			})
+		}
 	}
 
 	/**
@@ -68,6 +85,12 @@ export class PostHogTelemetryClient extends BaseTelemetryClient {
 	 * @param didUserOptIn Whether the user has explicitly opted into telemetry
 	 */
 	public override updateTelemetryState(didUserOptIn: boolean): void {
+		// Don't enable telemetry if we don't have a valid API key
+		if (!process.env.POSTHOG_API_KEY) {
+			this.telemetryEnabled = false
+			return
+		}
+
 		this.telemetryEnabled = false
 
 		// First check global telemetry level - telemetry should only be enabled when level is "all".
@@ -80,14 +103,18 @@ export class PostHogTelemetryClient extends BaseTelemetryClient {
 		}
 
 		// Update PostHog client state based on telemetry preference.
-		if (this.telemetryEnabled) {
-			this.client.optIn()
-		} else {
-			this.client.optOut()
+		if (this.client && typeof this.client.optIn === "function" && typeof this.client.optOut === "function") {
+			if (this.telemetryEnabled) {
+				this.client.optIn()
+			} else {
+				this.client.optOut()
+			}
 		}
 	}
 
 	public override async shutdown(): Promise<void> {
-		await this.client.shutdown()
+		if (this.client && typeof this.client.shutdown === "function") {
+			await this.client.shutdown()
+		}
 	}
 }

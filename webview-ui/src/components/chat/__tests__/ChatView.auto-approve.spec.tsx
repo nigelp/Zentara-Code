@@ -582,6 +582,99 @@ describe("ChatView - Auto Approval Tests", () => {
 		})
 	})
 
+	it("auto-approves glob tool when alwaysAllowReadOnly is enabled", async () => {
+		renderChatView()
+
+		// First hydrate state with initial task
+		mockPostMessage({
+			alwaysAllowReadOnly: true,
+			autoApprovalEnabled: true,
+			clineMessages: [
+				{
+					type: "say",
+					say: "task",
+					ts: Date.now() - 2000,
+					text: "Initial task",
+				},
+			],
+		})
+
+		// Then send the glob tool ask message
+		mockPostMessage({
+			alwaysAllowReadOnly: true,
+			autoApprovalEnabled: true,
+			clineMessages: [
+				{
+					type: "say",
+					say: "task",
+					ts: Date.now() - 2000,
+					text: "Initial task",
+				},
+				{
+					type: "ask",
+					ask: "tool",
+					ts: Date.now(),
+					text: JSON.stringify({ tool: "glob", pattern: "**/*.js" }),
+					partial: false,
+				},
+			],
+		})
+
+		// Wait for the auto-approval message
+		await waitFor(() => {
+			expect(vscode.postMessage).toHaveBeenCalledWith({
+				type: "askResponse",
+				askResponse: "yesButtonClicked",
+			})
+		})
+	})
+
+	it("does not auto-approve glob tool when alwaysAllowReadOnly is disabled", async () => {
+		renderChatView()
+
+		// First hydrate state with initial task
+		mockPostMessage({
+			alwaysAllowReadOnly: false,
+			autoApprovalEnabled: true,
+			clineMessages: [
+				{
+					type: "say",
+					say: "task",
+					ts: Date.now() - 2000,
+					text: "Initial task",
+				},
+			],
+		})
+
+		// Then send the glob tool ask message
+		mockPostMessage({
+			alwaysAllowReadOnly: false,
+			autoApprovalEnabled: true,
+			clineMessages: [
+				{
+					type: "say",
+					say: "task",
+					ts: Date.now() - 2000,
+					text: "Initial task",
+				},
+				{
+					type: "ask",
+					ask: "tool",
+					ts: Date.now(),
+					text: JSON.stringify({ tool: "glob", pattern: "**/*.js" }),
+					partial: false,
+				},
+			],
+		})
+
+		// Wait a short time and verify no auto-approval message was sent
+		await new Promise((resolve) => setTimeout(resolve, 100))
+		expect(vscode.postMessage).not.toHaveBeenCalledWith({
+			type: "askResponse",
+			askResponse: "yesButtonClicked",
+		})
+	})
+
 	it("does not auto-approve mode switch when disabled", async () => {
 		renderChatView()
 

@@ -8,6 +8,11 @@ export const filterProviders = (
 		return providers
 	}
 
+	// Check if providers object exists
+	if (!organizationAllowList.providers) {
+		return providers
+	}
+
 	return providers.filter((provider) => {
 		const providerConfig = organizationAllowList.providers[provider.value]
 		if (!providerConfig) {
@@ -29,6 +34,11 @@ export const filterModels = (
 
 	if (!providerId) {
 		return {}
+	}
+
+	// Check if providers object exists
+	if (!organizationAllowList.providers) {
+		return models
 	}
 
 	const providerConfig = organizationAllowList.providers[providerId]

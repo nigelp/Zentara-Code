@@ -115,6 +115,9 @@ export interface ExtensionMessage {
 		| "marketplaceInstallResult"
 		| "marketplaceRemoveResult"
 		| "marketplaceData"
+		| "gCliAuthStatus"
+		| "gCliAuthResult"
+		| "gCliAuthError"
 		| "shareTaskSuccess"
 		| "codeIndexSettingsSaved"
 		| "codeIndexSecretStatus"
@@ -122,8 +125,11 @@ export interface ExtensionMessage {
 		| "showEditMessageDialog"
 		| "commands"
 		| "insertTextIntoTextarea"
+		| "parallelTasksUpdate"
 	text?: string
 	payload?: any // Add a generic payload for now, can refine later
+	userEmail?: string // For G CLI OAuth status
+	projectId?: string // For G CLI OAuth project ID
 	action?:
 		| "chatButtonClicked"
 		| "mcpButtonClicked"
@@ -220,6 +226,8 @@ export type ExtensionState = Pick<
 	| "alwaysAllowModeSwitch"
 	| "alwaysAllowSubtasks"
 	| "alwaysAllowExecute"
+	| "alwaysAllowDebug"
+	| "alwaysAllowLsp"
 	| "alwaysAllowUpdateTodoList"
 	| "allowedCommands"
 	| "deniedCommands"
@@ -278,6 +286,7 @@ export type ExtensionState = Pick<
 	version: string
 	clineMessages: ClineMessage[]
 	currentTaskItem?: HistoryItem
+	activeTaskId?: string // NEW: Currently active task ID for routing responses
 	currentTaskTodos?: TodoItem[] // Initial todos for the current task
 	apiConfiguration?: ProviderSettings
 	uriScheme?: string
@@ -327,6 +336,12 @@ export type ExtensionState = Pick<
 	marketplaceInstalledMetadata?: { project: Record<string, any>; global: Record<string, any> }
 	profileThresholds: Record<string, number>
 	hasOpenedModeSelector: boolean
+	parallelTasks?: Array<{
+		taskId: string
+		description: string
+		status: "running" | "completed" | "failed"
+		lastActivity?: number
+	}>
 	openRouterImageApiKey?: string
 }
 
@@ -340,6 +355,7 @@ export interface ClineSayTool {
 		| "fetchInstructions"
 		| "listFilesTopLevel"
 		| "listFilesRecursive"
+		| "glob"
 		| "listCodeDefinitionNames"
 		| "searchFiles"
 		| "switchMode"
@@ -347,9 +363,13 @@ export interface ClineSayTool {
 		| "finishTask"
 		| "searchAndReplace"
 		| "insertContent"
+		| "debug"
+		| "lsp"
+		| "executeCommand"
 		| "generateImage"
 		| "imageGenerated"
 	path?: string
+	command?: string
 	diff?: string
 	content?: string
 	regex?: string
@@ -385,6 +405,7 @@ export interface ClineSayTool {
 		}>
 	}>
 	question?: string
+	operation?: string
 	imageData?: string // Base64 encoded image data for generated images
 }
 

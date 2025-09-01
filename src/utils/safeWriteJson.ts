@@ -98,7 +98,9 @@ async function safeWriteJson(filePath: string, data: any): Promise<void> {
 
 		// Step 3: Rename the new temporary file to the target file path.
 		// This is the main "commit" step.
+		//console.log(`[SAFE_WRITE_DEBUG] Committing file to: ${absoluteFilePath}`)
 		await fs.rename(actualTempNewFilePath, absoluteFilePath)
+		//console.log(`[SAFE_WRITE_DEBUG] ✅ Successfully committed file: ${absoluteFilePath}`)
 
 		// If we reach here, the new file is successfully in place.
 		// The original actualTempNewFilePath is now the main file, so we shouldn't try to clean it up as "temp".

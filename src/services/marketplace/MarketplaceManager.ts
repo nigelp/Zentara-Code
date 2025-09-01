@@ -41,7 +41,11 @@ export class MarketplaceManager {
 			let orgSettings: OrganizationSettings | undefined
 
 			try {
-				if (CloudService.hasInstance() && CloudService.instance.isAuthenticated()) {
+				if (
+					CloudService.hasInstance() &&
+					CloudService.instance &&
+					(await CloudService.instance.isAuthenticated())
+				) {
 					orgSettings = CloudService.instance.getOrganizationSettings()
 				}
 			} catch (orgError) {

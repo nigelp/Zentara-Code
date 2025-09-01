@@ -2,6 +2,11 @@ import type { ProviderSettings, OrganizationAllowList } from "@roo-code/types"
 
 export class ProfileValidator {
 	public static isProfileAllowed(profile: ProviderSettings, allowList: OrganizationAllowList): boolean {
+		// Check if allowList exists
+		if (!allowList) {
+			return true
+		}
+
 		if (allowList.allowAll) {
 			return true
 		}
@@ -21,6 +26,10 @@ export class ProfileValidator {
 		const modelId = this.getModelIdFromProfile(profile)
 
 		if (!modelId) {
+			// Check if providers exists before accessing
+			if (!allowList.providers) {
+				return true
+			}
 			return allowList.providers[profile.apiProvider]?.allowAll === true
 		}
 
@@ -32,11 +41,21 @@ export class ProfileValidator {
 			return true
 		}
 
+		// Check if providers object exists
+		if (!allowList.providers) {
+			return true
+		}
+
 		return providerName in allowList.providers
 	}
 
 	private static isModelAllowed(providerName: string, modelId: string, allowList: OrganizationAllowList): boolean {
 		if (allowList.allowAll) {
+			return true
+		}
+
+		// Check if providers object exists
+		if (!allowList.providers) {
 			return true
 		}
 

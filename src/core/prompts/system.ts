@@ -16,6 +16,7 @@ import { CodeIndexManager } from "../../services/code-index/manager"
 import { PromptVariables, loadSystemPromptFile } from "./sections/custom-system-prompt"
 
 import { getToolDescriptionsForMode } from "./tools"
+import { getOptimizedToolDescriptionsForMode } from "../../roo_tool_prompt_management/tool-optimization-integration"
 import {
 	getRulesSection,
 	getSystemInfoSection,
@@ -28,6 +29,49 @@ import {
 	addCustomInstructions,
 	markdownFormattingSection,
 } from "./sections"
+import { getSubagentSection } from "./subagent"
+
+// Cache for subagent descriptions by taskId
+// This ensures each task only generates the subagent description once
+const subagentDescriptionCache = new Map<string, string>()
+
+/**
+ * Clear the subagent description cache (useful for testing or cleanup)
+ */
+export function clearSubagentDescriptionCache(): void {
+	subagentDescriptionCache.clear()
+}
+
+/**
+ * Remove a specific task's cached subagent description
+ */
+export function clearTaskSubagentDescription(taskId: string): void {
+	subagentDescriptionCache.delete(taskId)
+}
+
+/**
+ * Get cached subagent description for a task, or generate and cache it
+ * @param taskId - The task ID for caching
+ * @param discoveredAgents - Pre-discovered agents from Task cache
+ */
+async function getCachedSubagentDescription(taskId?: string, discoveredAgents?: any): Promise<string> {
+	const cacheKey = taskId || "default"
+
+	// Check if we have a cached description for this task
+	let cachedDescription = subagentDescriptionCache.get(cacheKey)
+
+	if (!cachedDescription) {
+		// Generate the description and cache it
+		const { getSubagentDescription } = await import("./tools/subagent")
+		cachedDescription = await getSubagentDescription(discoveredAgents)
+		subagentDescriptionCache.set(cacheKey, cachedDescription)
+		console.log(`[SubagentCache] Generated and cached subagent description for task: ${cacheKey}`)
+	} else {
+		console.log(`[SubagentCache] Using cached subagent description for task: ${cacheKey}`)
+	}
+
+	return cachedDescription
+}
 
 // Helper function to get prompt component, filtering out empty objects
 export function getPromptComponent(
@@ -61,6 +105,9 @@ async function generatePrompt(
 	partialReadsEnabled?: boolean,
 	settings?: SystemPromptSettings,
 	todoList?: TodoItem[],
+	subagent?: boolean,
+	taskId?: string,
+	discoveredAgents?: any,
 	modelId?: string,
 ): Promise<string> {
 	if (!context) {
@@ -88,13 +135,16 @@ async function generatePrompt(
 
 	const codeIndexManager = CodeIndexManager.getInstance(context, cwd)
 
+	// Get cached subagent description for this task
+	const cachedSubagentDesc = await getCachedSubagentDescription(taskId, discoveredAgents)
+
 	const basePrompt = `${roleDefinition}
 
 ${markdownFormattingSection()}
-
+${getSubagentSection(subagent)}
 ${getSharedToolUseSection()}
 
-${getToolDescriptionsForMode(
+${await getOptimizedToolDescriptionsForMode(
 	mode,
 	cwd,
 	supportsComputerUse,
@@ -152,6 +202,9 @@ export const SYSTEM_PROMPT = async (
 	partialReadsEnabled?: boolean,
 	settings?: SystemPromptSettings,
 	todoList?: TodoItem[],
+	subagent?: boolean,
+	taskId?: string,
+	discoveredAgents?: any,
 	modelId?: string,
 ): Promise<string> => {
 	if (!context) {
@@ -224,6 +277,9 @@ ${customInstructions}`
 		partialReadsEnabled,
 		settings,
 		todoList,
+		subagent,
+		taskId,
+		discoveredAgents,
 		modelId,
 	)
 }

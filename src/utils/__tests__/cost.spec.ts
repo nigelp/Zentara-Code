@@ -2,7 +2,7 @@
 
 import type { ModelInfo } from "@roo-code/types"
 
-import { calculateApiCostAnthropic, calculateApiCostOpenAI } from "../../shared/cost"
+import { calculateApiCostAnthropic, calculateApiCostOpenAI, calculateApiCostSubscription } from "../../shared/cost"
 
 describe("Cost Utility", () => {
 	describe("calculateApiCostAnthropic", () => {
@@ -188,6 +188,68 @@ describe("Cost Utility", () => {
 			// Output cost: (15.0 / 1_000_000) * 500 = 0.0075
 			// Total: 0.003 + 0.0075 = 0.0105
 			expect(cost).toBe(0.0105)
+		})
+	
+		describe("calculateApiCostSubscription", () => {
+			const mockModelInfo: ModelInfo = {
+				maxTokens: 8192,
+				contextWindow: 200000,
+				supportsPromptCache: true,
+				inputPrice: 3.0,
+				outputPrice: 15.0,
+				cacheWritesPrice: 3.75,
+				cacheReadsPrice: 0.3,
+			}
+	
+			it("should always return zero cost regardless of token counts", () => {
+				const cost = calculateApiCostSubscription(mockModelInfo, 1000, 500)
+				expect(cost).toBe(0)
+			})
+	
+			it("should return zero cost with cache writes", () => {
+				const cost = calculateApiCostSubscription(mockModelInfo, 1000, 500, 2000)
+				expect(cost).toBe(0)
+			})
+	
+			it("should return zero cost with cache reads", () => {
+				const cost = calculateApiCostSubscription(mockModelInfo, 1000, 500, undefined, 3000)
+				expect(cost).toBe(0)
+			})
+	
+			it("should return zero cost with all parameters", () => {
+				const cost = calculateApiCostSubscription(mockModelInfo, 1000, 500, 2000, 3000)
+				expect(cost).toBe(0)
+			})
+	
+			it("should return zero cost even with high token counts", () => {
+				const cost = calculateApiCostSubscription(mockModelInfo, 100000, 50000, 20000, 30000)
+				expect(cost).toBe(0)
+			})
+	
+			it("should return zero cost with zero tokens", () => {
+				const cost = calculateApiCostSubscription(mockModelInfo, 0, 0, 0, 0)
+				expect(cost).toBe(0)
+			})
+	
+			it("should return zero cost with undefined cache values", () => {
+				const cost = calculateApiCostSubscription(mockModelInfo, 1000, 500)
+				expect(cost).toBe(0)
+			})
+	
+			it("should return zero cost even with expensive model pricing", () => {
+				const expensiveModel: ModelInfo = {
+					maxTokens: 8192,
+					contextWindow: 200000,
+					supportsPromptCache: true,
+					inputPrice: 100.0,
+					outputPrice: 500.0,
+					cacheWritesPrice: 200.0,
+					cacheReadsPrice: 50.0,
+				}
+	
+				const cost = calculateApiCostSubscription(expensiveModel, 10000, 5000, 2000, 3000)
+				expect(cost).toBe(0)
+			})
 		})
 	})
 })

@@ -6,6 +6,7 @@ import * as vscode from "vscode"
 
 import { RooIgnoreController } from "../../core/ignore/RooIgnoreController"
 import { fileExistsAtPath } from "../../utils/fs"
+import "../../utils/path" // Import for toPosix extension
 /*
 This file provides functionality to perform regex searches on files using ripgrep.
 Inspired by: https://github.com/DiscreteTom/vscode-ripgrep-utils
@@ -51,6 +52,21 @@ rel/path/to/helper.ts
 const isWindows = process.platform.startsWith("win")
 const binName = isWindows ? "rg.exe" : "rg"
 
+export interface SearchOptions {
+	pattern: string
+	path?: string
+	output_mode?: "content" | "files_with_matches" | "count"
+	glob?: string
+	type?: string
+	"-i"?: boolean
+	"-n"?: boolean
+	"-A"?: number
+	"-B"?: number
+	"-C"?: number
+	multiline?: boolean
+	head_limit?: number
+}
+
 interface SearchFileResult {
 	file: string
 	searchResults: SearchResult[]
@@ -67,7 +83,8 @@ interface SearchLineResult {
 	column?: number
 }
 // Constants
-const MAX_RESULTS = 300
+const MAX_RESULTS = 200
+const DEFAULT_HEAD_LIMIT = 100
 const MAX_LINE_LENGTH = 500
 
 /**
@@ -106,17 +123,9 @@ async function execRipgrep(bin: string, args: string[]): Promise<string> {
 		})
 
 		let output = ""
-		let lineCount = 0
-		const maxLines = MAX_RESULTS * 5 // limiting ripgrep output with max lines since there's no other way to limit results. it's okay that we're outputting as json, since we're parsing it line by line and ignore anything that's not part of a match. This assumes each result is at most 5 lines.
-
+		
 		rl.on("line", (line) => {
-			if (lineCount < maxLines) {
-				output += line + "\n"
-				lineCount++
-			} else {
-				rl.close()
-				rgProcess.kill()
-			}
+			output += line + "\n"
 		})
 
 		let errorOutput = ""
@@ -143,6 +152,21 @@ export async function regexSearchFiles(
 	filePattern?: string,
 	rooIgnoreController?: RooIgnoreController,
 ): Promise<string> {
+	// Legacy function - convert to new format
+	const options: SearchOptions = {
+		pattern: regex,
+		path: directoryPath,
+		glob: filePattern,
+		output_mode: "content",
+	}
+	return regexSearchFilesAdvanced(cwd, options, rooIgnoreController)
+}
+
+export async function regexSearchFilesAdvanced(
+	cwd: string,
+	options: SearchOptions,
+	rooIgnoreController?: RooIgnoreController,
+): Promise<string> {
 	const vscodeAppRoot = vscode.env.appRoot
 	const rgPath = await getBinPath(vscodeAppRoot)
 
@@ -150,7 +174,54 @@ export async function regexSearchFiles(
 		throw new Error("Could not find ripgrep binary")
 	}
 
-	const args = ["--json", "-e", regex, "--glob", filePattern || "*", "--context", "1", "--no-messages", directoryPath]
+	// Build ripgrep arguments based on options
+	const args: string[] = []
+
+	// Output format
+	if (options.output_mode === "count") {
+		args.push("--count")
+	} else if (options.output_mode === "files_with_matches") {
+		args.push("--files-with-matches")
+	} else {
+		// content mode (default)
+		args.push("--json")
+	}
+
+	// Pattern
+	args.push("-e", options.pattern)
+
+	// Case sensitivity
+	if (options["-i"]) {
+		args.push("--ignore-case")
+	}
+
+	// Multiline mode
+	if (options.multiline) {
+		args.push("--multiline", "--multiline-dotall")
+	}
+
+	// Context options
+	if (options["-C"] !== undefined) {
+		args.push("--context", options["-C"].toString())
+	} else {
+		if (options["-B"] !== undefined) {
+			args.push("--before-context", options["-B"].toString())
+		}
+		if (options["-A"] !== undefined) {
+			args.push("--after-context", options["-A"].toString())
+		}
+	}
+
+	// File filtering
+	if (options.glob) {
+		args.push("--glob", options.glob)
+	} else if (options.type) {
+		args.push("--type", options.type)
+	}
+
+	// Target path
+	const searchPath = options.path || cwd
+	args.push(searchPath)
 
 	let output: string
 	try {
@@ -160,6 +231,105 @@ export async function regexSearchFiles(
 		return "No results found"
 	}
 
+
+	// Handle different output modes
+	if (options.output_mode === "count") {
+		return formatCountResults(output, cwd, options)
+	} else if (options.output_mode === "files_with_matches") {
+		return formatFileListResults(output, cwd, options)
+	} else {
+		// content mode - parse JSON output
+		return parseAndFormatContentResults(output, cwd, options, rooIgnoreController)
+	}
+}
+
+function formatCountResults(output: string, cwd: string, options?: SearchOptions): string {
+	if (!output.trim()) {
+		return "No results found"
+	}
+
+	const lines = output.trim().split("\n")
+	let totalCount = 0
+	
+	// Apply head_limit with proper validation - default to DEFAULT_HEAD_LIMIT, cap at MAX_RESULTS
+	const requestedLimit = options?.head_limit || DEFAULT_HEAD_LIMIT
+	const maxResultsToShow = Math.min(requestedLimit, MAX_RESULTS)
+	const limitedLines = lines.slice(0, maxResultsToShow)
+	
+	let result = ""
+	
+	if (lines.length > maxResultsToShow) {
+		const wasLimitedByUser = options?.head_limit && options.head_limit <= MAX_RESULTS
+		const wasLimitedBySystem = options?.head_limit && options.head_limit > MAX_RESULTS
+		
+		if (wasLimitedBySystem) {
+			result += `Showing first ${maxResultsToShow} of ${lines.length}+ entries (limited to maximum ${MAX_RESULTS}). Use a more specific search pattern, file filters, or reduce scope to get fewer results.\n\n`
+		} else if (wasLimitedByUser) {
+			result += `Showing first ${maxResultsToShow} of ${lines.length}+ entries (as requested by head_limit). Use a more specific search pattern if you need fewer results.\n\n`
+		} else {
+			result += `Showing first ${maxResultsToShow} of ${lines.length}+ entries (default limit). Use head_limit parameter or more specific search pattern to control results.\n\n`
+		}
+	}
+	
+	result += "Match counts per file:\n\n"
+
+	limitedLines.forEach((line) => {
+		if (line.includes(":")) {
+			const [file, count] = line.split(":")
+			const relativeFile = path.relative(cwd, file)
+			const matchCount = parseInt(count)
+			totalCount += matchCount
+			result += `${relativeFile.toPosix()}: ${matchCount} matches\n`
+		}
+	})
+
+	result += `\nTotal: ${totalCount} matches across ${limitedLines.length} files`
+	return result
+}
+
+function formatFileListResults(output: string, cwd: string, options?: SearchOptions): string {
+	if (!output.trim()) {
+		return "No files found with matches"
+	}
+
+	const files = output.trim().split("\n")
+	
+	// Apply head_limit with proper validation - default to DEFAULT_HEAD_LIMIT, cap at MAX_RESULTS
+	const requestedLimit = options?.head_limit || DEFAULT_HEAD_LIMIT
+	const maxResultsToShow = Math.min(requestedLimit, MAX_RESULTS)
+	const limitedFiles = files.slice(0, maxResultsToShow)
+	
+	let result = ""
+	
+	if (files.length > maxResultsToShow) {
+		const wasLimitedByUser = options?.head_limit && options.head_limit <= MAX_RESULTS
+		const wasLimitedBySystem = options?.head_limit && options.head_limit > MAX_RESULTS
+		
+		if (wasLimitedBySystem) {
+			result += `Showing first ${maxResultsToShow} of ${files.length}+ files (limited to maximum ${MAX_RESULTS}). Use a more specific search pattern, file filters, or reduce scope to get fewer results.\n\n`
+		} else if (wasLimitedByUser) {
+			result += `Showing first ${maxResultsToShow} of ${files.length}+ files (as requested by head_limit). Use a more specific search pattern if you need fewer results.\n\n`
+		} else {
+			result += `Showing first ${maxResultsToShow} of ${files.length}+ files (default limit). Use head_limit parameter or more specific search pattern to control results.\n\n`
+		}
+	} else {
+		result += `Found matches in ${files.length} files:\n\n`
+	}
+
+	limitedFiles.forEach((file) => {
+		const relativeFile = path.relative(cwd, file)
+		result += `${relativeFile.toPosix()}\n`
+	})
+
+	return result
+}
+
+function parseAndFormatContentResults(
+	output: string,
+	cwd: string,
+	options: SearchOptions,
+	rooIgnoreController?: RooIgnoreController,
+): string {
 	const results: SearchFileResult[] = []
 	let currentFile: SearchFileResult | null = null
 
@@ -174,7 +344,9 @@ export async function regexSearchFiles(
 					}
 				} else if (parsed.type === "end") {
 					// Reset the current result when a new file is encountered
-					results.push(currentFile as SearchFileResult)
+					if (currentFile) {
+						results.push(currentFile)
+					}
 					currentFile = null
 				} else if ((parsed.type === "match" || parsed.type === "context") && currentFile) {
 					const line = {
@@ -210,29 +382,27 @@ export async function regexSearchFiles(
 		}
 	})
 
-	// console.log(results)
-
 	// Filter results using RooIgnoreController if provided
 	const filteredResults = rooIgnoreController
 		? results.filter((result) => rooIgnoreController.validateAccess(result.file))
 		: results
 
-	return formatResults(filteredResults, cwd)
+	return formatResults(filteredResults, cwd, options)
 }
 
-function formatResults(fileResults: SearchFileResult[], cwd: string): string {
+function formatResults(fileResults: SearchFileResult[], cwd: string, options?: SearchOptions): string {
 	const groupedResults: { [key: string]: SearchResult[] } = {}
 
 	let totalResults = fileResults.reduce((sum, file) => sum + file.searchResults.length, 0)
 	let output = ""
-	if (totalResults >= MAX_RESULTS) {
-		output += `Showing first ${MAX_RESULTS} of ${MAX_RESULTS}+ results. Use a more specific search if necessary.\n\n`
-	} else {
-		output += `Found ${totalResults === 1 ? "1 result" : `${totalResults.toLocaleString()} results`}.\n\n`
-	}
+	let currentOutputLines: string[] = []
+
+	// Apply head_limit with proper validation - default to DEFAULT_HEAD_LIMIT, cap at MAX_RESULTS
+	const requestedLimit = options?.head_limit || DEFAULT_HEAD_LIMIT
+	const maxLinesToShow = Math.min(requestedLimit, MAX_RESULTS)
 
 	// Group results by file name
-	fileResults.slice(0, MAX_RESULTS).forEach((file) => {
+	fileResults.forEach((file) => {
 		const relativeFilePath = path.relative(cwd, file.file)
 		if (!groupedResults[relativeFilePath]) {
 			groupedResults[relativeFilePath] = []
@@ -242,22 +412,44 @@ function formatResults(fileResults: SearchFileResult[], cwd: string): string {
 	})
 
 	for (const [filePath, fileResults] of Object.entries(groupedResults)) {
-		output += `# ${filePath.toPosix()}\n`
+		currentOutputLines.push(`# ${filePath.toPosix()}`)
 
 		fileResults.forEach((result) => {
 			// Only show results with at least one line
 			if (result.lines.length > 0) {
 				// Show all lines in the result
 				result.lines.forEach((line) => {
-					const lineNumber = String(line.line).padStart(3, " ")
-					output += `${lineNumber} | ${line.text.trimEnd()}\n`
+					// Show line numbers if requested
+					const lineNumber = options?.["-n"] ? String(line.line).padStart(3, " ") + " | " : ""
+					currentOutputLines.push(`${lineNumber}${line.text.trimEnd()}`)
 				})
-				output += "----\n"
+				currentOutputLines.push("----")
 			}
 		})
 
-		output += "\n"
+		currentOutputLines.push("")
+	}
+	
+	output = currentOutputLines.join("\n").trim()
+
+	let finalOutput = ""
+	const lines = output.split("\n")
+	if (lines.length > maxLinesToShow) {
+		const wasLimitedByUser = options?.head_limit && options.head_limit <= MAX_RESULTS
+		const wasLimitedBySystem = options?.head_limit && options.head_limit > MAX_RESULTS
+		
+		if (wasLimitedBySystem) {
+			finalOutput += `Showing first ${maxLinesToShow} of ${lines.length}+ lines (limited to maximum ${MAX_RESULTS}). Use a more specific search pattern, file filters, or reduce scope to get fewer results.\n\n`
+		} else if (wasLimitedByUser) {
+			finalOutput += `Showing first ${maxLinesToShow} of ${lines.length}+ lines (as requested by head_limit). Use a more specific search pattern if you need fewer results.\n\n`
+		} else {
+			finalOutput += `Showing first ${maxLinesToShow} of ${lines.length}+ lines (default limit). Use head_limit parameter or more specific search pattern to control results.\n\n`
+		}
+		finalOutput += lines.slice(0, maxLinesToShow).join("\n")
+	} else {
+		finalOutput += `Found ${lines.length === 1 ? "1 line" : `${lines.length.toLocaleString()} lines`}.\n\n`
+		finalOutput += output
 	}
 
-	return output.trim()
+	return finalOutput.trim()
 }

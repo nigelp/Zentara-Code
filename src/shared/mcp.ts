@@ -78,6 +78,7 @@ export type McpToolCallResponse = {
 					blob?: string
 				}
 		  }
+		| Record<string, any> // Allow additional content types for SDK compatibility
 	>
 	isError?: boolean
 }

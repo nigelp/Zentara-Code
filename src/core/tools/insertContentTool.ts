@@ -101,12 +101,31 @@ export async function insertContentTool(
 		cline.diffViewProvider.originalContent = fileContent
 		const lines = fileExists ? fileContent.split("\n") : []
 
-		const updatedContent = insertGroups(lines, [
-			{
-				index: lineNumber - 1,
-				elements: content.split("\n"),
-			},
-		]).join("\n")
+		// Add debugging information
+		console.log(`[insertContent] File: ${relPath}`)
+		console.log(`[insertContent] Original lines: ${lines.length}`)
+		console.log(`[insertContent] Insert at line: ${lineNumber} (index: ${lineNumber - 1})`)
+		console.log(`[insertContent] Content to insert: ${content.split("\n").length} lines`)
+
+		let updatedContent: string
+		try {
+			updatedContent = insertGroups(lines, [
+				{
+					index: lineNumber - 1,
+					elements: content.split("\n"),
+				},
+			]).join("\n")
+			
+			console.log(`[insertContent] Result lines: ${updatedContent.split("\n").length}`)
+			console.log(`[insertContent] Original length: ${fileContent.length} chars`)
+			console.log(`[insertContent] Updated length: ${updatedContent.length} chars`)
+		} catch (error) {
+			console.error(`[insertContent] insertGroups failed:`, error)
+			cline.consecutiveMistakeCount++
+			cline.recordToolError("insert_content")
+			pushToolResult(formatResponse.toolError(`Failed to insert content: ${error instanceof Error ? error.message : String(error)}`))
+			return
+		}
 
 		// Check if preventFocusDisruption experiment is enabled
 		const provider = cline.providerRef.deref()

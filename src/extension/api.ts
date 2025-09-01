@@ -110,7 +110,7 @@ export class API extends EventEmitter<RooCodeEvents> implements RooCodeAPI {
 		images,
 		newTab,
 	}: {
-		configuration: RooCodeSettings
+		configuration?: RooCodeSettings // Made configuration optional to match interface
 		text?: string
 		images?: string[]
 		newTab?: boolean
@@ -138,7 +138,7 @@ export class API extends EventEmitter<RooCodeEvents> implements RooCodeAPI {
 			consecutiveMistakeLimit: Number.MAX_SAFE_INTEGER,
 		}
 
-		const task = await provider.createTask(text, images, undefined, options, configuration)
+		const task = await provider.createTask(text, images, undefined, false, options, configuration)
 
 		if (!task) {
 			throw new Error("Failed to create task due to policy restrictions")
@@ -201,7 +201,7 @@ export class API extends EventEmitter<RooCodeEvents> implements RooCodeAPI {
 	}
 
 	private registerListeners(provider: ClineProvider) {
-		provider.on(RooCodeEventName.TaskCreated, (task) => {
+		provider.on(RooCodeEventName.TaskCreated, (task: any) => {
 			// Task Lifecycle
 
 			task.on(RooCodeEventName.TaskStarted, async () => {
@@ -210,7 +210,7 @@ export class API extends EventEmitter<RooCodeEvents> implements RooCodeAPI {
 				await this.fileLog(`[${new Date().toISOString()}] taskStarted -> ${task.taskId}\n`)
 			})
 
-			task.on(RooCodeEventName.TaskCompleted, async (_, tokenUsage, toolUsage) => {
+			task.on(RooCodeEventName.TaskCompleted, async (_: any, tokenUsage: any, toolUsage: any) => {
 				let isSubtask = false
 
 				if (typeof task.rootTask !== "undefined") {
@@ -264,13 +264,13 @@ export class API extends EventEmitter<RooCodeEvents> implements RooCodeAPI {
 				this.emit(RooCodeEventName.TaskUnpaused, task.taskId)
 			})
 
-			task.on(RooCodeEventName.TaskSpawned, (childTaskId) => {
+			task.on(RooCodeEventName.TaskSpawned, (childTaskId: any) => {
 				this.emit(RooCodeEventName.TaskSpawned, task.taskId, childTaskId)
 			})
 
 			// Task Execution
 
-			task.on(RooCodeEventName.Message, async (message) => {
+			task.on(RooCodeEventName.Message, async (message: any) => {
 				this.emit(RooCodeEventName.Message, { taskId: task.taskId, ...message })
 
 				if (message.message.partial !== true) {
@@ -278,7 +278,7 @@ export class API extends EventEmitter<RooCodeEvents> implements RooCodeAPI {
 				}
 			})
 
-			task.on(RooCodeEventName.TaskModeSwitched, (taskId, mode) => {
+			task.on(RooCodeEventName.TaskModeSwitched, (taskId: any, mode: any) => {
 				this.emit(RooCodeEventName.TaskModeSwitched, taskId, mode)
 			})
 
@@ -288,11 +288,11 @@ export class API extends EventEmitter<RooCodeEvents> implements RooCodeAPI {
 
 			// Task Analytics
 
-			task.on(RooCodeEventName.TaskToolFailed, (taskId, tool, error) => {
+			task.on(RooCodeEventName.TaskToolFailed, (taskId: any, tool: any, error: any) => {
 				this.emit(RooCodeEventName.TaskToolFailed, taskId, tool, error)
 			})
 
-			task.on(RooCodeEventName.TaskTokenUsageUpdated, (_, usage) => {
+			task.on(RooCodeEventName.TaskTokenUsageUpdated, (_: any, usage: any) => {
 				this.emit(RooCodeEventName.TaskTokenUsageUpdated, task.taskId, usage)
 			})
 

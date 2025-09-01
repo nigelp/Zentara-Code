@@ -14,6 +14,8 @@ import {
 	moonshotModels,
 	geminiDefaultModelId,
 	geminiModels,
+	gCliDefaultModelId,
+	gCliModels,
 	mistralDefaultModelId,
 	mistralModels,
 	openAiModelInfoSaneDefaults,
@@ -214,6 +216,11 @@ function getSelectedModel({
 			const info = geminiModels[id as keyof typeof geminiModels]
 			return { id, info }
 		}
+		case "g-cli": {
+			const id = apiConfiguration.apiModelId ?? gCliDefaultModelId
+			const info = gCliModels[id as keyof typeof gCliModels]
+			return { id, info }
+		}
 		case "deepseek": {
 			const id = apiConfiguration.apiModelId ?? deepSeekDefaultModelId
 			const info = deepSeekModels[id as keyof typeof deepSeekModels]
@@ -339,7 +346,7 @@ function getSelectedModel({
 		// case "human-relay":
 		// case "fake-ai":
 		default: {
-			provider satisfies "anthropic" | "gemini-cli" | "qwen-code" | "human-relay" | "fake-ai"
+			provider satisfies "anthropic" | "claude-max" | "gemini-cli" | "qwen-code" | "human-relay" | "fake-ai"
 			const id = apiConfiguration.apiModelId ?? anthropicDefaultModelId
 			const baseInfo = anthropicModels[id as keyof typeof anthropicModels]
 

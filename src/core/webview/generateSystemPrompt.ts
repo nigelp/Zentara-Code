@@ -89,6 +89,8 @@ export const generateSystemPrompt = async (provider: ClineProvider, message: Web
 				.getConfiguration("roo-cline")
 				.get<boolean>("newTaskRequireTodos", false),
 		},
+		false, // subagent parameter
+		"default", // taskId parameter for webview preview - use default since no specific task
 	)
 
 	return systemPrompt

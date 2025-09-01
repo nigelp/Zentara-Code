@@ -14,6 +14,13 @@ import { readLines } from "../../integrations/misc/read-lines"
 import { extractTextFromFile, addLineNumbers, getSupportedBinaryFormats } from "../../integrations/misc/extract-text"
 import { parseSourceCodeDefinitionsForFile } from "../../services/tree-sitter"
 import { parseXml } from "../../utils/xml"
+const DEBUG_RACE = process.env.DEBUG_RACE === "true" || false
+const raceLog = (context: string, taskId: string, data: any = {}) => {
+	if (!DEBUG_RACE) return
+	const timestamp = new Date().toISOString()
+	const hrTime = process.hrtime.bigint()
+	console.log(`[RACE ${timestamp}] [${hrTime}] [TASK ${taskId}] ${context}:`, JSON.stringify(data))
+}
 import {
 	DEFAULT_MAX_IMAGE_FILE_SIZE_MB,
 	DEFAULT_MAX_TOTAL_IMAGE_SIZE_MB,
@@ -122,7 +129,7 @@ export async function readFileTool(
 		await cline.ask("tool", partialMessage, block.partial).catch(() => {})
 		return
 	}
-
+	console.log(`[readFileTool]  Task Id: ${cline.taskId} Received block:`, block)
 	const fileEntries: FileEntry[] = []
 
 	if (argsXmlTag) {
@@ -303,8 +310,9 @@ export async function readFileTool(
 				tool: "readFile",
 				batchFiles,
 			} satisfies ClineSayTool)
-
+			console.log(`[readFileTool]  Task Id: ${cline.taskId} ,ask tool with  message: ${completeMessage}`)
 			const { response, text, images } = await cline.ask("tool", completeMessage, false)
+			raceLog("readFileTool_ask_tool_got_response", cline.taskId, { response, text, images })
 
 			// Process batch response
 			if (response === "yesButtonClicked") {
@@ -403,9 +411,9 @@ export async function readFileTool(
 				content: fullPath,
 				reason: lineSnippet,
 			} satisfies ClineSayTool)
-
+			console.log(`[readFileTool]  Task Id: ${cline.taskId} ,ask tool with  message: ${completeMessage}`)
 			const { response, text, images } = await cline.ask("tool", completeMessage, false)
-
+			console.log(`[readFileTool]  Task Id: ${cline.taskId} ,ask tool response:`, response)
 			if (response !== "yesButtonClicked") {
 				// Handle both messageResponse and noButtonClicked with text
 				if (text) {
@@ -623,7 +631,7 @@ export async function readFileTool(
 		// Generate final XML result from all file results
 		const xmlResults = fileResults.filter((result) => result.xmlContent).map((result) => result.xmlContent)
 		const filesXml = `<files>\n${xmlResults.join("\n")}\n</files>`
-
+		console.log(`[readFileTool]  Task Id: ${cline.taskId} , final files XML:`, filesXml)
 		// Collect all image data URLs from file results
 		const fileImageUrls = fileResults
 			.filter((result) => result.imageDataUrl)

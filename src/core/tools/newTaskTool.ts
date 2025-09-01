@@ -24,6 +24,18 @@ export async function newTaskTool(
 	const todos: string | undefined = block.params.todos
 
 	try {
+		// Check if the current task is a subagent (parallel task)
+		if (cline.isParallel) {
+			cline.consecutiveMistakeCount++
+			cline.recordToolError("new_task")
+			pushToolResult(
+				formatResponse.toolError(
+					"Subagents cannot launch new tasks. This operation is restricted to the main agent only.",
+				),
+			)
+			return
+		}
+
 		if (block.partial) {
 			const partialMessage = JSON.stringify({
 				tool: "newTask",

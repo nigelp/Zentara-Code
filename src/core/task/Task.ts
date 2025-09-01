@@ -1,13 +1,24 @@
 import * as path from "path"
+import { outputChannel } from "../../roo_debug/src/vscodeUtils"
 import * as vscode from "vscode"
 import os from "os"
 import crypto from "crypto"
 import EventEmitter from "events"
 
 import { Anthropic } from "@anthropic-ai/sdk"
+import { logOutgoingMessage } from "../logging/messageLogger"
 import delay from "delay"
 import pWaitFor from "p-wait-for"
 import { serializeError } from "serialize-error"
+
+// Race condition debugging
+const DEBUG_RACE = process.env.DEBUG_RACE === "true" || false
+const raceLog = (context: string, taskId: string, data: any = {}) => {
+	if (!DEBUG_RACE) return
+	const timestamp = new Date().toISOString()
+	const hrTime = process.hrtime.bigint()
+	console.log(`[RACE ${timestamp}] [${hrTime}] [TASK ${taskId}] ${context}:`, JSON.stringify(data))
+}
 
 import {
 	type RooCodeSettings,
@@ -128,6 +139,7 @@ export interface TaskOptions extends CreateTaskOptions {
 	rootTask?: Task
 	parentTask?: Task
 	taskNumber?: number
+	isParallel?: boolean
 	onCreated?: (task: Task) => void
 	initialTodos?: TodoItem[]
 }
@@ -197,10 +209,12 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 	resumableAsk?: ClineMessage
 	interactiveAsk?: ClineMessage
 
+	public isStreamingPaused = false
 	didFinishAbortingStream = false
 	abandoned = false
 	isInitialized = false
 	isPaused: boolean = false
+	isParallel: boolean = false
 	pausedModeSlug: string = defaultModeSlug
 	private pauseInterval: NodeJS.Timeout | undefined
 
@@ -245,6 +259,11 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 	private askResponseImages?: string[]
 	public lastMessageTs?: number
 
+	// Public getter for ask response status
+	public get hasAskResponse(): boolean {
+		return this.askResponse !== undefined
+	}
+
 	// Tool Use
 	consecutiveMistakeCount: number = 0
 	consecutiveMistakeLimit: number
@@ -275,6 +294,8 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 	assistantMessageParser: AssistantMessageParser
 	private lastUsedInstructions?: string
 	private skipPrevResponseIdOnce: boolean = false
+	private discoveredAgentsCache: any = null
+	private discoveredAgentsCachePromise: Promise<any> | null = null
 
 	constructor({
 		provider,
@@ -291,6 +312,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 		rootTask,
 		parentTask,
 		taskNumber = -1,
+		isParallel = false,
 		onCreated,
 		initialTodos,
 	}: TaskOptions) {
@@ -341,6 +363,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 		this.rootTask = rootTask
 		this.parentTask = parentTask
 		this.taskNumber = taskNumber
+		this.isParallel = isParallel
 
 		// Store the task's mode when it's created.
 		// For history items, use the stored mode; for new tasks, we'll set it
@@ -561,32 +584,87 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 				taskId: this.taskId,
 				globalStoragePath: this.globalStoragePath,
 			})
+
+			console.log(`[DEBUG] Successfully saved API conversation history for task ${this.taskId}`)
 		} catch (error) {
 			// In the off chance this fails, we don't want to stop the task.
-			console.error("Failed to save API conversation history:", error)
+			console.error(`[ERROR] Failed to save API conversation history for task ${this.taskId}:`, error)
+			console.error(`[ERROR] Error details:`, {
+				name: error?.name,
+				message: error?.message,
+				stack: error?.stack,
+				code: error?.code,
+			})
 		}
 	}
 
 	// Cline Messages
 
 	private async getSavedClineMessages(): Promise<ClineMessage[]> {
-		return readTaskMessages({ taskId: this.taskId, globalStoragePath: this.globalStoragePath })
+		try {
+			const messages = await readTaskMessages({ taskId: this.taskId, globalStoragePath: this.globalStoragePath })
+
+			// Migrate messages without taskId
+			return messages.map((msg) => {
+				if (!msg.taskId) {
+					return {
+						...msg,
+						taskId: this.taskId, // Add taskId to legacy messages
+					}
+				}
+				return msg
+			})
+		} catch (error) {
+			// Log error but return empty array to continue execution
+			console.error("Failed to read task messages:", error)
+			return []
+		}
 	}
 
 	private async addToClineMessages(message: ClineMessage) {
-		this.clineMessages.push(message)
+		// Add taskId to the message
+		const messageWithTaskId = {
+			...message,
+			taskId: this.taskId, // Include this task's ID
+		}
+		if (message.partial !== true) {
+			raceLog("ADD_TO_CLINE_MESSAGES", this.taskId, {
+				messageType: message.type,
+				isPartial: message.partial,
+				ask: message.ask,
+				say: message.say,
+				messageCount: this.clineMessages.length,
+				message: messageWithTaskId,
+			})
+		}
+		this.clineMessages.push(messageWithTaskId)
 		const provider = this.providerRef.deref()
-		await provider?.postStateToWebview()
-		this.emit(RooCodeEventName.Message, { action: "created", message })
+
+		// If this is an ask message, queue it for sequential processing
+		if (this.isParallel === true) {
+			if (message.type === "ask" && provider && message.partial !== true) {
+				// For complete asks, we can queue the request immediately
+				raceLog("QUEUE_ASK_REQUEST", this.taskId, { isPartial: false })
+				await provider.addAskRequest(this)
+			}
+		} else {
+			// For non-ask messages, update state immediately
+			raceLog("POST_STATE_FOR_NON_SUBAGENT", this.taskId, { messageType: message.type })
+			await provider?.postStateToWebview()
+		}
+
+		this.emit(RooCodeEventName.Message, { action: "created", message: messageWithTaskId })
 		await this.saveClineMessages()
 
 		const shouldCaptureMessage = message.partial !== true && CloudService.isEnabled()
 
 		if (shouldCaptureMessage) {
-			CloudService.instance.captureEvent({
-				event: TelemetryEventName.TASK_MESSAGE,
-				properties: { taskId: this.taskId, message },
-			})
+			if (CloudService.instance) {
+				CloudService.instance.captureEvent({
+					event: TelemetryEventName.TASK_MESSAGE,
+					properties: { taskId: this.taskId, message },
+				})
+			}
 		}
 	}
 
@@ -609,24 +687,50 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 	}
 
 	private async updateClineMessage(message: ClineMessage) {
+		// Add taskId to the message
+		const messageWithTaskId = {
+			...message,
+			taskId: this.taskId, // Include this task's ID
+		}
 		const provider = this.providerRef.deref()
-		await provider?.postMessageToWebview({ type: "messageUpdated", clineMessage: message })
+		if (message.partial !== true) {
+			raceLog("updateClineMessage", this.taskId, { messageWithTaskId: messageWithTaskId })
+		}
+		// If this is an ask message, queue it for sequential processing
+		if (this.isParallel === true) {
+			if (message.type === "ask" && provider && message.partial !== true) {
+				// For complete asks, we can queue the request immediately
+				await provider.addAskRequest(this)
+			}
+		} else {
+			// For non-ask messages or when no provider, just update the webview
+			await provider?.postMessageToWebview({ type: "messageUpdated", clineMessage: messageWithTaskId })
+		}
+
 		this.emit(RooCodeEventName.Message, { action: "updated", message })
 
 		const shouldCaptureMessage = message.partial !== true && CloudService.isEnabled()
 
 		if (shouldCaptureMessage) {
-			CloudService.instance.captureEvent({
-				event: TelemetryEventName.TASK_MESSAGE,
-				properties: { taskId: this.taskId, message },
-			})
+			if (CloudService.instance) {
+				CloudService.instance.captureEvent({
+					event: TelemetryEventName.TASK_MESSAGE,
+					properties: { taskId: this.taskId, message },
+				})
+			}
 		}
 	}
 
 	private async saveClineMessages() {
 		try {
+			// Ensure all messages have taskId before saving
+			const messagesWithTaskId = this.clineMessages.map((msg) => ({
+				...msg,
+				taskId: msg.taskId || this.taskId,
+			}))
+
 			await saveTaskMessages({
-				messages: this.clineMessages,
+				messages: messagesWithTaskId,
 				taskId: this.taskId,
 				globalStoragePath: this.globalStoragePath,
 			})
@@ -668,6 +772,17 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 		progressStatus?: ToolProgressStatus,
 		isProtected?: boolean,
 	): Promise<{ response: ClineAskResponse; text?: string; images?: string[] }> {
+		const askId = `${this.taskId}-${Date.now()}`
+		if (partial !== true) {
+			raceLog("ASK_START", this.taskId, {
+				askId,
+				type,
+				partial,
+				textLength: text?.length,
+				isProtected,
+				currentAskResponse: this.askResponse,
+			})
+		}
 		// If this Cline instance was aborted by the provider, then the only
 		// thing keeping us alive is a promise still running in the background,
 		// in which case we don't want to send its result to the webview as it
@@ -810,12 +925,15 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 		}
 
 		const result = { response: this.askResponse!, text: this.askResponseText, images: this.askResponseImages }
+		// outputChannel.appendLine(
+		// 	`[Task.ask] Returning result with response: ${result.response}, text: ${result.text ? "present" : "absent"}`,
+		// )
 		this.askResponse = undefined
 		this.askResponseText = undefined
 		this.askResponseImages = undefined
 
 		// Cancel the timeouts if they are still running.
-		statusMutationTimeouts.forEach((timeout) => clearTimeout(timeout))
+		statusMutationTimeouts.forEach((timeout: NodeJS.Timeout) => clearTimeout(timeout))
 
 		// Switch back to an active state.
 		if (this.idleAsk || this.resumableAsk || this.interactiveAsk) {
@@ -834,9 +952,29 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 	}
 
 	handleWebviewAskResponse(askResponse: ClineAskResponse, text?: string, images?: string[]) {
+		raceLog("HANDLE_WEBVIEW_ASK_RESPONSE", this.taskId, {
+			askResponse,
+			hasText: !!text,
+			hasImages: !!images,
+			previousAskResponse: this.askResponse,
+		})
+
 		this.askResponse = askResponse
 		this.askResponseText = text
 		this.askResponseImages = images
+
+		// Remove from ask set/queue since we have a response
+		const provider = this.providerRef.deref()
+		if (provider) {
+			provider.removeFromAskSet(this.taskId)
+		}
+
+		raceLog("ASK_RESPONSE_SET", this.taskId, {
+			askResponse: this.askResponse,
+			hasText: !!this.askResponseText,
+			hasImages: !!this.askResponseImages,
+		})
+		this.emit(RooCodeEventName.TaskAskResponded)
 	}
 
 	public approveAsk({ text, images }: { text?: string; images?: string[] } = {}) {
@@ -979,6 +1117,14 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 			throw new Error(`[RooCode#say] task ${this.taskId}.${this.instanceId} aborted`)
 		}
 
+		// Update activity indicator for parallel tasks
+		if (this.isParallel && type !== "text" && type !== "user_feedback") {
+			const provider = this.providerRef.deref()
+			if (provider && "updateSubagentActivity" in provider) {
+				await (provider as any).updateSubagentActivity(this.taskId)
+			}
+		}
+
 		if (partial !== undefined) {
 			const lastMessage = this.clineMessages.at(-1)
 
@@ -1084,6 +1230,9 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 	}
 
 	async sayAndCreateMissingParamError(toolName: ToolName, paramName: string, relPath?: string) {
+		outputChannel.appendLine(
+			`[Task] sayAndCreateMissingParamError called for tool '${toolName}', missing param '${paramName}', relPath: ${relPath ?? "none"}`,
+		)
 		await this.say(
 			"error",
 			`Roo tried to use ${toolName}${
@@ -1136,7 +1285,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 		])
 	}
 
-	public async resumePausedTask(lastMessage: string) {
+	public async resumePausedTask(lastMessage: string, say_subtask_result: boolean = true): Promise<void> {
 		this.isPaused = false
 		this.emit(RooCodeEventName.TaskUnpaused)
 
@@ -1144,7 +1293,13 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 		// this is the result of what it has done add the message to the chat
 		// history and to the webview ui.
 		try {
-			await this.say("subtask_result", lastMessage)
+			if (say_subtask_result) {
+				await this.say("subtask_result", lastMessage)
+			} else {
+				console.log(
+					`[subtasks] Resume pause task, task ${this.taskId}.${this.instanceId} ; last message : ${lastMessage}	`,
+				)
+			}
 
 			await this.addToApiConversationHistory({
 				role: "user",
@@ -1492,6 +1647,30 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 		} catch (error) {
 			console.error("Error reverting diff changes:", error)
 		}
+
+		// Emit disposal event with defensive error handling and delay
+		// Delay allows VSCode internal cleanup to complete first, preventing TreeErrors
+		try {
+			// Add small delay to allow VSCode internal cleanup
+			setTimeout(() => {
+				try {
+					this.emit("disposed")
+				} catch (error) {
+					console.error(`[Task ${this.taskId}] Error emitting disposed event:`, error)
+					// Swallow the error to prevent UI thread blocking
+				}
+			}, 50)
+		} catch (error) {
+			console.error(`[Task ${this.taskId}] Error scheduling disposal event:`, error)
+		}
+
+		// Clear any remaining event listeners with defensive error handling
+		try {
+			this.removeAllListeners()
+		} catch (error) {
+			console.error(`[Task ${this.taskId}] Error removing listeners:`, error)
+			// Continue disposal even if listener removal fails
+		}
 	}
 
 	public async abortTask(isAbandoned = false) {
@@ -1503,7 +1682,13 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 		}
 
 		this.abort = true
-		this.emit(RooCodeEventName.TaskAborted)
+
+		// Emit abort event in a try-catch to ensure abort continues even if listeners fail
+		try {
+			this.emit(RooCodeEventName.TaskAborted)
+		} catch (error) {
+			console.error(`Error emitting TaskAborted event for task ${this.taskId}.${this.instanceId}:`, error)
+		}
 
 		try {
 			this.dispose() // Call the centralized dispose method
@@ -1511,10 +1696,16 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 			console.error(`Error during task ${this.taskId}.${this.instanceId} disposal:`, error)
 			// Don't rethrow - we want abort to always succeed
 		}
+
 		// Save the countdown message in the automatic retry or other content.
 		try {
-			// Save the countdown message in the automatic retry or other content.
-			await this.saveClineMessages()
+			// Only save messages if not abandoned (abandoned tasks are being force-closed)
+			if (!isAbandoned) {
+				// Don't await during cancellation - save in background to avoid blocking abort completion
+				this.saveClineMessages().catch((error) =>
+					console.error(`Background save failed for task ${this.taskId}:`, error),
+				)
+			}
 		} catch (error) {
 			console.error(`Error saving messages during abort for task ${this.taskId}.${this.instanceId}:`, error)
 		}
@@ -1818,6 +2009,14 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 							continue
 						}
 
+											// Update activity for parallel tasks when receiving chunks
+					if (this.isParallel) {
+						const provider = this.providerRef.deref()
+						if (provider && "updateSubagentActivity" in provider) {
+							await (provider as any).updateSubagentActivity(this.taskId)
+						}
+					}
+
 						switch (chunk.type) {
 							case "reasoning":
 								reasoningMessage += chunk.text
@@ -1832,6 +2031,19 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 								break
 							case "text": {
 								assistantMessage += chunk.text
+
+							// Update streaming text for parallel tasks
+							if (this.isParallel) {
+								const provider = this.providerRef.deref()
+								if (provider && "updateSubagentStreamingText" in provider) {
+									// Show last 100 characters of the assistant message
+									const displayText =
+										assistantMessage.length > 100
+											? "..." + assistantMessage.slice(-100)
+											: assistantMessage
+									await (provider as any).updateSubagentStreamingText(this.taskId, displayText)
+								}
+							}
 
 								// Parse raw assistant message chunk into content blocks.
 								const prevLength = this.assistantMessageContent.length
@@ -2200,6 +2412,42 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 		return false
 	}
 
+	/**
+	 * Get discovered agents with caching at Task level.
+	 * This ensures agents are discovered only once per Task and shared across
+	 * both the prompt generation and tool execution.
+	 */
+	public async getDiscoveredAgents(): Promise<any> {
+		// If we already have the result cached, return it
+		if (this.discoveredAgentsCache !== null) {
+			return this.discoveredAgentsCache
+		}
+
+		// If discovery is already in progress, wait for it
+		if (this.discoveredAgentsCachePromise !== null) {
+			return await this.discoveredAgentsCachePromise
+		}
+
+		// Start discovery and cache the promise to prevent duplicate calls
+		this.discoveredAgentsCachePromise = (async () => {
+			try {
+				const mod = await import("../../roo_subagent/src/agentDiscovery")
+				const ctx = mod.createAgentLoadingContext()
+				const discovered = await mod.discoverAgents(ctx)
+				this.discoveredAgentsCache = discovered
+				console.log(`[Task ${this.taskId}] Discovered agents cached`)
+				return discovered
+			} catch (error) {
+				console.warn(`[Task ${this.taskId}] Failed to discover predefined agents.`, error)
+				// Cache null to prevent repeated attempts
+				this.discoveredAgentsCache = null
+				return null
+			}
+		})()
+
+		return await this.discoveredAgentsCachePromise
+	}
+
 	private async getSystemPrompt(): Promise<string> {
 		const { mcpEnabled } = (await this.providerRef.deref()?.getState()) ?? {}
 		let mcpHub: McpHub | undefined
@@ -2249,6 +2497,9 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 				throw new Error("Provider not available")
 			}
 
+			// Get discovered agents for this task
+			const discoveredAgents = await this.getDiscoveredAgents()
+
 			return SYSTEM_PROMPT(
 				provider.context,
 				this.cwd,
@@ -2275,6 +2526,9 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 						.get<boolean>("newTaskRequireTodos", false),
 				},
 				undefined, // todoList
+				this.isParallel, // subagent
+				this.taskId,
+				discoveredAgents,
 				this.api.getModel().id,
 			)
 		})()
@@ -2467,6 +2721,13 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 		}
 
 		const messagesSinceLastSummary = getMessagesSinceLastSummary(this.apiConversationHistory)
+		
+		// Log the last outgoing message (user text and tool results only)
+		if (messagesSinceLastSummary.length > 0) {
+			const lastMessage = messagesSinceLastSummary[messagesSinceLastSummary.length - 1]
+			logOutgoingMessage(lastMessage)
+		}
+		
 		let cleanConversationHistory = maybeRemoveImageBlocks(messagesSinceLastSummary, this.api).map(
 			({ role, content }) => ({ role, content }),
 		)
@@ -2561,6 +2822,15 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 				} else {
 					errorMsg = "Unknown error"
 				}
+
+				// Show the error using the same mechanism as manual retry so it appears in the WebUI
+				// We'll create an api_req_failed message but then automatically proceed with retry
+				await this.addToClineMessages({
+					ts: Date.now(),
+					type: "ask",
+					ask: "api_req_failed",
+					text: errorMsg,
+				})
 
 				const baseDelay = requestDelaySeconds || 5
 				let exponentialDelay = Math.min(

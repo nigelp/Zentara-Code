@@ -96,6 +96,14 @@ export async function attemptCompletionTool(
 			cline.emit(RooCodeEventName.TaskCompleted, cline.taskId, cline.getTokenUsage(), cline.toolUsage)
 
 			if (cline.parentTask) {
+				// For parallel tasks (like subagents), skip approval and directly finish
+				if (cline.isParallel) {
+					// tell the provider to remove the current subtask and resume the previous task in the stack
+					await cline.providerRef.deref()?.finishSubTask(result, cline)
+					return
+				}
+
+				// For sequential subtasks, ask for approval
 				const didApprove = await askFinishSubTaskApproval()
 
 				if (!didApprove) {
@@ -103,7 +111,7 @@ export async function attemptCompletionTool(
 				}
 
 				// tell the provider to remove the current subtask and resume the previous task in the stack
-				await cline.providerRef.deref()?.finishSubTask(result)
+				await cline.providerRef.deref()?.finishSubTask(result, cline)
 				return
 			}
 

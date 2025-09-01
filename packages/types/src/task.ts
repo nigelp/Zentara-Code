@@ -145,4 +145,7 @@ export type TaskEvents = {
 	// Task Analytics
 	[RooCodeEventName.TaskToolFailed]: [taskId: string, tool: ToolName, error: string]
 	[RooCodeEventName.TaskTokenUsageUpdated]: [taskId: string, tokenUsage: TokenUsage]
+	
+	// Task Disposal (special case - uses string literal)
+	disposed: []
 }

@@ -1,6 +1,5 @@
 {
 	"compilerOptions": {
-		"types": ["vitest/globals"],
 		"esModuleInterop": true,
 		"experimentalDecorators": true,
 		"forceConsistentCasingInFileNames": true,
@@ -20,8 +19,25 @@
 		"useDefineForClassFields": true,
 		"useUnknownInCatchVariables": false
 	},
-	"include": ["."],
-	"exclude": ["node_modules"],
+	"include": [
+		".",
+		"src/**/*",
+		"scripts/**/*",
+		".changeset/**/*",
+		"src/roo_debug/**/*",
+		"src/roo_subagent/**/*",
+		"src/zentara_lsp/src/__tests__/**/*"
+	],
+	"exclude": [
+		"node_modules",
+		".vscode-test",
+		"node_modules/@types/mocha",
+		"**/*.test.ts",
+		"**/*.test.js",
+		"**/__tests__/**/*",
+		"**/__mocks__/**/*",
+		"**/jest.setup.ts"
+	],
 	"watchOptions": {
 		"watchFile": "useFsEvents",
 		"watchDirectory": "useFsEvents",

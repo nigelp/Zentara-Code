@@ -158,6 +158,11 @@ function validateProviderAgainstOrganizationSettings(
 		const provider = apiConfiguration.apiProvider
 		if (!provider) return undefined
 
+		// Check if providers object exists
+		if (!organizationAllowList.providers) {
+			return undefined
+		}
+
 		const providerConfig = organizationAllowList.providers[provider]
 		if (!providerConfig) {
 			return {

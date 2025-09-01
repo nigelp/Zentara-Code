@@ -96,7 +96,7 @@
 	"scrollToBottom": "Scroll to bottom of chat",
 	"about": "Generate, refactor, and debug code with AI assistance. Check out our <DocsLink>documentation</DocsLink> to learn more.",
 	"onboarding": "Your task list in this workspace is empty.",
-	"rooTips": {
+	"RooTips": {
 		"boomerangTasks": {
 			"title": "Task Orchestration",
 			"description": "Split tasks into smaller, manageable parts"
@@ -278,6 +278,7 @@
 	},
 	"announcement": {
 		"title": "🎉 Roo Code {{version}} Released",
+		"description": "Roo Code {{version}} , the first comprehensive open-source runtime debugging AI coder, is now available! This release introduces several powerful features to enhance your coding experience.",
 		"stealthModel": {
 			"feature": "The Sonic stealth model is now <bold>Grok Code Fast</bold>! This high-performance reasoning model is available as <code>grok-code-fast-1</code> under the <bold>xAI (Grok)</bold> provider.",
 			"note": "As a thank you for all the helpful feedback on Sonic, xAI is extending free access to <code>grok-code-fast-1</code> for another week through the <bold>Roo Code Cloud</bold> provider.",
@@ -295,7 +296,7 @@
 		"countdownDisplay": "{{count}}s"
 	},
 	"browser": {
-		"rooWantsToUse": "Roo wants to use the browser:",
+		"RooWantsToUse": "Roo wants to use the browser:",
 		"consoleLogs": "Console Logs",
 		"noNewLogs": "(No new logs)",
 		"screenshot": "Browser screenshot",
@@ -342,6 +343,14 @@
 			"title": "Auto-Approved Cost Limit Reached",
 			"description": "Roo has reached the auto-approved cost limit of ${{count}}. Would you like to reset the cost and proceed with the task?",
 			"button": "Reset and Continue"
+		},
+		"debug": {
+			"wantsToExecute": "Roo wants to execute debug operation: {{operation}}",
+			"operation": "{{operation}}"
+		},
+		"tool": {
+			"wantsToExecute": "Roo wants to execute {{tool}} operation: {{operation}}",
+			"wantsToUse": "Roo wants to use {{tool}}"
 		}
 	},
 	"indexingStatus": {

@@ -1,0 +1,88 @@
+{
+  "timestamp": "2025-08-21T00:53:59.201Z",
+  "duration": 7864,
+  "totalTests": 11,
+  "passed": 3,
+  "failed": 8,
+  "results": [
+    {
+      "toolName": "rename",
+      "testName": "Rename TypeScript variable",
+      "passed": false,
+      "error": "Assertion failed: TypeScript variable rename: WorkspaceEdit should have changes or documentChanges",
+      "duration": 1137
+    },
+    {
+      "toolName": "rename",
+      "testName": "Rename class name",
+      "passed": false,
+      "error": "Assertion failed: Class rename: WorkspaceEdit should have changes or documentChanges",
+      "duration": 445
+    },
+    {
+      "toolName": "rename",
+      "testName": "Rename method name",
+      "passed": false,
+      "error": "Assertion failed: Method rename: WorkspaceEdit should have changes or documentChanges",
+      "duration": 430
+    },
+    {
+      "toolName": "rename",
+      "testName": "Rename Python function",
+      "passed": false,
+      "error": "Assertion failed: Python function rename: WorkspaceEdit should have changes or documentChanges",
+      "duration": 1199
+    },
+    {
+      "toolName": "rename",
+      "testName": "Rename JavaScript variable",
+      "passed": false,
+      "error": "Assertion failed: JavaScript variable rename: WorkspaceEdit should have changes or documentChanges",
+      "duration": 545
+    },
+    {
+      "toolName": "rename",
+      "testName": "Handle invalid rename position",
+      "passed": true,
+      "duration": 393
+    },
+    {
+      "toolName": "rename",
+      "testName": "Rename interface property",
+      "passed": false,
+      "error": "Assertion failed: Interface property rename: WorkspaceEdit should have changes or documentChanges",
+      "duration": 453
+    },
+    {
+      "toolName": "rename",
+      "testName": "Test invalid rename - keywords (returned empty edit)",
+      "passed": true,
+      "duration": 439
+    },
+    {
+      "toolName": "rename",
+      "testName": "Cross-file rename",
+      "passed": false,
+      "error": "Assertion failed: Cross-file rename: WorkspaceEdit should have changes or documentChanges",
+      "duration": 1921
+    },
+    {
+      "toolName": "rename",
+      "testName": "Rename with special characters (rejected as expected)",
+      "passed": true,
+      "duration": 472
+    },
+    {
+      "toolName": "rename",
+      "testName": "Rename at different symbol positions",
+      "passed": false,
+      "error": "Assertion failed: Rename from declaration position: WorkspaceEdit should have changes or documentChanges",
+      "duration": 425
+    }
+  ],
+  "summary": {
+    "testSuites": 1,
+    "failedSuites": 0,
+    "successRate": "100.0%"
+  }
+}

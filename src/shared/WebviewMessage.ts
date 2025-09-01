@@ -73,6 +73,7 @@ export interface WebviewMessage {
 		| "openFile"
 		| "openMention"
 		| "cancelTask"
+		| "cancelAllSubagents"
 		| "updateVSCodeSetting"
 		| "getVSCodeSetting"
 		| "vsCodeSetting"
@@ -87,6 +88,8 @@ export interface WebviewMessage {
 		| "autoCondenseContextPercent"
 		| "condensingApiConfigId"
 		| "updateCondensingPrompt"
+		| "alwaysAllowDebug"
+		| "alwaysAllowLsp"
 		| "playSound"
 		| "playTts"
 		| "stopTts"
@@ -185,6 +188,19 @@ export interface WebviewMessage {
 		| "indexCleared"
 		| "focusPanelRequest"
 		| "profileThresholds"
+		| "gCliCheckAuth" // Check G CLI authentication status
+		| "gCliAuthenticate" // Start G CLI OAuth flow
+		| "gCliReauthenticate" // Clear credentials and start fresh OAuth flow
+		| "gCliAuthStatus" // Response with authentication status
+		| "gCliAuthResult" // Response with authentication result
+		| "gCliAuthError" // Response with authentication error
+		| "claudeMaxCheckAuth" // Check Claude Max authentication status
+		| "claudeMaxStartAuth" // Start Claude Max OAuth flow
+		| "claudeMaxExchangeCode" // Exchange authorization code for tokens
+		| "claudeMaxAuthStatus" // Response with authentication status
+		| "claudeMaxAuthStarted" // Response when auth URL is opened
+		| "claudeMaxAuthResult" // Response with authentication result
+		| "claudeMaxAuthError" // Response with authentication error
 		| "setHistoryPreviewCollapsed"
 		| "openExternal"
 		| "filterMarketplaceItems"
@@ -196,6 +212,8 @@ export interface WebviewMessage {
 		| "marketplaceInstallResult"
 		| "fetchMarketplaceData"
 		| "switchTab"
+		| "logToDebugConsole" // Added for logging from webview to extension host debug console
+		| "stateUpdateComplete"
 		| "profileThresholds"
 		| "shareTaskSuccess"
 		| "exportMode"
@@ -222,6 +240,7 @@ export interface WebviewMessage {
 	context?: string
 	dataUri?: string
 	askResponse?: ClineAskResponse
+	taskId?: string // NEW FIELD - task that should receive the response
 	apiConfiguration?: ProviderSettings
 	images?: string[]
 	bool?: boolean
@@ -240,6 +259,8 @@ export interface WebviewMessage {
 	query?: string
 	setting?: string
 	slug?: string
+	code?: string // For Claude Max auth code exchange
+	verifier?: string // For Claude Max PKCE verifier
 	modeConfig?: ModeConfig
 	timeout?: number
 	payload?: WebViewMessagePayload
@@ -256,6 +277,10 @@ export interface WebviewMessage {
 	mpItem?: MarketplaceItem
 	mpInstallOptions?: InstallMarketplaceItemOptions
 	config?: Record<string, any> // Add config to the payload
+	// Properties for logToDebugConsole message type
+	logLevel?: "info" | "warn" | "error" | "debug"
+	logMessage?: string
+	logData?: string // JSON stringified data
 	visibility?: ShareVisibility // For share visibility
 	hasContent?: boolean // For checkRulesDirectoryResult
 	checkOnly?: boolean // For deleteCustomMode check

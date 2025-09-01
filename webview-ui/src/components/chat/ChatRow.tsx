@@ -119,6 +119,23 @@ export const ChatRowContent = ({
 
 	const { copyWithFeedback } = useCopyToClipboard()
 
+	const logToExtensionHost = useCallback(
+		(logLevel: "info" | "warn" | "error" | "debug", message: string, data?: any) => {
+			vscode.postMessage({
+				type: "logToDebugConsole", // Message type for the extension host
+				logLevel: logLevel,
+				logMessage: message, // Corrected property name
+				logData: data ? JSON.stringify(data, null, 2) : undefined, // Corrected property name
+			})
+		},
+		[],
+	)
+
+	useEffect(() => {
+		// Dummy call to satisfy linter for logToExtensionHost
+		logToExtensionHost("debug", "ChatRowContent mounted")
+	}, [logToExtensionHost])
+
 	// Memoized callback to prevent re-renders caused by inline arrow functions.
 	const handleToggleExpand = useCallback(() => {
 		onToggleExpand(message.ts)
@@ -295,6 +312,24 @@ export const ChatRowContent = ({
 		}
 		return null
 	}, [message.type, message.ask, message.partial, message.text])
+
+	const displayableArgs = useMemo(() => {
+		// Only attempt to parse for the "debug" tool
+		if (tool?.tool !== "debug" || !tool?.content || tool.content === "(No arguments)") {
+			return null
+		}
+		try {
+			const args = JSON.parse(tool.content)
+			// Ensure it's an object and has keys
+			if (typeof args === "object" && args !== null && Object.keys(args).length > 0) {
+				return args
+			}
+		} catch (e) {
+			// Not a valid JSON string or not an object, so no structured args to display
+			console.error("Error parsing tool content for debug args:", e)
+		}
+		return null // Fallback: no displayable structured arguments
+	}, [tool])
 
 	if (tool) {
 		const toolIcon = (name: string) => (
@@ -824,8 +859,281 @@ export const ChatRowContent = ({
 						)}
 					</>
 				)
+			case "glob":
+				return (
+					<>
+						<div style={headerStyle}>
+							{toolIcon("search")}
+							<span style={{ fontWeight: "bold" }}>
+								{message.type === "ask"
+									? t("chat:fileOperations.wantsToFindFiles", "Wants to find files matching pattern")
+									: t("chat:fileOperations.foundFiles", "Found files matching pattern")}
+							</span>
+						</div>
+						{tool.content && (
+							<ToolUseBlock>
+								<ToolUseBlockHeader>
+									<div
+										style={{ display: "flex", flexDirection: "column", gap: "4px", width: "100%" }}>
+										<div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+											<span style={{ fontWeight: "bold" }}>Pattern:</span>
+											<code>{tool.content}</code>
+										</div>
+										{tool.path && tool.path !== "." && (
+											<div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+												<span style={{ fontWeight: "bold" }}>Search in:</span>
+												<code>{tool.path}</code>
+											</div>
+										)}
+										{tool.isOutsideWorkspace && (
+											<div
+												style={{
+													color: "var(--vscode-editorWarning-foreground)",
+													marginTop: "4px",
+												}}>
+												⚠️ This path is outside the workspace
+											</div>
+										)}
+									</div>
+								</ToolUseBlockHeader>
+							</ToolUseBlock>
+						)}
+					</>
+				)
+			case "debug":
+				return (
+					<>
+						{/* Outer header - always shown */}
+						<div style={headerStyle}>
+							{toolIcon("debug")}
+							<span style={{ fontWeight: "bold" }}>
+								{(() => {
+									//logToExtensionHost("info", "ChatRow.tsx - tool object (before operationName in wantsToExecute):", tool);
+									const operationName = tool.operation
+									return t("chat:ask.debug.wantsToExecute", { operation: operationName })
+								})()}
+							</span>
+						</div>
+
+						{/* Inner bordered box - always shown */}
+						<div
+							style={{
+								marginTop: "4px",
+								backgroundColor: "var(--vscode-editor-background)",
+								border: "1px solid var(--vscode-editorGroup-border)",
+								borderRadius: "4px",
+								overflow: "hidden",
+								marginBottom: "8px",
+							}}>
+							{/* "Debug Operation: {{operation}}" title bar - always shown */}
+							<div
+								style={{
+									padding: "9px 10px 9px 14px",
+									backgroundColor: "var(--vscode-textCodeBlock-background)",
+									borderBottom: displayableArgs
+										? "1px solid var(--vscode-editorGroup-border)"
+										: "none",
+									fontWeight: "bold",
+									fontSize: "var(--vscode-font-size)",
+									color: "var(--vscode-editor-foreground)",
+									display: "flex",
+									alignItems: "center",
+									gap: "6px",
+								}}>
+								<span className="codicon codicon-debug-console"></span>
+								{(() => {
+									//logToExtensionHost("info", "ChatRow.tsx - tool object (before operationName in operation title):", tool);
+									const operationName = tool.operation
+									return t("chat:ask.debug.operation", { operation: operationName })
+								})()}
+							</div>
+
+							{/* Conditionally render the arguments content area */}
+							{displayableArgs && (
+								<div
+									style={{
+										padding: "12px 16px",
+										backgroundColor: "var(--vscode-editor-background)",
+									}}>
+									<div style={{ ...pStyle, display: "flex", flexDirection: "column", gap: "2px" }}>
+										{Object.entries(displayableArgs).map(([key, value]) => (
+											<div key={key} style={{ display: "flex" }}>
+												<strong
+													style={{ minWidth: "120px", marginRight: "8px", flexShrink: 0 }}>
+													{key}:
+												</strong>
+												<span>
+													{typeof value === "object" && value !== null
+														? JSON.stringify(value)
+														: String(value)}
+												</span>
+											</div>
+										))}
+									</div>
+								</div>
+							)}
+						</div>
+					</>
+				)
 			default:
-				return null
+				// Generic handler for tools without specific cases
+				return (
+					<>
+						{/* Outer header - always shown */}
+						<div style={headerStyle}>
+							{toolIcon(tool.tool)}
+							<span style={{ fontWeight: "bold" }}>
+								{(() => {
+									// For tools with operations (like lsp), show the operation name
+									if (tool.operation) {
+										return t("chat:ask.tool.wantsToExecute", {
+											tool: tool.tool.toUpperCase(),
+											operation: tool.operation,
+										})
+									}
+									// For simple tools, just show the tool name
+									return t("chat:ask.tool.wantsToUse", { tool: tool.tool })
+								})()}
+							</span>
+						</div>
+
+						{/* Inner bordered box - always shown */}
+						<div
+							style={{
+								marginTop: "4px",
+								backgroundColor: "var(--vscode-editor-background)",
+								border: "1px solid var(--vscode-editorGroup-border)",
+								borderRadius: "4px",
+								overflow: "hidden",
+								marginBottom: "8px",
+							}}>
+							{/* Tool/Operation title bar */}
+							<div
+								style={{
+									padding: "9px 10px 9px 14px",
+									backgroundColor: "var(--vscode-textCodeBlock-background)",
+									borderBottom:
+										tool.content && tool.content !== "(No arguments)"
+											? "1px solid var(--vscode-editorGroup-border)"
+											: "none",
+									fontWeight: "bold",
+									fontSize: "var(--vscode-font-size)",
+									color: "var(--vscode-editor-foreground)",
+									display: "flex",
+									alignItems: "center",
+									gap: "6px",
+								}}>
+								{toolIcon(tool.tool)}
+								{tool.operation ? (
+									<span>
+										{tool.tool.toUpperCase()}: {tool.operation}
+									</span>
+								) : (
+									<span>{tool.tool}</span>
+								)}
+							</div>
+
+							{/* Parameters/Content area */}
+							{tool.content && tool.content !== "(No arguments)" && (
+								<div
+									style={{
+										padding: "12px 16px",
+										backgroundColor: "var(--vscode-editor-background)",
+									}}>
+									{(() => {
+										// Try to parse as JSON for structured display
+										try {
+											const args = JSON.parse(tool.content)
+											if (
+												typeof args === "object" &&
+												args !== null &&
+												Object.keys(args).length > 0
+											) {
+												return (
+													<div
+														style={{
+															...pStyle,
+															display: "flex",
+															flexDirection: "column",
+															gap: "2px",
+														}}>
+														{Object.entries(args).map(([key, value]) => (
+															<div key={key} style={{ display: "flex" }}>
+																<strong
+																	style={{
+																		minWidth: "120px",
+																		marginRight: "8px",
+																		flexShrink: 0,
+																	}}>
+																	{key}:
+																</strong>
+																<span>
+																	{typeof value === "object" && value !== null
+																		? JSON.stringify(value)
+																		: String(value)}
+																</span>
+															</div>
+														))}
+													</div>
+												)
+											}
+										} catch (e) {
+											// Not JSON, display as plain text
+										}
+										// Fallback to plain text display
+										return (
+											<div style={pStyle}>
+												<pre
+													style={{
+														margin: 0,
+														whiteSpace: "pre-wrap",
+														fontFamily: "var(--vscode-editor-font-family)",
+														fontSize: "var(--vscode-editor-font-size)",
+													}}>
+													{tool.content}
+												</pre>
+											</div>
+										)
+									})()}
+								</div>
+							)}
+
+							{/* Show additional properties if they exist */}
+							{(tool.path || tool.command || tool.query || tool.search) && (
+								<div
+									style={{
+										padding: "12px 16px",
+										backgroundColor: "var(--vscode-editor-background)",
+										borderTop: "1px solid var(--vscode-editorGroup-border)",
+									}}>
+									<div style={{ ...pStyle, display: "flex", flexDirection: "column", gap: "4px" }}>
+										{tool.path && (
+											<div>
+												<strong>Path:</strong> <code>{tool.path}</code>
+											</div>
+										)}
+										{tool.command && (
+											<div>
+												<strong>Command:</strong> <code>{tool.command}</code>
+											</div>
+										)}
+										{tool.query && (
+											<div>
+												<strong>Query:</strong> <code>{tool.query}</code>
+											</div>
+										)}
+										{tool.search && (
+											<div>
+												<strong>Search:</strong> <code>{tool.search}</code>
+											</div>
+										)}
+									</div>
+								</div>
+							)}
+						</div>
+					</>
+				)
+			// Old code: return null
 		}
 	}
 

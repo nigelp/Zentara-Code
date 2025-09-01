@@ -13,6 +13,7 @@ import { shouldUseSingleFileRead } from "@roo-code/types"
 import { getWriteToFileDescription } from "./write-to-file"
 import { getSearchFilesDescription } from "./search-files"
 import { getListFilesDescription } from "./list-files"
+import { getGlobDescription } from "./glob"
 import { getInsertContentDescription } from "./insert-content"
 import { getSearchAndReplaceDescription } from "./search-and-replace"
 import { getListCodeDefinitionNamesDescription } from "./list-code-definition-names"
@@ -27,9 +28,72 @@ import { getCodebaseSearchDescription } from "./codebase-search"
 import { getUpdateTodoListDescription } from "./update-todo-list"
 import { getGenerateImageDescription } from "./generate-image"
 import { CodeIndexManager } from "../../../services/code-index/manager"
+import { getDebugToolDescription } from "./debug"
+import { getSubagentDescription } from "./subagent"
+import { getFetchToolDescriptionDescription } from "./fetch-tool-description"
+import {
+	getDebugLaunchToolDescription,
+	getDebugRestartToolDescription,
+	getDebugQuitToolDescription,
+	getDebugContinueToolDescription,
+	getDebugNextToolDescription,
+	getDebugStepInToolDescription,
+	getDebugStepOutToolDescription,
+	getDebugJumpToolDescription,
+	getDebugUntilToolDescription,
+	getDebugSetBreakpointToolDescription,
+	getDebugSetTempBreakpointToolDescription,
+	getDebugRemoveBreakpointToolDescription,
+	getDebugRemoveAllBreakpointsInFileToolDescription,
+	getDebugDisableBreakpointToolDescription,
+	getDebugEnableBreakpointToolDescription,
+	getDebugIgnoreBreakpointToolDescription,
+	getDebugSetBreakpointConditionToolDescription,
+	getDebugGetActiveBreakpointsToolDescription,
+	getDebugStackTraceToolDescription,
+	getDebugListSourceToolDescription,
+	getDebugUpToolDescription,
+	getDebugDownToolDescription,
+	getDebugGotoFrameToolDescription,
+	getDebugGetSourceToolDescription,
+	getDebugGetStackFrameVariablesToolDescription,
+	getDebugGetArgsToolDescription,
+	getDebugEvaluateToolDescription,
+	getDebugPrettyPrintToolDescription,
+	getDebugWhatisToolDescription,
+	getDebugExecuteStatementToolDescription,
+	getDebugGetLastStopInfoToolDescription,
+} from "./debug_operations"
+import {
+	getFindUsagesToolDescription,
+	getGoToDefinitionToolDescription,
+	getFindImplementationsToolDescription,
+	getGetHoverInfoToolDescription,
+	getGetDocumentSymbolsToolDescription,
+	getGetCompletionsToolDescription,
+	getGetSignatureHelpToolDescription,
+	getRenameToolDescription,
+	getGetCodeActionsToolDescription,
+	getGetSemanticTokensToolDescription,
+	getGetCallHierarchyToolDescription,
+	getGetTypeHierarchyToolDescription,
+	getGetCodeLensToolDescription,
+	getGetSelectionRangeToolDescription,
+	getGetTypeDefinitionToolDescription,
+	getGetDeclarationToolDescription,
+	getGetDocumentHighlightsToolDescription,
+	getGetWorkspaceSymbolsToolDescription,
+	getGetSymbolCodeSnippetToolDescription,
+	getGetSymbolChildrenToolDescription,
+	getGetSymbolsToolDescription,
+	getGetSymbolsOverviewToolDescription,
+	getInsertAfterSymbolToolDescription,
+	getInsertBeforeSymbolToolDescription,
+	getReplaceSymbolBodyToolDescription,
+} from "./lsp_operations"
 
 // Map of tool names to their description functions
-const toolDescriptionMap: Record<string, (args: ToolArgs) => string | undefined> = {
+export const toolDescriptionMap: Record<string, (args: ToolArgs) => string | Promise<string> | undefined> = {
 	execute_command: (args) => getExecuteCommandDescription(args),
 	read_file: (args) => {
 		// Check if the current model should use the simplified read_file tool
@@ -43,6 +107,7 @@ const toolDescriptionMap: Record<string, (args: ToolArgs) => string | undefined>
 	write_to_file: (args) => getWriteToFileDescription(args),
 	search_files: (args) => getSearchFilesDescription(args),
 	list_files: (args) => getListFilesDescription(args),
+	glob: (args) => getGlobDescription(args),
 	list_code_definition_names: (args) => getListCodeDefinitionNamesDescription(args),
 	browser_action: (args) => getBrowserActionDescription(args),
 	ask_followup_question: () => getAskFollowupQuestionDescription(),
@@ -58,9 +123,71 @@ const toolDescriptionMap: Record<string, (args: ToolArgs) => string | undefined>
 		args.diffStrategy ? args.diffStrategy.getToolDescription({ cwd: args.cwd, toolOptions: args.toolOptions }) : "",
 	update_todo_list: (args) => getUpdateTodoListDescription(args),
 	generate_image: (args) => getGenerateImageDescription(args),
+	debug: (_args) => getDebugToolDescription(), // Does not use args currently
+	debug_launch: (args) => getDebugLaunchToolDescription(args),
+	debug_restart: (args) => getDebugRestartToolDescription(args),
+	debug_quit: () => getDebugQuitToolDescription(),
+	debug_continue: () => getDebugContinueToolDescription(),
+	debug_next: () => getDebugNextToolDescription(),
+	debug_step_in: () => getDebugStepInToolDescription(),
+	debug_step_out: () => getDebugStepOutToolDescription(),
+	debug_jump: () => getDebugJumpToolDescription(),
+	debug_until: () => getDebugUntilToolDescription(),
+	debug_set_breakpoint: (args) => getDebugSetBreakpointToolDescription(args),
+	debug_set_temp_breakpoint: (args) => getDebugSetTempBreakpointToolDescription(args), // Will be updated to accept args
+	debug_remove_breakpoint: (args) => getDebugRemoveBreakpointToolDescription(args), // Will be updated to accept args
+	debug_remove_all_breakpoints_in_file: (args) => getDebugRemoveAllBreakpointsInFileToolDescription(args), // Will be updated to accept args
+	debug_disable_breakpoint: (args) => getDebugDisableBreakpointToolDescription(args), // Will be updated to accept args
+	debug_enable_breakpoint: (args) => getDebugEnableBreakpointToolDescription(args), // Will be updated to accept args
+	debug_ignore_breakpoint: (args) => getDebugIgnoreBreakpointToolDescription(args), // Will be updated to accept args
+	debug_set_breakpoint_condition: (args) => getDebugSetBreakpointConditionToolDescription(args), // Will be updated to accept args
+	debug_get_active_breakpoints: (_args) => getDebugGetActiveBreakpointsToolDescription(), // Does not use args currently
+	debug_stack_trace: () => getDebugStackTraceToolDescription(),
+	debug_list_source: () => getDebugListSourceToolDescription(),
+	debug_up: () => getDebugUpToolDescription(),
+	debug_down: () => getDebugDownToolDescription(),
+	debug_goto_frame: () => getDebugGotoFrameToolDescription(),
+	debug_get_source: () => getDebugGetSourceToolDescription(),
+	debug_get_stack_frame_variables: () => getDebugGetStackFrameVariablesToolDescription(),
+	debug_get_args: () => getDebugGetArgsToolDescription(),
+	debug_evaluate: () => getDebugEvaluateToolDescription(),
+	debug_pretty_print: () => getDebugPrettyPrintToolDescription(),
+	debug_whatis: () => getDebugWhatisToolDescription(),
+	debug_execute_statement: () => getDebugExecuteStatementToolDescription(),
+	debug_get_last_stop_info: () => getDebugGetLastStopInfoToolDescription(),
+	lsp_find_usages: (args) => getFindUsagesToolDescription(args),
+	lsp_go_to_definition: (args) => getGoToDefinitionToolDescription(args),
+	lsp_find_implementations: (args) => getFindImplementationsToolDescription(args),
+	lsp_get_hover_info: (args) => getGetHoverInfoToolDescription(args),
+	lsp_get_document_symbols: (args) => getGetDocumentSymbolsToolDescription(args),
+	lsp_get_completions: (args) => getGetCompletionsToolDescription(args),
+	lsp_get_signature_help: (args) => getGetSignatureHelpToolDescription(args),
+	lsp_rename: (args) => getRenameToolDescription(args),
+	lsp_get_code_actions: (args) => getGetCodeActionsToolDescription(args),
+	lsp_get_semantic_tokens: (args) => getGetSemanticTokensToolDescription(args),
+	lsp_get_call_hierarchy: (args) => getGetCallHierarchyToolDescription(args),
+	lsp_get_type_hierarchy: (args) => getGetTypeHierarchyToolDescription(args),
+	lsp_get_code_lens: (args) => getGetCodeLensToolDescription(args),
+	lsp_get_selection_range: (args) => getGetSelectionRangeToolDescription(args),
+	lsp_get_type_definition: (args) => getGetTypeDefinitionToolDescription(args),
+	lsp_get_declaration: (args) => getGetDeclarationToolDescription(args),
+	lsp_get_document_highlights: (args) => getGetDocumentHighlightsToolDescription(args),
+	lsp_get_workspace_symbols: (args) => getGetWorkspaceSymbolsToolDescription(args),
+	lsp_get_symbol_code_snippet: (args) => getGetSymbolCodeSnippetToolDescription(args),
+	lsp_get_symbol_children: (args) => getGetSymbolChildrenToolDescription(args),
+	lsp_get_symbols: (args) => getGetSymbolsToolDescription(args),
+	lsp_get_symbols_overview: (args) => getGetSymbolsOverviewToolDescription(args),
+	lsp_insert_after_symbol: (args) => getInsertAfterSymbolToolDescription(args),
+	lsp_insert_before_symbol: (args) => getInsertBeforeSymbolToolDescription(args),
+	lsp_replace_symbol_body: (args) => getReplaceSymbolBodyToolDescription(args),
+	subagent: async () => {
+		// Pass null to use cached discovered agents from Task
+		return await getSubagentDescription(null)
+	},
+	fetch_tool_description: (args) => getFetchToolDescriptionDescription(args),
 }
 
-export function getToolDescriptionsForMode(
+export async function getToolDescriptionsForMode(
 	mode: Mode,
 	cwd: string,
 	supportsComputerUse: boolean,
@@ -74,7 +201,7 @@ export function getToolDescriptionsForMode(
 	settings?: Record<string, any>,
 	enableMcpServerCreation?: boolean,
 	modelId?: string,
-): string {
+): Promise<string> {
 	const config = getModeConfig(mode, customModes)
 	const args: ToolArgs = {
 		cwd,
@@ -137,17 +264,22 @@ export function getToolDescriptionsForMode(
 	}
 
 	// Map tool descriptions for allowed tools
-	const descriptions = Array.from(tools).map((toolName) => {
+	const descriptionPromises = Array.from(tools).map(async (toolName) => {
 		const descriptionFn = toolDescriptionMap[toolName]
 		if (!descriptionFn) {
 			return undefined
 		}
 
-		return descriptionFn({
+		const result = descriptionFn({
 			...args,
 			toolOptions: undefined, // No tool options in group-based approach
 		})
+		
+		// Handle both sync and async descriptions
+		return await Promise.resolve(result)
 	})
+
+	const descriptions = await Promise.all(descriptionPromises)
 
 	return `# Tools\n\n${descriptions.filter(Boolean).join("\n\n")}`
 }
@@ -161,6 +293,7 @@ export {
 	getWriteToFileDescription,
 	getSearchFilesDescription,
 	getListFilesDescription,
+	getGlobDescription,
 	getListCodeDefinitionNamesDescription,
 	getBrowserActionDescription,
 	getAskFollowupQuestionDescription,
@@ -172,4 +305,40 @@ export {
 	getSearchAndReplaceDescription,
 	getCodebaseSearchDescription,
 	getGenerateImageDescription,
+	getDebugToolDescription,
+	// Debug operations
+	getDebugLaunchToolDescription,
+	getDebugRestartToolDescription,
+	getDebugQuitToolDescription,
+	getDebugContinueToolDescription,
+	getDebugNextToolDescription,
+	getDebugStepInToolDescription,
+	getDebugStepOutToolDescription,
+	getDebugJumpToolDescription,
+	getDebugUntilToolDescription,
+	getDebugSetBreakpointToolDescription,
+	getDebugSetTempBreakpointToolDescription,
+	getDebugRemoveBreakpointToolDescription,
+	getDebugRemoveAllBreakpointsInFileToolDescription,
+	getDebugDisableBreakpointToolDescription,
+	getDebugEnableBreakpointToolDescription,
+	getDebugIgnoreBreakpointToolDescription,
+	getDebugSetBreakpointConditionToolDescription,
+	getDebugGetActiveBreakpointsToolDescription,
+	getDebugStackTraceToolDescription,
+	getDebugListSourceToolDescription,
+	getDebugUpToolDescription,
+	getDebugDownToolDescription,
+	getDebugGotoFrameToolDescription,
+	getDebugGetSourceToolDescription,
+	getDebugGetStackFrameVariablesToolDescription,
+	getDebugGetArgsToolDescription,
+	getDebugEvaluateToolDescription,
+	getDebugPrettyPrintToolDescription,
+	getDebugWhatisToolDescription,
+	getDebugExecuteStatementToolDescription,
+	getDebugGetLastStopInfoToolDescription,
+	getSubagentDescription,
 }
+
+// Export the tool description map for optimization system

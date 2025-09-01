@@ -7,6 +7,7 @@ const { silent, reporters, onConsoleLog } = resolveVerbosity()
 export default defineConfig({
 	test: {
 		globals: true,
+		environment: "node",
 		setupFiles: ["./vitest.setup.ts"],
 		watch: false,
 		reporters,
@@ -19,5 +20,8 @@ export default defineConfig({
 		alias: {
 			vscode: path.resolve(__dirname, "./__mocks__/vscode.js"),
 		},
+	},
+	define: {
+		global: "globalThis",
 	},
 })

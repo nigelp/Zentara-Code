@@ -69,7 +69,7 @@ export default function Privacy() {
 							If you run the Roo Code extension <strong>without</strong> connecting to a Cloud account,
 							your data is governed by the standalone{" "}
 							<a
-								href="https://github.com/RooCodeInc/Roo-Code/blob/main/PRIVACY.md"
+								href="https://github.com/Zentar-Ai/Roo-Codeblob/main/PRIVACY.md"
 								target="_blank"
 								rel="noopener noreferrer"
 								className="text-primary hover:underline">
@@ -295,8 +295,8 @@ export default function Privacy() {
 					<h2 className="mt-12 text-2xl font-bold">8. Contact Us</h2>
 					<p>
 						Questions or concerns? Email{" "}
-						<a href="mailto:privacy@roocode.com" className="text-primary hover:underline">
-							privacy@roocode.com
+						<a href="mailto:privacy@zentar.ai" className="text-primary hover:underline">
+							privacy@zentar.ai
 						</a>
 						.
 					</p>

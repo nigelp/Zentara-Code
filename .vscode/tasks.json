@@ -4,20 +4,45 @@
 	"version": "2.0.0",
 	"tasks": [
 		{
-			"label": "watch",
-			"dependsOn": ["watch:webview", "watch:bundle", "watch:tsc"],
+			"label": "build",
+			"dependsOn": ["build:webview", "build:bundle"],
 			"presentation": {
 				"reveal": "never"
 			},
 			"group": {
 				"kind": "build",
 				"isDefault": true
-			}
+			},
+			"problemMatcher": []
+		},
+		{
+			"label": "build:webview",
+			"type": "shell",
+			"command": "conda run -n zen_agent pnpm --filter @zentara-code/vscode-webview build",
+			"group": "build",
+			"problemMatcher": []
+		},
+		{
+			"label": "build:bundle",
+			"type": "shell",
+			"command": "conda run -n zen_agent pnpm bundle",
+			"group": "build",
+			"problemMatcher": []
+		},
+		{
+			"label": "watch",
+			"dependsOn": ["watch:webview", "watch:bundle", "watch:tsc"],
+			"presentation": {
+				"reveal": "never"
+			},
+			"group": "build",
+			"problemMatcher": [],
+			"isBackground": true
 		},
 		{
 			"label": "watch:webview",
 			"type": "shell",
-			"command": "pnpm --filter @roo-code/vscode-webview dev",
+			"command": "conda run -n zen_agent pnpm --filter @zentara-code/vscode-webview dev",
 			"group": "build",
 			"problemMatcher": {
 				"owner": "vite",
@@ -39,7 +64,7 @@
 		{
 			"label": "watch:bundle",
 			"type": "shell",
-			"command": "npx turbo watch:bundle",
+			"command": "conda run -n zen_agent npx turbo watch:bundle",
 			"group": "build",
 			"problemMatcher": {
 				"owner": "esbuild",
@@ -61,7 +86,7 @@
 		{
 			"label": "watch:tsc",
 			"type": "shell",
-			"command": "npx turbo watch:tsc",
+			"command": "conda run -n zen_agent npx turbo watch:tsc",
 			"group": "build",
 			"problemMatcher": "$tsc-watch",
 			"isBackground": true,
@@ -69,6 +94,19 @@
 				"group": "watch",
 				"reveal": "always"
 			}
+		},
+		{
+			"label": "build-extension",
+			"type": "shell",
+			"command": "cd src && pnpm bundle",
+			"group": {
+				"kind": "build",
+				"isDefault": false
+			},
+			"presentation": {
+				"reveal": "silent"
+			},
+			"problemMatcher": []
 		}
 	]
 }

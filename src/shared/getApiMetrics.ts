@@ -68,12 +68,15 @@ export function getApiMetrics(messages: ClineMessage[]) {
 
 	// Calculate context tokens, from the last API request started or condense context message
 	result.contextTokens = 0
+	//console.log(`[TOKEN_DEBUG] getApiMetrics processing ${messages.length} messages`)
 	for (let i = messages.length - 1; i >= 0; i--) {
 		const message = messages[i]
 		if (message.type === "say" && message.say === "api_req_started" && message.text) {
+			//console.log(`[TOKEN_DEBUG] Found api_req_started message at index ${i}:`, message.text)
 			try {
 				const parsedText: ParsedApiReqStartedTextType = JSON.parse(message.text)
 				const { tokensIn, tokensOut, cacheWrites, cacheReads, apiProtocol } = parsedText
+				//console.log(`[TOKEN_DEBUG] Parsed token data:`, { tokensIn, tokensOut, cacheWrites, cacheReads, apiProtocol })
 
 				// Calculate context tokens based on API protocol
 				if (apiProtocol === "anthropic") {
@@ -82,17 +85,20 @@ export function getApiMetrics(messages: ClineMessage[]) {
 					// For OpenAI (or when protocol is not specified)
 					result.contextTokens = (tokensIn || 0) + (tokensOut || 0)
 				}
+				//console.log(`[TOKEN_DEBUG] Calculated contextTokens:`, result.contextTokens)
 			} catch (error) {
 				console.error("Error parsing JSON:", error)
 				continue
 			}
 		} else if (message.type === "say" && message.say === "condense_context") {
 			result.contextTokens = message.contextCondense?.newContextTokens ?? 0
+			//console.log(`[TOKEN_DEBUG] Found condense_context message, contextTokens:`, result.contextTokens)
 		}
 		if (result.contextTokens) {
 			break
 		}
 	}
+	//console.log(`[TOKEN_DEBUG] Final getApiMetrics result:`, result)
 
 	return result
 }

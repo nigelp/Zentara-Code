@@ -21,7 +21,6 @@ interface AnnouncementProps {
  * updated in state. This ensures that announcements are not shown more than
  * once, even if the user doesn't close it themselves.
  */
-
 const Announcement = ({ hideAnnouncement }: AnnouncementProps) => {
 	const { t } = useAppTranslation()
 	const [open, setOpen] = useState(true)

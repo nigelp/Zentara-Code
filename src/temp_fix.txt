@@ -1,0 +1,9 @@
+// Mock use-sound hook
+const mockPlayFunction = vi.fn()
+vi.mock("use-sound", () => ({
+	__esModule: true,
+	default: vi.fn().mockImplementation(() => {
+		return [mockPlayFunction]
+	}),
+}))
+FIX_EOF < /dev/null

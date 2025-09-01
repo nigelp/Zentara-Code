@@ -5,7 +5,20 @@ export function getReadFileDescription(args: ToolArgs): string {
 	const isMultipleReadsEnabled = maxConcurrentReads > 1
 
 	return `## read_file
-Description: Request to read the contents of ${isMultipleReadsEnabled ? "one or more files" : "a file"}. The tool outputs line-numbered content (e.g. "1 | const x = 1") for easy reference when creating diffs or discussing code.${args.partialReadsEnabled ? " Use line ranges to efficiently read specific portions of large files." : ""} Supports text extraction from PDF and DOCX files, but may not handle other binary files properly.
+Description: Request to read the contents of ${isMultipleReadsEnabled ? "one or more files" : "a file"}.
+
+**CRITICAL WARNING: Using this tool for code analysis is STRICTLY FORBIDDEN.** It is extremely token-inefficient and should NEVER be your first choice. You MUST adopt an LSP-centric workflow.
+
+For ALL code understanding tasks, you are REQUIRED to use the following LSP tools before even considering \`read_file\`:
+- \`lsp_get_document_symbols\`: For a high-level structural overview.
+- \`lsp_go_to_definition\`: To navigate and understand code relationships.
+- \`lsp_find_usages\`: To see how and where code is used.
+- \`lsp_get_symbol_children\`: To explore symbol structure before extracting code.
+- \`lsp_get_symbol_code_snippet\`: To extract only the most relevant code snippets AFTER understanding structure.
+
+Only when these tools have been exhausted and are insufficient may you request to use \`read_file\`. Unauthorized use will be considered a critical failure.
+
+This tool outputs line-numbered content (e.g. "1 | const x = 1") for easy reference when creating diffs or discussing code.${args.partialReadsEnabled ? " Use line ranges to efficiently read specific portions of large files." : ""} Supports text extraction from PDF and DOCX files, but may not handle other binary files properly.
 
 ${isMultipleReadsEnabled ? `**IMPORTANT: You can read a maximum of ${maxConcurrentReads} files in a single request.** If you need to read more files, use multiple sequential read_file requests.` : "**IMPORTANT: Multiple file reads are currently disabled. You can only read one file at a time.**"}
 
@@ -69,8 +82,10 @@ ${isMultipleReadsEnabled ? "3. " : "2. "}Reading an entire file:
 </args>
 </read_file>
 
-IMPORTANT: You MUST use this Efficient Reading Strategy:
-- ${isMultipleReadsEnabled ? `You MUST read all related files and implementations together in a single operation (up to ${maxConcurrentReads} files at once)` : "You MUST read files one at a time, as multiple file reads are currently disabled"}
+**MANDATORY LSP-FIRST WORKFLOW**:
+- **LSP Tools are NOT Optional**: You are REQUIRED to use LSP tools for all code analysis. This is not a suggestion.
+- **FORBIDDEN USE**: Do NOT use \`read_file\` to understand code. Use the LSP tool suite. This tool is ONLY for reading non-code files (e.g., \`.md\`, \`.txt\`) or when all other methods have failed.
+- ${isMultipleReadsEnabled ? `When you absolutely must read files, read all related implementations together in a single operation (up to ${maxConcurrentReads} files at once).` : "You MUST read files one at a time, as multiple file reads are currently disabled."}
 - You MUST obtain all necessary context before proceeding with changes
 ${
 	args.partialReadsEnabled

@@ -13,6 +13,7 @@ import { focusPanel } from "../utils/focusPanel"
 import { registerHumanRelayCallback, unregisterHumanRelayCallback, handleHumanRelayResponse } from "./humanRelay"
 import { handleNewTask } from "./handleTask"
 import { CodeIndexManager } from "../services/code-index/manager"
+import { runSubagentTestsCommand } from "./commands/runSubagentTests"
 import { importSettingsWithFeedback } from "../core/config/importExport"
 import { MdmService } from "../services/mdm/MdmService"
 import { t } from "../i18n"
@@ -221,6 +222,7 @@ const getCommandsMap = ({ context, outputChannel, provider }: RegisterCommandOpt
 
 		visibleProvider.postMessageToWebview({ type: "acceptInput" })
 	},
+	runSubagentTests: () => runSubagentTestsCommand(),
 })
 
 export const openClineInNewTab = async ({ context, outputChannel }: Omit<RegisterCommandOptions, "provider">) => {
@@ -265,8 +267,10 @@ export const openClineInNewTab = async ({ context, outputChannel }: Omit<Registe
 	// TODO: Use better svg icon with light and dark variants (see
 	// https://stackoverflow.com/questions/58365687/vscode-extension-iconpath).
 	newPanel.iconPath = {
-		light: vscode.Uri.joinPath(context.extensionUri, "assets", "icons", "panel_light.png"),
-		dark: vscode.Uri.joinPath(context.extensionUri, "assets", "icons", "panel_dark.png"),
+		//light: vscode.Uri.joinPath(context.extensionUri, "assets", "icons", "panel_light.png"),
+		//dark: vscode.Uri.joinPath(context.extensionUri, "assets", "icons", "panel_dark.png"),
+		light: vscode.Uri.joinPath(context.extensionUri, "assets", "icons", "icon.png"),
+		dark: vscode.Uri.joinPath(context.extensionUri, "assets", "icons", "icon.png"),
 	}
 
 	await tabProvider.resolveWebviewView(newPanel)

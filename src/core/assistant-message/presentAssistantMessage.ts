@@ -1,14 +1,26 @@
 import cloneDeep from "clone-deep"
 import { serializeError } from "serialize-error"
-
-import type { ToolName, ClineAsk, ToolProgressStatus } from "@roo-code/types"
+import { outputChannel } from "../../roo_debug/src/vscodeUtils"
+import { logIncomingMessage } from "../logging/messageLogger"
+import type { ToolName, ClineAsk, ToolProgressStatus, ModeConfig } from "@roo-code/types"
 import { TelemetryService } from "@roo-code/telemetry"
 
 import { defaultModeSlug, getModeBySlug } from "../../shared/modes"
-import type { ToolParamName, ToolResponse } from "../../shared/tools"
+import type {
+	ToolParamName,
+	ToolResponse,
+	ToolUse,
+	DebugToolUse,
+	LspToolUse,
+	AskApproval,
+	HandleError,
+	PushToolResult,
+} from "../../shared/tools"
+import { trackToolUsage } from "../../roo_tool_prompt_management/tool-optimization-integration"
 
 import { fetchInstructionsTool } from "../tools/fetchInstructionsTool"
 import { listFilesTool } from "../tools/listFilesTool"
+import { globTool } from "../tools/globTool"
 import { getReadFileToolDescription, readFileTool } from "../tools/readFileTool"
 import { getSimpleReadFileToolDescription, simpleReadFileTool } from "../tools/simpleReadFileTool"
 import { shouldUseSingleFileRead } from "@roo-code/types"
@@ -26,6 +38,10 @@ import { askFollowupQuestionTool } from "../tools/askFollowupQuestionTool"
 import { switchModeTool } from "../tools/switchModeTool"
 import { attemptCompletionTool } from "../tools/attemptCompletionTool"
 import { newTaskTool } from "../tools/newTaskTool"
+import { debugTool } from "../tools/debugTool"
+import { lspTool } from "../tools/lspTool"
+import { subagentTool } from "../tools/subagentTool"
+import { fetchToolDescriptionTool } from "../tools/fetchToolDescriptionTool"
 
 import { updateTodoListTool } from "../tools/updateTodoListTool"
 import { generateImageTool } from "../tools/generateImageTool"
@@ -36,6 +52,13 @@ import { Task } from "../task/Task"
 import { codebaseSearchTool } from "../tools/codebaseSearchTool"
 import { experiments, EXPERIMENT_IDS } from "../../shared/experiments"
 import { applyDiffToolLegacy } from "../tools/applyDiffTool"
+const DEBUG_RACE = process.env.DEBUG_RACE === "true" || false
+const raceLog = (context: string, taskId: string, data: any = {}) => {
+	if (!DEBUG_RACE) return
+	const timestamp = new Date().toISOString()
+	const hrTime = process.hrtime.bigint()
+	console.log(`[RACE ${timestamp}] [${hrTime}] [TASK ${taskId}] ${context}:`, JSON.stringify(data))
+}
 
 /**
  * Processes and presents assistant message content to the user interface.
@@ -54,18 +77,34 @@ import { applyDiffToolLegacy } from "../tools/applyDiffTool"
  * as it becomes available.
  */
 
+import pWaitFor from "p-wait-for"
+
 export async function presentAssistantMessage(cline: Task) {
+	raceLog("START_PRESENT_ASSISTANT_MESSAGE", cline.taskId, {
+		didCompleteReadingStream: cline.didCompleteReadingStream,
+		currentStreamingContentIndex: cline.currentStreamingContentIndex,
+		assistantMessageContent: cline.assistantMessageContent.length,
+		AMcontent: cline.assistantMessageContent,
+	})
 	if (cline.abort) {
-		throw new Error(`[Task#presentAssistantMessage] task ${cline.taskId}.${cline.instanceId} aborted`)
+		return
+		//throw new Error(`[Task#presentAssistantMessage] task ${cline.taskId}.${cline.instanceId} aborted`)
 	}
 
 	if (cline.presentAssistantMessageLocked) {
 		cline.presentAssistantMessageHasPendingUpdates = true
+		raceLog("PRESENT_ASSISTANT_MESSAGE_RETURN_presentAssistantMessageLocked_72", cline.taskId, {})
 		return
 	}
 
 	cline.presentAssistantMessageLocked = true
 	cline.presentAssistantMessageHasPendingUpdates = false
+	raceLog("CHECK_USER_MESSAGE_CONTENT_READY", cline.taskId, {
+		didCompleteReadingStream: cline.didCompleteReadingStream,
+		currentStreamingContentIndex: cline.currentStreamingContentIndex,
+		assistantMessageContent: cline.assistantMessageContent.length,
+		AMcontent: cline.assistantMessageContent,
+	})
 
 	if (cline.currentStreamingContentIndex >= cline.assistantMessageContent.length) {
 		// This may happen if the last content block was completed before
@@ -77,6 +116,7 @@ export async function presentAssistantMessage(cline: Task) {
 		}
 
 		cline.presentAssistantMessageLocked = false
+		raceLog("PRESENT_ASSISTANT_MESSAGE_RETURN_streaming_index_more_than_content_92", cline.taskId, {})
 		return
 	}
 
@@ -198,6 +238,8 @@ export async function presentAssistantMessage(cline: Task) {
 						return `[${block.name} for '${block.params.path}']`
 					case "list_files":
 						return `[${block.name} for '${block.params.path}']`
+					case "glob":
+						return `[${block.name} for pattern '${block.params.pattern}']`
 					case "list_code_definition_names":
 						return `[${block.name} for '${block.params.path}']`
 					case "browser_action":
@@ -222,8 +264,41 @@ export async function presentAssistantMessage(cline: Task) {
 						const modeName = getModeBySlug(mode, customModes)?.name ?? mode
 						return `[${block.name} in ${modeName} mode: '${message}']`
 					}
+					case "fetch_tool_description": {
+						const toolName = block.params.tool_name || "(no tool specified)"
+						return `[${block.name} for '${toolName}']`
+					}
+					case "subagent": {
+						let description = "(no description)"
+						let preview = "(no message)"
+						if (block.params._text) {
+							try {
+								const parsedParams = JSON.parse(block.params._text)
+								description = parsedParams.description || "(no description)"
+								preview = parsedParams.message
+									? parsedParams.message.substring(0, 50) +
+										(parsedParams.message.length > 50 ? "..." : "")
+									: "(no message)"
+							} catch (e) {
+								// Fallback to default if parsing fails
+							}
+						}
+						return `[${block.name}: ${description} - ${preview}]`
+					}
 					case "generate_image":
 						return `[${block.name} for '${block.params.path}']`
+					default:
+						if (block.name.startsWith("lsp_")) {
+							const operation = block.name.substring(4) || "operation"
+							return `[lsp tool: ${operation}]`
+						} else if (block.name.startsWith("debug_")) {
+							// @ts-expect-error operation is part of debug tool params
+							const operation = block.params?.operation || block.name.substring(6) || "operation"
+							const program = block.params?.program ? ` for ${block.params.program}` : ""
+							return `[debug tool: ${operation}${program}]`
+						}
+						// Fallback for any other unhandled tool names
+						return `[${block.name}]`
 				}
 			}
 
@@ -232,13 +307,13 @@ export async function presentAssistantMessage(cline: Task) {
 				if (!block.partial) {
 					cline.userMessageContent.push({
 						type: "text",
-						text: `Skipping tool ${toolDescription()} due to user rejecting a previous tool.`,
+						text: `Skipping tool ${getToolDescriptionString(block as ToolUse, undefined)} due to user rejecting a previous tool.`,
 					})
 				} else {
 					// Partial tool after user rejected a previous tool.
 					cline.userMessageContent.push({
 						type: "text",
-						text: `Tool ${toolDescription()} was interrupted and not executed due to user rejecting a previous tool.`,
+						text: `Tool ${getToolDescriptionString(block as ToolUse, undefined)} was interrupted and not executed due to user rejecting a previous tool.`,
 					})
 				}
 
@@ -256,7 +331,10 @@ export async function presentAssistantMessage(cline: Task) {
 			}
 
 			const pushToolResult = (content: ToolResponse) => {
-				cline.userMessageContent.push({ type: "text", text: `${toolDescription()} Result:` })
+				cline.userMessageContent.push({
+					type: "text",
+					text: `${getToolDescriptionString(block as ToolUse, customModes)} Result:`,
+				})
 
 				if (typeof content === "string") {
 					cline.userMessageContent.push({ type: "text", text: content || "(tool did not return anything)" })
@@ -359,19 +437,40 @@ export async function presentAssistantMessage(cline: Task) {
 			if (!block.partial) {
 				cline.recordToolUsage(block.name)
 				TelemetryService.instance.captureToolUsage(cline.taskId, block.name)
+				// Track tool usage for optimization system
+				trackToolUsage(block.name, cline.taskId)
+				let nameForTelemetry = block.name
+				// If the tool is a specific debug operation (e.g., "debug_launch"),
+				// map it to the generic "debug" tool name for telemetry purposes.
+				// This assumes "debug" is a recognized ToolName and that the ToolName
+				// schema has not yet been updated to include all individual debug_operations.
+				if (nameForTelemetry.startsWith("debug_")) {
+					nameForTelemetry = "debug"
+				} else if (nameForTelemetry.startsWith("lsp_")) {
+					nameForTelemetry = "use_mcp_tool"
+				}
+				// The following calls assume that `nameForTelemetry` (which is now either an original tool name
+				// or "debug") is a string that is compatible with the expected ToolName type,
+				// or that the functions can gracefully handle strings that might not strictly be ToolName.
+				// If these functions strictly require a validated ToolName, further checks or schema updates are needed.
+				cline.recordToolUsage(nameForTelemetry as ToolName)
 			}
 
 			// Validate tool use before execution.
 			const { mode, customModes } = (await cline.providerRef.deref()?.getState()) ?? {}
 
 			try {
-				validateToolUse(
-					block.name as ToolName,
-					mode ?? defaultModeSlug,
-					customModes ?? [],
-					{ apply_diff: cline.diffEnabled },
-					block.params,
-				)
+				// For new debug_ tools, validation is handled by debugToolValidation.ts (called by debugTool.ts).
+				// So, only call validateToolUse for non-debug_ tools here.
+				if (!block.name.startsWith("debug_") && !block.name.startsWith("lsp_")) {
+					validateToolUse(
+						block.name as ToolName,
+						mode ?? defaultModeSlug,
+						customModes ?? [],
+						{ apply_diff: cline.diffEnabled },
+						block.params,
+					)
+				}
 			} catch (error) {
 				cline.consecutiveMistakeCount++
 				pushToolResult(formatResponse.toolError(error.message))
@@ -479,12 +578,16 @@ export async function presentAssistantMessage(cline: Task) {
 					} else {
 						await readFileTool(cline, block, askApproval, handleError, pushToolResult, removeClosingTag)
 					}
+					raceLog("PRESENT_ASSISTANT_MESSAGE_read_file_finished", cline.taskId, {})
 					break
 				case "fetch_instructions":
 					await fetchInstructionsTool(cline, block, askApproval, handleError, pushToolResult)
 					break
 				case "list_files":
 					await listFilesTool(cline, block, askApproval, handleError, pushToolResult, removeClosingTag)
+					break
+				case "glob":
+					await globTool(cline, block, askApproval, handleError, pushToolResult, removeClosingTag)
 					break
 				case "codebase_search":
 					await codebaseSearchTool(cline, block, askApproval, handleError, pushToolResult, removeClosingTag)
@@ -537,6 +640,19 @@ export async function presentAssistantMessage(cline: Task) {
 				case "new_task":
 					await newTaskTool(cline, block, askApproval, handleError, pushToolResult, removeClosingTag)
 					break
+				case "fetch_tool_description":
+					await fetchToolDescriptionTool(
+						cline,
+						block,
+						askApproval,
+						handleError,
+						pushToolResult,
+						removeClosingTag,
+					)
+					break
+				case "subagent":
+					await subagentTool(cline, block, askApproval, handleError, pushToolResult, removeClosingTag)
+					break
 				case "attempt_completion":
 					await attemptCompletionTool(
 						cline,
@@ -551,6 +667,21 @@ export async function presentAssistantMessage(cline: Task) {
 					break
 				case "generate_image":
 					await generateImageTool(cline, block, askApproval, handleError, pushToolResult, removeClosingTag)
+					break
+				default:
+					// Dispatch to the appropriate handler
+					if (block.name.startsWith("lsp_")) {
+						await handleIndividualLspTool(cline, block as ToolUse, askApproval, handleError, pushToolResult)
+					} else if (block.name.startsWith("debug_")) {
+						// Delegate to the new helper function for individual debug tools
+						await handleIndividualDebugTool(
+							cline,
+							block as ToolUse,
+							askApproval,
+							handleError,
+							pushToolResult,
+						)
+					}
 					break
 			}
 
@@ -573,8 +704,15 @@ export async function presentAssistantMessage(cline: Task) {
 	// skip execution since `didRejectTool` and iterate until `contentIndex` is
 	// set to message length and it sets userMessageContentReady to true itself
 	// (instead of preemptively doing it in iterator).
+	raceLog("[CHECK_USER_MESSAGE_CONTENT_READY_BLOCK_FULL]", cline.taskId, {
+		block_partial: block.partial,
+		currentStreamingContentIndex: cline.currentStreamingContentIndex,
+		assistantMessageContent: cline.assistantMessageContent.length,
+	})
+
 	if (!block.partial || cline.didRejectTool || cline.didAlreadyUseTool) {
 		// Block is finished streaming and executing.
+
 		if (cline.currentStreamingContentIndex === cline.assistantMessageContent.length - 1) {
 			// It's okay that we increment if !didCompleteReadingStream, it'll
 			// just return because out of bounds and as streaming continues it
@@ -583,6 +721,10 @@ export async function presentAssistantMessage(cline: Task) {
 			// true when out of bounds. This gracefully allows the stream to
 			// continue on and all potential content blocks be presented.
 			// Last block is complete and it is finished executing
+			// Log the complete incoming message
+			if (cline.assistantMessageContent && cline.assistantMessageContent.length > 0) {
+				logIncomingMessage(cline.assistantMessageContent)
+			}
 			cline.userMessageContentReady = true // Will allow `pWaitFor` to continue.
 		}
 
@@ -595,15 +737,19 @@ export async function presentAssistantMessage(cline: Task) {
 		if (cline.currentStreamingContentIndex < cline.assistantMessageContent.length) {
 			// There are already more content blocks to stream, so we'll call
 			// this function ourselves.
-			presentAssistantMessage(cline)
+			raceLog("PRESENT_ASSISTANT_MESSAGE_not_finish_streaming_recursive_call_PAM_655", cline.taskId, {})
+			await presentAssistantMessage(cline)
+			raceLog("PRESENT_ASSISTANT_MESSAGE_return_from_recursive_call_PAM_657", cline.taskId, {})
 			return
 		}
 	}
 
 	// Block is partial, but the read stream may have finished.
 	if (cline.presentAssistantMessageHasPendingUpdates) {
-		presentAssistantMessage(cline)
+		raceLog("PRESENT_ASSISTANT_MESSAGE_BLOCK_PARTIAL_PAM_PENDING_UPDATE_664", cline.taskId, {})
+		await presentAssistantMessage(cline)
 	}
+	raceLog("PRESENT_ASSISTANT_MESSAGE_RETURN_normally_664", cline.taskId, {})
 }
 
 /**
@@ -622,3 +768,193 @@ async function checkpointSaveAndMark(task: Task) {
 		console.error(`[Task#presentAssistantMessage] Error saving checkpoint: ${error.message}`, error)
 	}
 }
+
+/**
+ * Generates a human-readable description string for a tool use block.
+ * @param block The tool use block to describe.
+ * @param customModes Optional custom modes, needed for describing the "new_task" tool.
+ * @returns A string describing the tool and its main parameters.
+ */
+function getToolDescriptionString(block: ToolUse, customModes?: any[]): string {
+	// Changed ToolUseBlock to ToolUse
+	if (block.name.startsWith("debug_")) {
+		const operationName = block.name.substring("debug_".length)
+		let paramsString = ""
+		if (block.params && Object.keys(block.params).length > 0) {
+			try {
+				paramsString = JSON.stringify(block.params)
+				if (paramsString.length > 100) {
+					// Truncate for very long params
+					paramsString = paramsString.substring(0, 97) + "..."
+				}
+			} catch (e) {
+				paramsString = "[error stringifying params]"
+			}
+		} else {
+			paramsString = "{}"
+		}
+		return `[${block.name} (operation: '${operationName}') arguments: ${paramsString}]`
+	} else if (block.name.startsWith("lsp_")) {
+		return `[LSP tool: ${block.name}]`
+	}
+
+	switch (block.name) {
+		case "execute_command":
+			return `[${block.name} for '${block.params.command}']`
+		case "read_file":
+			return `[${block.name} for '${block.params.path}']`
+		case "fetch_instructions":
+			return `[${block.name} for '${block.params.task}']`
+		case "write_to_file":
+			return `[${block.name} for '${block.params.path}']`
+		case "apply_diff":
+			return `[${block.name} for '${block.params.path}']`
+		case "search_files":
+			return `[${block.name} for '${block.params.regex}'${
+				block.params.file_pattern ? ` in '${block.params.file_pattern}'` : ""
+			}]`
+		case "insert_content":
+			return `[${block.name} for '${block.params.path}']`
+		case "search_and_replace":
+			return `[${block.name} for '${block.params.path}']`
+		case "list_files":
+			return `[${block.name} for '${block.params.path}']`
+		case "glob":
+			return `[${block.name} for pattern '${block.params.pattern}']`
+		case "list_code_definition_names":
+			return `[${block.name} for '${block.params.path}']`
+		case "browser_action":
+			return `[${block.name} for '${block.params.action}']`
+		case "use_mcp_tool":
+			return `[${block.name} for '${block.params.server_name}']`
+		case "access_mcp_resource":
+			return `[${block.name} for '${block.params.server_name}']`
+		case "ask_followup_question":
+			return `[${block.name} for '${block.params.question}']`
+		case "attempt_completion":
+			return `[${block.name}]`
+		case "switch_mode":
+			return `[${block.name} to '${block.params.mode_slug}'${block.params.reason ? ` because: ${block.params.reason}` : ""}]`
+		case "new_task": {
+			const modeSlug = block.params.mode ?? defaultModeSlug
+			const message = block.params.message ?? "(no message)"
+			// Ensure customModes is an array before calling getModeBySlug
+			const modeName = getModeBySlug(modeSlug, customModes ?? [])?.name ?? modeSlug
+			return `[${block.name} in ${modeName} mode: '${message}']`
+		}
+		case "fetch_tool_description": {
+			const toolName = block.params.tool_name || "(no tool specified)"
+			return `[${block.name} for '${toolName}']`
+		}
+		case "subagent": {
+			let description = "(no description)"
+			let preview = "(no message)"
+			if (block.params._text) {
+				try {
+					const parsedParams = JSON.parse(block.params._text)
+					description = parsedParams.description || "(no description)"
+					preview = parsedParams.message
+						? parsedParams.message.substring(0, 50) + (parsedParams.message.length > 50 ? "..." : "")
+						: "(no message)"
+				} catch (e) {
+					// Fallback to default if parsing fails
+				}
+			}
+			return `[${block.name}: ${description} - ${preview}]`
+		}
+		case "debug": // Original meta-tool
+			outputChannel.appendLine(
+				`[Debug] Inside getToolDescriptionString for "debug" meta-tool, block params: ${JSON.stringify(block.params, null, 2)}`,
+			)
+			return `[${block.name} operation: '${block.params.debug_operation}' arguments: ${block.params.arguments ?? "{}"}]`
+		default:
+			// Fallback for any unhandled tool names
+			return `[${String(block.name)}]`
+	}
+}
+
+/**
+ * Generic block reconstruction function that handles all meta-tool patterns
+ */
+function reconstructBlockForMetaTool<TBlock extends { params: any }>(
+	originalBlock: ToolUse,
+	operationName: string,
+	toolGroupName: string,
+): TBlock {
+	// Derive configuration from toolGroupName
+	const useFixedMetaToolName = toolGroupName
+	const operationParamName = `${toolGroupName}_operation`
+
+	const reconstructedBlock = {
+		type: "tool_use" as const,
+		name: useFixedMetaToolName,
+		params: {
+			...originalBlock.params,
+			[operationParamName]: operationName,
+		},
+		partial: originalBlock.partial,
+	}
+	return reconstructedBlock as unknown as TBlock
+}
+
+/**
+ * Factory function that creates individual tool handlers for meta-tools.
+ * This eliminates code duplication between debug, lsp, and future similar tool patterns.
+ * All configuration is derived from the single toolGroupName parameter.
+ */
+function createIndividualToolHandler<TBlock extends { params: any }>(
+	toolGroupName: string,
+	metaToolFunction: (
+		cline: Task,
+		block: TBlock,
+		askApproval: AskApproval,
+		handleError: HandleError,
+		pushToolResult: PushToolResult,
+	) => Promise<void>,
+) {
+	// Derive all configuration from toolGroupName
+	const toolPrefix = `${toolGroupName}_`
+	const toolDisplayName = toolGroupName
+
+	/**
+	 * Helper function to handle the invocation of individual operation tools.
+	 * It reconstructs the tool call to be compatible with the existing meta-tool
+	 * and then calls the meta-tool.
+	 */
+	return async function handleIndividualTool(
+		cline: Task,
+		block: ToolUse,
+		askApproval: AskApproval,
+		handleError: HandleError,
+		pushToolResult: PushToolResult,
+	) {
+		const functionName = `handleIndividual${toolDisplayName.charAt(0).toUpperCase() + toolDisplayName.slice(1)}Tool`
+
+		const operationName = block.name.substring(toolPrefix.length)
+
+		// Wait if block until block is full
+		if (block.partial) {
+			return
+		}
+
+		// Reconstruct the block for the meta-tool using the unified reconstruction function
+		const reconstructedBlock = reconstructBlockForMetaTool<TBlock>(block, operationName, toolGroupName)
+
+		// Call the meta-tool with the reconstructed block
+		await metaToolFunction(cline, reconstructedBlock, askApproval, handleError, pushToolResult)
+	}
+}
+
+/**
+ * Helper function to handle the invocation of individual debug operation tools.
+ * It reconstructs the tool call to be compatible with the existing `debugTool` (meta-tool)
+ * and then calls `debugTool`.
+ */
+const handleIndividualDebugTool = createIndividualToolHandler<DebugToolUse>("debug", debugTool)
+
+/**
+ * Helper function to handle the invocation of individual LSP operation tools.
+ * It reconstructs the tool call to be compatible with the existing `lspTool` (meta-tool)
+ * and then calls `lspTool`.
+ */
+const handleIndividualLspTool = createIndividualToolHandler<LspToolUse>("lsp", lspTool)

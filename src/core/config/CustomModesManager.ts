@@ -259,7 +259,7 @@ export class CustomModesManager {
 
 	private async watchCustomModesFiles(): Promise<void> {
 		// Skip if test environment is detected
-		if (process.env.NODE_ENV === "test") {
+		if (process.env.NODE_ENV === "test" || process.env.JEST_WORKER_ID !== undefined) {
 			return
 		}
 

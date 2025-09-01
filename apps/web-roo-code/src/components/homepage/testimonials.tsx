@@ -69,7 +69,7 @@ export function Testimonials() {
 			y: 0,
 			transition: {
 				duration: 0.6,
-				ease: [0.21, 0.45, 0.27, 0.9],
+				ease: [0.21, 0.45, 0.27, 0.9] as [number, number, number, number],
 			},
 		},
 	}
@@ -82,7 +82,7 @@ export function Testimonials() {
 			opacity: 1,
 			transition: {
 				duration: 1.2,
-				ease: "easeOut",
+				ease: "easeOut" as const,
 			},
 		},
 	}
@@ -107,7 +107,7 @@ export function Testimonials() {
 						viewport={{ once: true }}
 						transition={{
 							duration: 0.6,
-							ease: [0.21, 0.45, 0.27, 0.9],
+							ease: [0.21, 0.45, 0.27, 0.9] as [number, number, number, number],
 						}}>
 						<h2 className="text-4xl font-bold tracking-tight sm:text-5xl">
 							Empowering developers worldwide.

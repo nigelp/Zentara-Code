@@ -28,9 +28,15 @@ interface ScanContext {
  * @param dirPath - Directory path to list files from
  * @param recursive - Whether to recursively list files in subdirectories
  * @param limit - Maximum number of files to return
+ * @param ignorePatterns - Array of glob patterns to ignore (optional)
  * @returns Tuple of [file paths array, whether the limit was reached]
  */
-export async function listFiles(dirPath: string, recursive: boolean, limit: number): Promise<[string[], boolean]> {
+export async function listFiles(
+	dirPath: string,
+	recursive: boolean,
+	limit: number,
+	ignorePatterns?: string[],
+): Promise<[string[], boolean]> {
 	// Early return for limit of 0 - no need to scan anything
 	if (limit === 0) {
 		return [[], false]
@@ -49,14 +55,14 @@ export async function listFiles(dirPath: string, recursive: boolean, limit: numb
 	if (!recursive) {
 		// For non-recursive, use the existing approach
 		const files = await listFilesWithRipgrep(rgPath, dirPath, false, limit)
-		const ignoreInstance = await createIgnoreInstance(dirPath)
+		const ignoreInstance = await createIgnoreInstance(dirPath, ignorePatterns)
 		const directories = await listFilteredDirectories(dirPath, false, ignoreInstance)
 		return formatAndCombineResults(files, directories, limit)
 	}
 
 	// For recursive mode, use the original approach but ensure first-level directories are included
 	const files = await listFilesWithRipgrep(rgPath, dirPath, true, limit)
-	const ignoreInstance = await createIgnoreInstance(dirPath)
+	const ignoreInstance = await createIgnoreInstance(dirPath, ignorePatterns)
 	const directories = await listFilteredDirectories(dirPath, true, ignoreInstance)
 
 	// Combine and check if we hit the limit
@@ -64,7 +70,7 @@ export async function listFiles(dirPath: string, recursive: boolean, limit: numb
 
 	// If we hit the limit, ensure all first-level directories are included
 	if (limitReached) {
-		const firstLevelDirs = await getFirstLevelDirectories(dirPath, ignoreInstance)
+		const firstLevelDirs = await getFirstLevelDirectories(dirPath, ignoreInstance, ignorePatterns)
 		return ensureFirstLevelDirectoriesIncluded(results, firstLevelDirs, limit)
 	}
 
@@ -74,7 +80,11 @@ export async function listFiles(dirPath: string, recursive: boolean, limit: numb
 /**
  * Get only the first-level directories in a path
  */
-async function getFirstLevelDirectories(dirPath: string, ignoreInstance: ReturnType<typeof ignore>): Promise<string[]> {
+async function getFirstLevelDirectories(
+	dirPath: string,
+	ignoreInstance: ReturnType<typeof ignore>,
+	ignorePatterns?: string[],
+): Promise<string[]> {
 	const absolutePath = path.resolve(dirPath)
 	const directories: string[] = []
 
@@ -322,8 +332,9 @@ function buildNonRecursiveArgs(): string[] {
 /**
  * Create an ignore instance that handles .gitignore files properly
  * This replaces the custom gitignore parsing with the proper ignore library
+ * @param ignorePatterns - Additional patterns to ignore beyond .gitignore files
  */
-async function createIgnoreInstance(dirPath: string): Promise<ReturnType<typeof ignore>> {
+async function createIgnoreInstance(dirPath: string, ignorePatterns?: string[]): Promise<ReturnType<typeof ignore>> {
 	const ignoreInstance = ignore()
 	const absolutePath = path.resolve(dirPath)
 
@@ -343,6 +354,11 @@ async function createIgnoreInstance(dirPath: string): Promise<ReturnType<typeof 
 
 	// Always ignore .gitignore files themselves
 	ignoreInstance.add(".gitignore")
+
+	// Add custom ignore patterns if provided
+	if (ignorePatterns && ignorePatterns.length > 0) {
+		ignoreInstance.add(ignorePatterns)
+	}
 
 	return ignoreInstance
 }

@@ -530,14 +530,17 @@ const CodeBlock = memo(
 						wasScrolledUpRef.current = false
 					}
 
-					// Also scroll outer container if it was near bottom
-					if (outerContainerNearBottomRef.current) {
-						const scrollContainer = document.querySelector('[data-virtuoso-scroller="true"]')
-						if (scrollContainer) {
-							scrollContainer.scrollTop = scrollContainer.scrollHeight
-							outerContainerNearBottomRef.current = true
-						}
-					}
+					// DISABLED - This was causing unwanted autoscroll of the main chat view
+					// especially problematic when subagents have code blocks
+					console.log("[CodeBlock] NOT scrolling outer container to prevent unwanted autoscroll")
+					// Original code disabled:
+					// if (outerContainerNearBottomRef.current) {
+					// 	const scrollContainer = document.querySelector('[data-virtuoso-scroller="true"]')
+					// 	if (scrollContainer) {
+					// 		scrollContainer.scrollTop = scrollContainer.scrollHeight
+					// 		outerContainerNearBottomRef.current = true
+					// 	}
+					// }
 
 					// Reset the flag
 					shouldScrollAfterHighlightRef.current = false

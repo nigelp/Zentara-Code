@@ -202,6 +202,7 @@ export type ContextCondense = z.infer<typeof contextCondenseSchema>
 export const clineMessageSchema = z.object({
 	ts: z.number(),
 	type: z.union([z.literal("ask"), z.literal("say")]),
+	taskId: z.string().optional(), // NEW FIELD - tracks which task created this message
 	ask: clineAskSchema.optional(),
 	say: clineSaySchema.optional(),
 	text: z.string().optional(),

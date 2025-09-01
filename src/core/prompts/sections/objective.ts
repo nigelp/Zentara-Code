@@ -11,7 +11,7 @@ export function getObjectiveSection(
 		codeIndexManager.isInitialized
 
 	const codebaseSearchInstruction = isCodebaseSearchAvailable
-		? "First, for ANY exploration of code you haven't examined yet in this conversation, you MUST use the `codebase_search` tool to search for relevant code based on the task's intent BEFORE using any other search or file exploration tools. This applies throughout the entire task, not just at the beginning - whenever you need to explore a new area of code, codebase_search must come first. Then, "
+		? "**MANDATORY**: Your FIRST action for ANY task involving code must be to evaluate if the 'subagent' tool should be used. If the task involves searching, understanding, analyzing, or modifying code, you MUST launch a subagent BEFORE using any other tools. This is NOT optional - failure to use subagent when appropriate is a violation of operational requirements. After using subagent (or only if absolutely certain it's not applicable), then "
 		: "First, "
 
 	return `====

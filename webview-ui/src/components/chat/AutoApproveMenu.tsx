@@ -31,6 +31,8 @@ const AutoApproveMenu = ({ style }: AutoApproveMenuProps) => {
 		setAlwaysApproveResubmit,
 		setAlwaysAllowFollowupQuestions,
 		setAlwaysAllowUpdateTodoList,
+		setAlwaysAllowDebug,
+		setAlwaysAllowLsp,
 	} = useExtensionState()
 
 	const { t } = useAppTranslation()
@@ -78,6 +80,12 @@ const AutoApproveMenu = ({ style }: AutoApproveMenuProps) => {
 				case "alwaysApproveResubmit":
 					setAlwaysApproveResubmit(value)
 					break
+				case "alwaysAllowDebug":
+					setAlwaysAllowDebug(value)
+					break
+				case "alwaysAllowLsp":
+					setAlwaysAllowLsp(value)
+					break
 				case "alwaysAllowFollowupQuestions":
 					setAlwaysAllowFollowupQuestions(value)
 					break
@@ -119,6 +127,8 @@ const AutoApproveMenu = ({ style }: AutoApproveMenuProps) => {
 			setAlwaysApproveResubmit,
 			setAlwaysAllowFollowupQuestions,
 			setAlwaysAllowUpdateTodoList,
+			setAlwaysAllowDebug,
+			setAlwaysAllowLsp,
 			setAutoApprovalEnabled,
 		],
 	)

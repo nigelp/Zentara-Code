@@ -28,6 +28,8 @@ type AutoApproveSettingsProps = HTMLAttributes<HTMLDivElement> & {
 	alwaysAllowModeSwitch?: boolean
 	alwaysAllowSubtasks?: boolean
 	alwaysAllowExecute?: boolean
+	alwaysAllowDebug?: boolean
+	alwaysAllowLsp?: boolean
 	alwaysAllowFollowupQuestions?: boolean
 	alwaysAllowUpdateTodoList?: boolean
 	followupAutoApproveTimeoutMs?: number
@@ -48,6 +50,8 @@ type AutoApproveSettingsProps = HTMLAttributes<HTMLDivElement> & {
 		| "alwaysAllowModeSwitch"
 		| "alwaysAllowSubtasks"
 		| "alwaysAllowExecute"
+		| "alwaysAllowDebug"
+		| "alwaysAllowLsp"
 		| "alwaysAllowFollowupQuestions"
 		| "followupAutoApproveTimeoutMs"
 		| "allowedCommands"
@@ -71,6 +75,8 @@ export const AutoApproveSettings = ({
 	alwaysAllowModeSwitch,
 	alwaysAllowSubtasks,
 	alwaysAllowExecute,
+	alwaysAllowDebug,
+	alwaysAllowLsp,
 	alwaysAllowFollowupQuestions,
 	followupAutoApproveTimeoutMs = 60000,
 	alwaysAllowUpdateTodoList,
@@ -164,6 +170,8 @@ export const AutoApproveSettings = ({
 						alwaysAllowModeSwitch={alwaysAllowModeSwitch}
 						alwaysAllowSubtasks={alwaysAllowSubtasks}
 						alwaysAllowExecute={alwaysAllowExecute}
+						alwaysAllowDebug={alwaysAllowDebug}
+						alwaysAllowLsp={alwaysAllowLsp}
 						alwaysAllowFollowupQuestions={alwaysAllowFollowupQuestions}
 						alwaysAllowUpdateTodoList={alwaysAllowUpdateTodoList}
 						onToggle={(key, value) => setCachedStateField(key, value)}

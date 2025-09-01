@@ -23,7 +23,7 @@ export function CompanyLogos() {
 						transition={{
 							duration: 0.5,
 							delay: index * 0.1,
-							ease: "easeOut",
+							ease: "easeOut" as const,
 						}}
 						className="flex items-center justify-center">
 						{/* eslint-disable @next/next/no-img-element */}

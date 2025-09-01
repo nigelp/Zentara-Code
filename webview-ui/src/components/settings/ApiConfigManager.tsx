@@ -56,6 +56,11 @@ const ApiConfigManager = ({
 		const provider = profile.apiProvider
 		if (!provider) return true
 
+		// Check if providers object exists
+		if (!organizationAllowList.providers) {
+			return true
+		}
+
 		const providerConfig = organizationAllowList.providers[provider]
 		if (!providerConfig) {
 			return false

@@ -99,6 +99,15 @@ export class AssistantMessageParser {
 				const toolUseClosingTag = `</${this.currentToolUse.name}>`
 				if (currentToolValue.endsWith(toolUseClosingTag)) {
 					// End of a tool use.
+					const rawTextContent = currentToolValue.slice(0, -toolUseClosingTag.length).trim()
+					// If no XML-style parameters were parsed and there's raw text content,
+					// store it in _text. This is for tools like debug_launch that pass
+					// arguments as a direct JSON string within the tool tag.
+					if (Object.keys(this.currentToolUse.params).length === 0 && rawTextContent) {
+						// TODO: Consider refining ToolUse.params type in src/shared/tools.ts
+						// to formally include _text, avoiding 'as any'.
+						;(this.currentToolUse.params as any)._text = rawTextContent
+					}
 					this.currentToolUse.partial = false
 
 					this.currentToolUse = undefined

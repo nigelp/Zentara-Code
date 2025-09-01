@@ -32,6 +32,8 @@ import { migrateSettings } from "./utils/migrateSettings"
 import { autoImportSettings } from "./utils/autoImportSettings"
 import { API } from "./extension/api"
 
+import { DapStopTrackerFactory } from "./roo_debug/src/debug/DapStopTracker"
+
 import {
 	handleUri,
 	registerCommands,
@@ -40,6 +42,11 @@ import {
 	CodeActionProvider,
 } from "./activate"
 import { initializeI18n } from "./i18n"
+import { runDirectDebugToolLaunchTest } from "./test-scripts/directDebugToolLaunchTest" // Added for direct test
+import { runToolFlowDebugLaunchTest } from "./test-scripts/toolFlowDebugLaunchTest" // Added for tool flow test
+import { runToolFlowDebugSequenceTest } from "./test-scripts/toolFlowDebugSequenceTest" // Added for sequence test
+import { activateLspTestCommands } from "./test/lsp-integration/registerCommands" // LSP integration test commands
+import { registerLspTestCommand } from "./test/lsp-integration-by-lspTool/registerTestCommand" // LSP tool integration test commands
 
 /**
  * Built using https://github.com/microsoft/vscode-webview-ui-toolkit
@@ -60,6 +67,8 @@ let userInfoHandler: ((data: { userInfo: CloudUserInfo }) => Promise<void>) | un
 // This method is called when your extension is activated.
 // Your extension is activated the very first time the command is executed.
 export async function activate(context: vscode.ExtensionContext) {
+	process.env.NODE_ENV = "development"
+	console.log(`[Zentara] Activating extension in ${process.env.NODE_ENV} mode.`)
 	extensionContext = context
 	outputChannel = vscode.window.createOutputChannel(Package.outputChannel)
 	context.subscriptions.push(outputChannel)
@@ -234,6 +243,12 @@ export async function activate(context: vscode.ExtensionContext) {
 
 	registerCommands({ context, outputChannel, provider })
 
+	// Register LSP integration test commands
+	activateLspTestCommands(context)
+
+	// Register LSP tool integration test commands
+	registerLspTestCommand(context)
+
 	/**
 	 * We use the text document content provider API to show the left side for diff
 	 * view by creating a virtual document for the original content. This makes it
@@ -272,6 +287,10 @@ export async function activate(context: vscode.ExtensionContext) {
 	registerCodeActions(context)
 	registerTerminalActions(context)
 
+	// Register debug adapter tracker to monitor DAP messages
+	context.subscriptions.push(vscode.debug.registerDebugAdapterTrackerFactory("*", new DapStopTrackerFactory()))
+	outputChannel.appendLine("Registered DAP message tracker")
+
 	// Allows other extensions to activate once Roo is ready.
 	vscode.commands.executeCommand(`${Package.name}.activationCompleted`)
 
@@ -281,6 +300,31 @@ export async function activate(context: vscode.ExtensionContext) {
 
 	// Watch the core files and automatically reload the extension host.
 	if (process.env.NODE_ENV === "development") {
+		// Register commands for debug tool launch tests
+		let disposableDirectTestRunner = vscode.commands.registerCommand(
+			"debugging-zentara-code.runDirectLaunchTest",
+			() => {
+				runDirectDebugToolLaunchTest()
+			},
+		)
+		context.subscriptions.push(disposableDirectTestRunner)
+
+		let disposableToolFlowTestRunner = vscode.commands.registerCommand(
+			"debugging-zentara-code.runToolFlowLaunchTest",
+			() => {
+				runToolFlowDebugLaunchTest()
+			},
+		)
+		context.subscriptions.push(disposableToolFlowTestRunner)
+
+		let disposableSequenceTestRunner = vscode.commands.registerCommand(
+			"debugging-zentara-code.runToolFlowSequenceTest",
+			() => {
+				runToolFlowDebugSequenceTest()
+			},
+		)
+		context.subscriptions.push(disposableSequenceTestRunner)
+
 		const watchPaths = [
 			{ path: context.extensionPath, pattern: "**/*.ts" },
 			{ path: path.join(context.extensionPath, "../packages/types"), pattern: "**/*.ts" },
@@ -297,14 +341,26 @@ export async function activate(context: vscode.ExtensionContext) {
 		const DEBOUNCE_DELAY = 1_000
 
 		const debouncedReload = (uri: vscode.Uri) => {
+			// DIAGNOSTIC: Log file change events during debugging
+			const isDebugging = vscode.debug.activeDebugSession !== undefined
+			console.log(`♻️ [DEBUG DIAGNOSTIC] File change detected: ${uri.fsPath}`)
+			console.log(`♻️ [DEBUG DIAGNOSTIC] Active debug session: ${isDebugging}`)
+			console.log(`♻️ [DEBUG DIAGNOSTIC] Debug mode: ${process.env.VSCODE_DEBUG_MODE}`)
+
+			// DIAGNOSTIC: Prevent reload during active debugging
+			if (isDebugging) {
+				console.log(`♻️ [DEBUG DIAGNOSTIC] Skipping reload - debug session active`)
+				return
+			}
+
 			if (reloadTimeout) {
 				clearTimeout(reloadTimeout)
 			}
 
-			console.log(`♻️ ${uri.fsPath} changed; scheduling reload...`)
+			console.log(`♻️ [DEBUG DIAGNOSTIC] ${uri.fsPath} changed; scheduling reload...`)
 
 			reloadTimeout = setTimeout(() => {
-				console.log(`♻️ Reloading host after debounce delay...`)
+				console.log(`♻️ [DEBUG DIAGNOSTIC] Reloading host after debounce delay...`)
 				vscode.commands.executeCommand("workbench.action.reloadWindow")
 			}, DEBOUNCE_DELAY)
 		}

@@ -22,7 +22,7 @@ bin/
 # Test environment
 .test_env
 .vscode-test/
-
+.vscode/settings.json
 # Docs
 docs/_site/
 
@@ -33,7 +33,6 @@ docs/_site/
 
 # Logging
 logs
-*.log
 
 # Vite development
 .vite-port
@@ -45,7 +44,28 @@ logs
 .idea/
 .qodo/
 .vercel
-.roo/mcp.json
+# compiled files
+*.pyc
+testdata/*.debug.js
+src/**/*.js
+src/**/*.js.map
+scripts/*.mjs
+scripts/*.mjs.map
+.zentara/mcp.json
+
+.claude/
+
+
+# Next.js build output
+.next/
+node_modules/
+
+# Ignore local web app build
+/apps/web-zentara-code/
+testdata/
+.lsp-test-files
+
+opencode*
 
 # Qdrant
 qdrant_storage/

@@ -11,8 +11,8 @@
 Clone the Roo Code repo:
 
 ```sh
-git clone https://github.com/RooCodeInc/Roo-Code.git
-cd Roo-Code
+git clone https://github.com/Zentar-Ai/roo-code.git
+cd roo-code
 ```
 
 Add your OpenRouter API key:
@@ -37,7 +37,7 @@ Additionally, you'll find in Docker Desktop that database and redis services are
 
 Navigate to [localhost:3446](http://localhost:3446/) in your browser and click the 🚀 button.
 
-By default a evals run will run all programming exercises in [Roo Code Evals](https://github.com/RooCodeInc/Roo-Code-Evals) repository with the Claude Sonnet 4 model and default settings. For basic configuration you can specify the LLM to use and any subset of the exercises you'd like. For advanced configuration you can import a Roo Code settings file which will allow you to run the evals with Roo Code configured any way you'd like (this includes custom modes, a footgun prompt, etc).
+By default a evals run will run all programming exercises in [Roo Code Evals](https://github.com/Zentar-Ai/roo-code-Evals) repository with the Claude Sonnet 4 model and default settings. For basic configuration you can specify the LLM to use and any subset of the exercises you'd like. For advanced configuration you can import a Roo Code settings file which will allow you to run the evals with Roo Code configured any way you'd like (this includes custom modes, a footgun prompt, etc).
 
 <img width="1053" src="https://github.com/user-attachments/assets/2367eef4-6ae9-4ac2-8ee4-80f981046486" />
 
@@ -129,20 +129,3 @@ If you encounter port conflicts when running `pnpm evals`, you have several opti
 3. **Customize ports**: Use the `.env.local` file to set different ports
 4. **Use Docker networks**: Run services in isolated Docker networks
 
-## Troubleshooting
-
-Here are some errors that you might encounter along with potential fixes:
-
-Problem:
-
-```sh
-Error response from daemon: network 3d812c43410fcad072c764fa872a53fc0a5edf33634964699242a886947aff1a not found
-```
-
-Solution:
-
-Prune orphaned resources:
-
-```sh
-docker system prune -f
-```

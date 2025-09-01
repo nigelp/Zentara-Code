@@ -1,0 +1,14 @@
+vi.mock('@roo-code/telemetry', async (importOriginal) => {
+	const actual = await importOriginal()
+	return {
+		...actual,
+		TelemetryService: {
+			instance: {
+				logEvent: vi.fn(),
+				logError: vi.fn(),
+				logUserAction: vi.fn()
+			}
+		},
+		BaseTelemetryClient: class MockBaseTelemetryClient {}
+	}
+})

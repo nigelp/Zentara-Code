@@ -59,7 +59,7 @@ export async function accessMcpResourceTool(
 
 			const resourceResultPretty =
 				resourceResult?.contents
-					.map((item) => {
+					.map((item: any) => {
 						if (item.text) {
 							return item.text
 						}
@@ -71,7 +71,7 @@ export async function accessMcpResourceTool(
 			// Handle images (image must contain mimetype and blob)
 			let images: string[] = []
 
-			resourceResult?.contents.forEach((item) => {
+			resourceResult?.contents.forEach((item: any) => {
 				if (item.mimeType?.startsWith("image") && item.blob) {
 					if (item.blob.startsWith("data:")) {
 						images.push(item.blob)

@@ -54,4 +54,16 @@ export function calculateApiCostOpenAI(
 	)
 }
 
+// For subscription-based providers like Claude Max that have zero per-request cost
+export function calculateApiCostSubscription(
+	modelInfo: ModelInfo,
+	inputTokens: number,
+	outputTokens: number,
+	cacheCreationInputTokens?: number,
+	cacheReadInputTokens?: number,
+): number {
+	// Always return 0 for subscription-based providers
+	return 0
+}
+
 export const parseApiPrice = (price: any) => (price ? parseFloat(price) * 1_000_000 : undefined)

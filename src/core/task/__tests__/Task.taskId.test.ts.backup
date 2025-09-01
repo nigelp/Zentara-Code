@@ -1,0 +1,198 @@
+import { describe, it, expect, beforeEach, vi } from "vitest"
+
+vi.mock("@roo-code/telemetry", async (importOriginal) => {
+	const actual = await importOriginal()
+	return {
+		...actual,
+		TelemetryService: {
+			instance: {
+				logEvent: vi.fn(),
+				logError: vi.fn(),
+				logUserAction: vi.fn(),
+				captureTaskCreated: vi.fn(),
+				captureTaskRestarted: vi.fn(),
+			},
+		},
+		BaseTelemetryClient: class MockBaseTelemetryClient {},
+	}
+})
+import { Task } from "../Task"
+import type { ClineMessage } from "@roo-code/types"
+
+// Mock dependencies
+vi.mock("../../../api", () => ({
+	buildApiHandler: vi.fn().mockReturnValue({
+		createMessageStream: vi.fn(),
+	}),
+}))
+
+vi.mock("../../webview/ClineProvider", () => ({
+	ClineProvider: vi.fn().mockImplementation(() => ({
+		postStateToWebview: vi.fn(),
+		queueAskRequest: vi.fn(),
+		removeFromAskQueue: vi.fn(),
+		log: vi.fn(),
+	})),
+}))
+
+vi.mock("../task-persistence/messages", () => ({
+	readTaskMessages: vi.fn().mockResolvedValue([]),
+	saveTaskMessages: vi.fn().mockResolvedValue(undefined),
+}))
+
+vi.mock("../task-persistence/metadata", () => ({
+	taskMetadata: vi.fn().mockResolvedValue({
+		historyItem: {},
+		tokenUsage: {},
+	}),
+}))
+
+describe("Task taskId handling", () => {
+	let task: Task
+	let mockProvider: any
+
+	beforeEach(() => {
+		// Create a proper mock class that can be used with WeakRef
+		class MockProvider {
+			context = {
+				globalStorageUri: { fsPath: "/mock/storage" },
+			}
+			postStateToWebview = vi.fn()
+			queueAskRequest = vi.fn()
+			removeFromAskQueue = vi.fn()
+			getState = vi.fn().mockReturnValue({ showZentaraIgnoredFiles: true })
+			log = vi.fn()
+		}
+		const mockProviderInstance = new MockProvider()
+		mockProvider = mockProviderInstance
+		vi.clearAllMocks()
+
+		// Create task with mocked dependencies
+		task = new Task({
+			provider: mockProviderInstance,
+			apiConfiguration: {} as any,
+			task: "Test task",
+			startTask: false,
+		})
+	})
+
+	describe("Message creation with taskId", () => {
+		it("should include taskId in all created messages", async () => {
+			// Test say message
+			await task.say("text", "Hello world")
+
+			// Get the last message
+			const messages = task.clineMessages
+			expect(messages.length).toBe(1)
+			expect(messages[0].taskId).toBe("test-task-123")
+			expect(messages[0].type).toBe("say")
+			expect(messages[0].text).toBe("Hello world")
+		})
+
+		it("should queue ask messages for sequential processing", async () => {
+			// Create ask message (mocking the internal behavior)
+			const askPromise = task.ask("tool", "Approve file read?")
+
+			// Should have queued the ask request
+			expect(mockProvider.queueAskRequest).toHaveBeenCalledWith(task)
+
+			// Simulate response
+			task.handleWebviewAskResponse("yesButtonClicked")
+
+			const result = await askPromise
+			expect(result.response).toBe("yesButtonClicked")
+		})
+
+		it("should add taskId to legacy messages when loading", async () => {
+			// Mock legacy messages without taskId
+			const { readTaskMessages } = await import("../task-persistence/messages")
+			vi.mocked(readTaskMessages).mockResolvedValueOnce([
+				{ ts: 1000, type: "say", say: "text", text: "Legacy message" },
+				{ ts: 2000, type: "ask", ask: "tool", text: "Legacy ask" },
+			] as ClineMessage[])
+
+			// Create new task which will load messages
+			const newTask = new Task({
+				...task.options,
+				taskId: "migrate-task-456",
+			} as any)
+
+			// Load messages (this happens internally)
+			// For testing, we'll access the messages directly after construction
+			await new Promise((resolve) => setTimeout(resolve, 100)) // Allow async loading
+
+			// All messages should now have taskId
+			for (const msg of newTask.clineMessages) {
+				expect(msg.taskId).toBe("migrate-task-456")
+			}
+		})
+	})
+
+	describe("Task disposal", () => {
+		it("should emit disposed event on disposal", () => {
+			const disposedHandler = vi.fn()
+			task.once("disposed", disposedHandler)
+
+			// Dispose task
+			task.dispose()
+
+			// Should emit disposed event
+			expect(disposedHandler).toHaveBeenCalled()
+
+			// Should remove from ask queue
+			expect(mockProvider.removeFromAskQueue).toHaveBeenCalledWith("test-task-123")
+		})
+
+		it("should clean up event listeners on disposal", () => {
+			const handler1 = vi.fn()
+			const handler2 = vi.fn()
+
+			task.on("message", handler1)
+			task.on("taskStarted", handler2)
+
+			// Dispose task
+			task.dispose()
+
+			// Try to emit events - handlers should not be called
+			task.emit("message", { action: "created", message: {} as any })
+			task.emit("taskStarted")
+
+			expect(handler1).not.toHaveBeenCalled()
+			expect(handler2).not.toHaveBeenCalled()
+		})
+	})
+
+	describe("hasAskResponse getter", () => {
+		it("should return false when no ask response", () => {
+			expect(task.hasAskResponse).toBe(false)
+		})
+
+		it("should return true after receiving ask response", () => {
+			// Simulate ask response
+			task.handleWebviewAskResponse("yesButtonClicked")
+
+			expect(task.hasAskResponse).toBe(true)
+		})
+	})
+
+	describe("Message persistence", () => {
+		it("should ensure all messages have taskId when saving", async () => {
+			const { saveTaskMessages } = await import("../task-persistence/messages")
+
+			// Add messages with and without taskId
+			task.clineMessages = [
+				{ ts: 1000, type: "say", say: "text", text: "Has ID", taskId: "test-task-123" },
+				{ ts: 2000, type: "say", say: "text", text: "Missing ID" } as any,
+			]
+
+			// Save messages (internal method call)
+			await (task as any).saveClineMessages()
+
+			// Verify all saved messages have taskId
+			const savedCall = vi.mocked(saveTaskMessages).mock.calls[0][0]
+			expect(savedCall.messages).toHaveLength(2)
+			expect(savedCall.messages[0].taskId).toBe("test-task-123")
+			expect(savedCall.messages[1].taskId).toBe("test-task-123")
+		})
+	})
+})

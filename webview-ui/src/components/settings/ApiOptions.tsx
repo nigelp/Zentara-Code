@@ -18,6 +18,7 @@ import {
 	doubaoDefaultModelId,
 	claudeCodeDefaultModelId,
 	qwenCodeDefaultModelId,
+	gCliDefaultModelId,
 	geminiDefaultModelId,
 	deepSeekDefaultModelId,
 	moonshotDefaultModelId,
@@ -67,9 +68,11 @@ import {
 	Cerebras,
 	Chutes,
 	ClaudeCode,
+	ClaudeMax,
 	DeepSeek,
 	Doubao,
 	Gemini,
+	GCli,
 	Glama,
 	Groq,
 	HuggingFace,
@@ -313,9 +316,11 @@ const ApiOptions = ({
 				anthropic: { field: "apiModelId", default: anthropicDefaultModelId },
 				cerebras: { field: "apiModelId", default: cerebrasDefaultModelId },
 				"claude-code": { field: "apiModelId", default: claudeCodeDefaultModelId },
+				"claude-max": { field: "apiModelId", default: claudeCodeDefaultModelId }, // Claude Max uses same default as Claude Code
 				"qwen-code": { field: "apiModelId", default: qwenCodeDefaultModelId },
 				"openai-native": { field: "apiModelId", default: openAiNativeDefaultModelId },
 				gemini: { field: "apiModelId", default: geminiDefaultModelId },
+				"g-cli": { field: "apiModelId", default: gCliDefaultModelId },
 				deepseek: { field: "apiModelId", default: deepSeekDefaultModelId },
 				doubao: { field: "apiModelId", default: doubaoDefaultModelId },
 				moonshot: { field: "apiModelId", default: moonshotDefaultModelId },
@@ -495,6 +500,10 @@ const ApiOptions = ({
 				<ClaudeCode apiConfiguration={apiConfiguration} setApiConfigurationField={setApiConfigurationField} />
 			)}
 
+			{selectedProvider === "claude-max" && (
+				<ClaudeMax apiConfiguration={apiConfiguration} setApiConfigurationField={setApiConfigurationField} />
+			)}
+
 			{selectedProvider === "openai-native" && (
 				<OpenAI apiConfiguration={apiConfiguration} setApiConfigurationField={setApiConfigurationField} />
 			)}
@@ -525,6 +534,10 @@ const ApiOptions = ({
 					setApiConfigurationField={setApiConfigurationField}
 					fromWelcomeView={fromWelcomeView}
 				/>
+			)}
+
+			{selectedProvider === "g-cli" && (
+				<GCli apiConfiguration={apiConfiguration} setApiConfigurationField={setApiConfigurationField} />
 			)}
 
 			{selectedProvider === "openai" && (

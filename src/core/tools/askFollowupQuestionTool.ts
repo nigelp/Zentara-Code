@@ -13,6 +13,16 @@ export async function askFollowupQuestionTool(
 ) {
 	const question: string | undefined = block.params.question
 	const follow_up: string | undefined = block.params.follow_up
+	if (cline.isParallel) {
+		cline.consecutiveMistakeCount++
+		cline.recordToolError("ask_followup_question")
+		pushToolResult(
+			formatResponse.toolError(
+				"Subagents cannot ask follow-up questions. This operation is restricted to the main agent only.",
+			),
+		)
+		return
+	}
 
 	try {
 		if (block.partial) {

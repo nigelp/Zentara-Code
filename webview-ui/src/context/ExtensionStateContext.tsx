@@ -57,6 +57,8 @@ export interface ExtensionStateContextType extends ExtensionState {
 	profileThresholds: Record<string, number>
 	setProfileThresholds: (value: Record<string, number>) => void
 	setApiConfiguration: (config: ProviderSettings) => void
+	alwaysAllowDebug?: boolean // Add the new debug auto-approval property
+	alwaysAllowLsp?: boolean // Add the new LSP auto-approval property
 	setCustomInstructions: (value?: string) => void
 	setAlwaysAllowReadOnly: (value: boolean) => void
 	setAlwaysAllowReadOnlyOutsideWorkspace: (value: boolean) => void
@@ -67,6 +69,8 @@ export interface ExtensionStateContextType extends ExtensionState {
 	setAlwaysAllowMcp: (value: boolean) => void
 	setAlwaysAllowModeSwitch: (value: boolean) => void
 	setAlwaysAllowSubtasks: (value: boolean) => void
+	setAlwaysAllowDebug: (value: boolean) => void // Add the setter for debug auto-approval
+	setAlwaysAllowLsp: (value: boolean) => void // Add the setter for LSP auto-approval
 	setBrowserToolEnabled: (value: boolean) => void
 	setShowRooIgnoredFiles: (value: boolean) => void
 	setShowAnnouncement: (value: boolean) => void
@@ -143,6 +147,12 @@ export interface ExtensionStateContextType extends ExtensionState {
 	autoCondenseContextPercent: number
 	setAutoCondenseContextPercent: (value: number) => void
 	routerModels?: RouterModels
+	parallelTasks?: Array<{
+		taskId: string
+		description: string
+		status: "running" | "completed" | "failed"
+		lastActivity?: number
+	}>
 	alwaysAllowUpdateTodoList?: boolean
 	setAlwaysAllowUpdateTodoList: (value: boolean) => void
 	includeDiagnosticMessages?: boolean
@@ -213,6 +223,7 @@ export const ExtensionStateContextProvider: React.FC<{ children: React.ReactNode
 		customCondensingPrompt: "", // Default empty string for custom condensing prompt
 		hasOpenedModeSelector: false, // Default to false (not opened yet)
 		autoApprovalEnabled: false,
+		alwaysAllowDebug: false, // Default to not auto-approving debug operations
 		customModes: [],
 		maxOpenTabsContext: 20,
 		maxWorkspaceFiles: 200,
@@ -295,6 +306,7 @@ export const ExtensionStateContextProvider: React.FC<{ children: React.ReactNode
 			switch (message.type) {
 				case "state": {
 					const newState = message.state!
+					const lastMessage = newState.clineMessages.at(-1)
 					setState((prevState) => mergeExtensionState(prevState, newState))
 					setShowWelcome(!checkExistKey(newState.apiConfiguration))
 					setDidHydrateState(true)
@@ -317,6 +329,7 @@ export const ExtensionStateContextProvider: React.FC<{ children: React.ReactNode
 					if (newState.marketplaceInstalledMetadata !== undefined) {
 						setMarketplaceInstalledMetadata(newState.marketplaceInstalledMetadata)
 					}
+					vscode.postMessage({ type: "stateUpdateComplete" })
 					break
 				}
 				case "theme": {
@@ -376,6 +389,13 @@ export const ExtensionStateContextProvider: React.FC<{ children: React.ReactNode
 					}
 					break
 				}
+				case "parallelTasksUpdate": {
+					setState((prevState) => ({
+						...prevState,
+						parallelTasks: message.payload,
+					}))
+					break
+				}
 			}
 		},
 		[setListApiConfigMeta],
@@ -431,6 +451,8 @@ export const ExtensionStateContextProvider: React.FC<{ children: React.ReactNode
 		setAlwaysAllowMcp: (value) => setState((prevState) => ({ ...prevState, alwaysAllowMcp: value })),
 		setAlwaysAllowModeSwitch: (value) => setState((prevState) => ({ ...prevState, alwaysAllowModeSwitch: value })),
 		setAlwaysAllowSubtasks: (value) => setState((prevState) => ({ ...prevState, alwaysAllowSubtasks: value })),
+		setAlwaysAllowDebug: (value) => setState((prevState) => ({ ...prevState, alwaysAllowDebug: value })),
+		setAlwaysAllowLsp: (value) => setState((prevState) => ({ ...prevState, alwaysAllowLsp: value })),
 		setAlwaysAllowFollowupQuestions,
 		setFollowupAutoApproveTimeoutMs: (value) =>
 			setState((prevState) => ({ ...prevState, followupAutoApproveTimeoutMs: value })),

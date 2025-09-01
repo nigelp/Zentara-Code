@@ -34,6 +34,7 @@ export async function listFilesTool(
 	const relDirPath: string | undefined = block.params.path
 	const recursiveRaw: string | undefined = block.params.recursive
 	const recursive = recursiveRaw?.toLowerCase() === "true"
+	const ignorePatterns: string[] | undefined = (block.params as any).ignore
 
 	// Calculate if the path is outside workspace
 	const absolutePath = relDirPath ? path.resolve(cline.cwd, relDirPath) : cline.cwd
@@ -60,7 +61,7 @@ export async function listFilesTool(
 
 			cline.consecutiveMistakeCount = 0
 
-			const [files, didHitLimit] = await listFiles(absolutePath, recursive, 200)
+			const [files, didHitLimit] = await listFiles(absolutePath, recursive, 200, ignorePatterns)
 			const { showRooIgnoredFiles = false } = (await cline.providerRef.deref()?.getState()) ?? {}
 
 			const result = formatResponse.formatFilesList(

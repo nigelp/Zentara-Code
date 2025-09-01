@@ -203,6 +203,14 @@
 			"title": "Max Cost",
 			"unlimited": "Unlimited"
 		},
+		"debug": {
+			"label": "Debug",
+			"description": "Automatically approve debug operations without requiring confirmation"
+		},
+		"lsp": {
+			"label": "LSP",
+			"description": "Automatically approve Language Server Protocol operations without requiring confirmation"
+		},
 		"maxLimits": {
 			"description": "Automatically make requests up to these limits before asking for approval to continue."
 		},
@@ -470,6 +478,25 @@
 			"placeholder": "Default: claude",
 			"maxTokensLabel": "Max Output Tokens",
 			"maxTokensDescription": "Maximum number of output tokens for Claude Code responses. Default is 8000."
+		},
+		"claudeMax": {
+			"description": "Use Claude Max with OAuth authentication for direct API access. Zero cost for Max plan subscribers.",
+			"authenticate": "Authenticate with Claude Max",
+			"authenticating": "Authenticating...",
+			"authDescription": "Click to sign in with your Claude Pro/Max account",
+			"codeInstructions": "After authorizing in your browser, paste the authorization code below:",
+			"codePlaceholder": "Paste authorization code here",
+			"submitCode": "Submit Code",
+			"submitting": "Submitting...",
+			"authenticated": "Successfully authenticated with Claude Max",
+			"reauthenticate": "Re-authenticate",
+			"maxTokensLabel": "Max Output Tokens",
+			"maxTokensDescription": "Maximum number of output tokens for Claude Max responses. Default is 8000.",
+			"subscription": "Subscription",
+			"subscriptionDescription": "No per-request charges with your Claude Max subscription"
+		},
+		"common": {
+			"cost": "Cost"
 		}
 	},
 	"browser": {

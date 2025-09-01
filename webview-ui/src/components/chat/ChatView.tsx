@@ -54,6 +54,7 @@ import AutoApproveMenu from "./AutoApproveMenu"
 import SystemPromptWarning from "./SystemPromptWarning"
 import ProfileViolationWarning from "./ProfileViolationWarning"
 import { CheckpointWarning } from "./CheckpointWarning"
+import { SubagentStack } from "./SubagentStack"
 import QueuedMessages from "./QueuedMessages"
 import { getLatestTodo } from "@roo/todo"
 import { QueuedMessage } from "@roo-code/types"
@@ -66,6 +67,13 @@ export interface ChatViewProps {
 
 export interface ChatViewRef {
 	acceptInput: () => void
+}
+const DEBUG_RACE = process.env.DEBUG_RACE === "true" || false
+const raceLog = (context: string, data: any = {}) => {
+	if (!DEBUG_RACE) return
+	const timestamp = new Date().toISOString()
+	const hrTime = process.hrtime.bigint()
+	console.log(`[RACE ${timestamp}] [${hrTime}] ${context}:`, JSON.stringify(data))
 }
 
 export const MAX_IMAGES_PER_MESSAGE = 20 // This is the Anthropic limit.
@@ -90,6 +98,7 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 	const {
 		clineMessages: messages,
 		currentTaskItem,
+		activeTaskId, // NEW: Get active task ID from state
 		currentTaskTodos,
 		taskHistory,
 		apiConfiguration,
@@ -112,6 +121,7 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 		autoApprovalEnabled,
 		alwaysAllowModeSwitch,
 		alwaysAllowSubtasks,
+		alwaysAllowDebug, // Added alwaysAllowDebug
 		alwaysAllowFollowupQuestions,
 		alwaysAllowUpdateTodoList,
 		customModes,
@@ -120,6 +130,7 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 		historyPreviewCollapsed, // Added historyPreviewCollapsed
 		soundEnabled,
 		soundVolume,
+		parallelTasks,
 		cloudIsAuthenticated,
 	} = useExtensionState()
 
@@ -191,9 +202,11 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 	const scrollContainerRef = useRef<HTMLDivElement>(null)
 	const disableAutoScrollRef = useRef(false)
 	const [showScrollToBottom, setShowScrollToBottom] = useState(false)
-	const [isAtBottom, setIsAtBottom] = useState(false)
+	const [isAtBottom, setIsAtBottom] = useState(true) // Track if we're at bottom
 	const lastTtsRef = useRef<string>("")
+	const lastMessageTypeRef = useRef<"user" | "agent" | null>(null)
 	const [wasStreaming, setWasStreaming] = useState<boolean>(false)
+	const hasActiveSubagentsRef = useRef(false) // Track if subagents are active
 	const [showCheckpointWarning, setShowCheckpointWarning] = useState<boolean>(false)
 	const [isCondensing, setIsCondensing] = useState<boolean>(false)
 	const [showAnnouncementModal, setShowAnnouncementModal] = useState(false)
@@ -278,6 +291,12 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 		if (lastMessage) {
 			switch (lastMessage.type) {
 				case "ask":
+					raceLog("[ChatView lastMessage is ask]", {
+						taskId: lastMessage.taskId,
+						ask: lastMessage.ask,
+						partial: lastMessage.partial,
+						text: lastMessage.text,
+					})
 					// Reset user response flag when a new ask arrives to allow auto-approval
 					userRespondedRef.current = false
 					const isPartial = lastMessage.partial === true
@@ -626,12 +645,17 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 							case "resume_task":
 							case "resume_completed_task":
 							case "mistake_limit_reached":
+								// Find the task ID from the current ask message
+								const askMessage = messagesRef.current.findLast((m) => m.type === "ask")
+								const taskId = activeTaskId || askMessage?.taskId
 								vscode.postMessage({
 									type: "askResponse",
 									askResponse: "messageResponse",
 									text,
 									images,
+									taskId: taskId, // Include task ID
 								})
+								raceLog("[ChatView post messageResponse message]", { text: text, taskId: taskId })
 								break
 							// There is no other case that a textfield should be enabled.
 						}
@@ -652,7 +676,7 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 				// but for now we'll just log it
 			}
 		},
-		[handleChatReset, markFollowUpAsAnswered, sendingDisabled], // messagesRef and clineAskRef are stable
+		[handleChatReset, markFollowUpAsAnswered, sendingDisabled, activeTaskId], // messagesRef and clineAskRef are stable
 	)
 
 	useEffect(() => {
@@ -748,6 +772,14 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 
 			const trimmedInput = text?.trim()
 
+			// Use activeTaskId from state, or find from the current ask message
+			const askMessage = messages.findLast((m) => m.type === "ask")
+			const taskId = activeTaskId || askMessage?.taskId
+
+			if (!taskId) {
+				console.warn("No taskId available for response routing")
+			}
+
 			switch (clineAsk) {
 				case "api_req_failed":
 				case "command":
@@ -763,13 +795,22 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 							askResponse: "yesButtonClicked",
 							text: trimmedInput,
 							images: images,
+							taskId: taskId, // Include task ID
 						})
 						// Clear input state after sending
 						setInputValue("")
 						setSelectedImages([])
 					} else {
-						vscode.postMessage({ type: "askResponse", askResponse: "yesButtonClicked" })
+						vscode.postMessage({
+							type: "askResponse",
+							askResponse: "yesButtonClicked",
+							taskId: taskId, // Include task ID
+						})
 					}
+					raceLog("[ChatView post askResponse yesButtonClicked]", {
+						taskId: taskId,
+						clineAsk: clineAsk,
+					})
 					break
 				case "completion_result":
 				case "resume_completed_task":
@@ -785,7 +826,7 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 			setClineAsk(undefined)
 			setEnableButtons(false)
 		},
-		[clineAsk, startNewTask],
+		[clineAsk, startNewTask, messages, activeTaskId],
 	)
 
 	const handleSecondaryButtonClick = useCallback(
@@ -795,8 +836,17 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 
 			const trimmedInput = text?.trim()
 
+			// Find the task ID from the current ask message
+			const askMessage = messages.findLast((m) => m.type === "ask")
+			const taskId = activeTaskId || askMessage?.taskId
+
 			if (isStreaming) {
-				vscode.postMessage({ type: "cancelTask" })
+				// Cancel main task
+				vscode.postMessage({
+					type: "cancelTask",
+					taskId: taskId, // Include task ID for cancellation
+				})
+
 				setDidClickCancel(true)
 				return
 			}
@@ -818,13 +868,22 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 							askResponse: "noButtonClicked",
 							text: trimmedInput,
 							images: images,
+							taskId: taskId, // Include task ID
 						})
 						// Clear input state after sending
 						setInputValue("")
 						setSelectedImages([])
 					} else {
 						// Responds to the API with a "This operation failed" and lets it try again
-						vscode.postMessage({ type: "askResponse", askResponse: "noButtonClicked" })
+						vscode.postMessage({
+							type: "askResponse",
+							askResponse: "noButtonClicked",
+							taskId: taskId, // Include task ID
+						})
+						raceLog("[ChatView post askResponse noButtonClicked]", {
+							taskId: taskId,
+							clineAsk: clineAsk,
+						})
 					}
 					break
 				case "command_output":
@@ -835,7 +894,7 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 			setClineAsk(undefined)
 			setEnableButtons(false)
 		},
-		[clineAsk, startNewTask, isStreaming],
+		[clineAsk, startNewTask, isStreaming, messages, activeTaskId],
 	)
 
 	const { info: model } = useSelectedModel(apiConfiguration)
@@ -1028,6 +1087,7 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 				"listCodeDefinitionNames",
 				"searchFiles",
 				"codebaseSearch",
+				"glob",
 			].includes(tool.tool)
 		}
 
@@ -1050,6 +1110,21 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 				"insertContent",
 				"generateImage",
 			].includes(tool.tool)
+		}
+
+		return false
+	}, [])
+
+	const isDebugToolAction = useCallback((message: ClineMessage | undefined) => {
+		if (message?.type === "ask") {
+			if (!message.text) {
+				return false
+			}
+
+			const tool = JSON.parse(message.text)
+
+			// Check if it's the debug meta-tool or any of the specific debug operations
+			return tool.tool === "debug" || tool.tool.startsWith("debug_")
 		}
 
 		return false
@@ -1192,6 +1267,11 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 				const isOutsideWorkspace = !!tool.isOutsideWorkspace
 				const isProtected = message.isProtected
 
+				// Check for debug tools
+				if (isDebugToolAction(message)) {
+					return alwaysAllowDebug || false
+				}
+
 				if (isReadOnlyToolAction(message)) {
 					return alwaysAllowReadOnly && (!isOutsideWorkspace || alwaysAllowReadOnlyOutsideWorkspace)
 				}
@@ -1225,6 +1305,8 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 			alwaysAllowModeSwitch,
 			alwaysAllowFollowupQuestions,
 			alwaysAllowSubtasks,
+			alwaysAllowDebug,
+			isDebugToolAction,
 			alwaysAllowUpdateTodoList,
 		],
 	)
@@ -1259,7 +1341,7 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 		}
 
 		// Update previous value.
-		setWasStreaming(isStreaming)
+		// Note: setWasStreaming is now handled in the streaming autoscroll effect
 	}, [isStreaming, lastMessage, wasStreaming, isAutoApproved, messages.length])
 
 	const isBrowserSessionMessage = (message: ClineMessage): boolean => {
@@ -1354,15 +1436,125 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 		return result
 	}, [isCondensing, visibleMessages])
 
-	// scrolling
+	// Track previous parallel tasks count for auto-scroll
+	const prevParallelTasksLengthRef = useRef(parallelTasks?.length || 0)
+	const userScrolledDuringSubagentsRef = useRef(false) // Track if user scrolled while subagents active
 
-	const scrollToBottomSmooth = useMemo(
-		() =>
-			debounce(() => virtuosoRef.current?.scrollTo({ top: Number.MAX_SAFE_INTEGER, behavior: "smooth" }), 10, {
+	const scrollToBottomSmooth = useCallback(
+		debounce(
+			() => {
+				//console.trace("[ChatView] scrollToBottomSmooth called - STACK TRACE:")
+				virtuosoRef.current?.scrollTo({ top: Number.MAX_SAFE_INTEGER, behavior: "smooth" })
+			},
+			10,
+			{
 				immediate: true,
-			}),
-		[],
+			},
+		),
+		[virtuosoRef],
 	)
+
+	// Update hasActiveSubagentsRef when parallelTasks changes
+	useEffect(() => {
+		const hasActiveSubagents = !!(parallelTasks && parallelTasks.length > 0)
+		const prevHadActiveSubagents = hasActiveSubagentsRef.current
+		hasActiveSubagentsRef.current = hasActiveSubagents
+
+		if (!hasActiveSubagents && prevHadActiveSubagents) {
+			// All subagents completed - reset BOTH flags to re-enable autoscroll for main agent
+			console.log("[ChatView] All subagents completed, re-enabling autoscroll for main agent")
+
+			// Reset both scroll flags to allow main agent autoscroll to resume
+			disableAutoScrollRef.current = false
+			userScrolledDuringSubagentsRef.current = false
+
+			// Scroll to bottom when returning to main agent to show completion
+			setTimeout(() => {
+				console.log("[ChatView] Scrolling to bottom after subagents complete")
+				scrollToBottomSmooth()
+			}, 100)
+		} else if (!prevHadActiveSubagents && hasActiveSubagents) {
+			// Just started subagents - reset the subagent scroll flag but keep general scroll state
+			console.log("[ChatView] Subagents started, resetting subagent scroll tracking")
+			userScrolledDuringSubagentsRef.current = false
+			// Keep existing disableAutoScrollRef value - if user had scrolled before subagents started, respect that
+		}
+	}, [parallelTasks, scrollToBottomSmooth])
+
+	// Effect to handle continuous autoscroll during streaming for main agent
+	useEffect(() => {
+		// Reset autoscroll when streaming starts for main agent
+		if (isStreaming && !wasStreaming && !hasActiveSubagentsRef.current) {
+			console.log("[ChatView] Streaming started for main agent, enabling autoscroll")
+			disableAutoScrollRef.current = false
+			userScrolledDuringSubagentsRef.current = false
+		}
+
+		// Only autoscroll during streaming if:
+		// 1. We're actually streaming
+		// 2. No subagents are active (main agent conversation)
+		// 3. User hasn't manually scrolled up during this streaming session
+		if (isStreaming && !hasActiveSubagentsRef.current && !disableAutoScrollRef.current) {
+			console.log("[ChatView] Streaming detected for main agent, enabling continuous autoscroll")
+
+			// Scroll immediately when streaming starts
+			virtuosoRef.current?.scrollTo({
+				top: Number.MAX_SAFE_INTEGER,
+				behavior: "auto", // Use auto for immediate scroll
+			})
+
+			virtuosoRef.current?.scrollTo({
+				top: Number.MAX_SAFE_INTEGER,
+				behavior: "smooth",
+			})
+
+			// Set up interval to keep scrolling during streaming
+			// Using interval instead of requestAnimationFrame to avoid performance issues
+			const scrollInterval = setInterval(() => {
+				// Double-check conditions inside interval too
+				if (!disableAutoScrollRef.current && !userScrolledDuringSubagentsRef.current) {
+					virtuosoRef.current?.scrollTo({
+						top: Number.MAX_SAFE_INTEGER,
+						behavior: "smooth",
+					})
+				}
+			}, 100) // Scroll every 100ms during streaming
+
+			// Cleanup function to stop scrolling when streaming ends
+			return () => {
+				clearInterval(scrollInterval)
+			}
+		}
+
+		setWasStreaming(isStreaming)
+	}, [isStreaming, wasStreaming])
+
+	// Additional effect to scroll when the last message content changes during streaming
+	useEffect(() => {
+		// Check if we should autoscroll when message content updates
+		const lastMessage = modifiedMessages.at(-1)
+		if (
+			lastMessage?.partial === true && // Message is still streaming
+			!hasActiveSubagentsRef.current && // Main agent (no subagents)
+			!disableAutoScrollRef.current && // User hasn't scrolled away
+			isAtBottom // We're at the bottom
+		) {
+			// Debounced scroll to avoid too frequent updates
+			const scrollTimer = setTimeout(() => {
+				// Double-check conditions before scrolling
+				if (!disableAutoScrollRef.current && !userScrolledDuringSubagentsRef.current) {
+					virtuosoRef.current?.scrollTo({
+						top: Number.MAX_SAFE_INTEGER,
+						behavior: "smooth",
+					})
+				}
+			}, 50)
+
+			return () => clearTimeout(scrollTimer)
+		}
+	}, [modifiedMessages, isAtBottom])
+
+	// scrolling
 
 	useEffect(() => {
 		return () => {
@@ -1373,6 +1565,7 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 	}, [scrollToBottomSmooth])
 
 	const scrollToBottomAuto = useCallback(() => {
+		console.trace("[ChatView] scrollToBottomAuto called - STACK TRACE:")
 		virtuosoRef.current?.scrollTo({
 			top: Number.MAX_SAFE_INTEGER,
 			behavior: "auto", // Instant causes crash.
@@ -1401,41 +1594,145 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 
 	const handleRowHeightChange = useCallback(
 		(isTaller: boolean) => {
-			if (!disableAutoScrollRef.current) {
+			// Only autoscroll if ALL conditions are met
+			const shouldAutoScroll =
+				// Must not be manually disabled
+				!disableAutoScrollRef.current &&
+				// Must be at bottom
+				isAtBottom &&
+				// Must satisfy one of these conditions:
+				// Case 1: No active subagents (main agent streaming)
+				(!hasActiveSubagentsRef.current ||
+					// Case 2: Subagents active AND user hasn't scrolled during this session
+					(hasActiveSubagentsRef.current && !userScrolledDuringSubagentsRef.current))
+
+			if (shouldAutoScroll) {
+				console.log(
+					`[ChatView] Row height changed (taller: ${isTaller}), auto-scrolling ${isStreaming ? "during streaming" : "normally"}`,
+				)
 				if (isTaller) {
 					scrollToBottomSmooth()
 				} else {
 					setTimeout(() => scrollToBottomAuto(), 0)
 				}
+			} else {
+				console.log(
+					`[ChatView] Row height changed (taller: ${isTaller}), NOT auto-scrolling (streaming: ${isStreaming}, disabled: ${disableAutoScrollRef.current}, atBottom: ${isAtBottom}, subagents: ${hasActiveSubagentsRef.current}, userScrolled: ${userScrolledDuringSubagentsRef.current})`,
+				)
 			}
 		},
-		[scrollToBottomSmooth, scrollToBottomAuto],
+		[isAtBottom, isStreaming, scrollToBottomSmooth, scrollToBottomAuto],
 	)
 
 	useEffect(() => {
-		let timer: ReturnType<typeof setTimeout> | undefined
-		if (!disableAutoScrollRef.current) {
-			timer = setTimeout(() => scrollToBottomSmooth(), 50)
-		}
-		return () => {
-			if (timer) {
-				clearTimeout(timer)
+		// Autoscroll logic for message updates
+		const lastMessage = modifiedMessages.at(-1)
+
+		// Determine if the last message is from the agent or user
+		let currentMessageType: "user" | "agent" | null = null
+		if (lastMessage) {
+			// Messages from the agent (assistant)
+			if (lastMessage.type === "say" || (lastMessage.type === "ask" && lastMessage.ask !== "followup")) {
+				currentMessageType = "agent"
+			}
+			// Messages from the user
+			else if (lastMessage.type === "ask" && lastMessage.ask === "followup" && !lastMessage.partial) {
+				currentMessageType = "user"
 			}
 		}
-	}, [groupedMessages.length, scrollToBottomSmooth])
 
-	const handleWheel = useCallback((event: Event) => {
-		const wheelEvent = event as WheelEvent
-
-		if (wheelEvent.deltaY && wheelEvent.deltaY < 0) {
-			if (scrollContainerRef.current?.contains(wheelEvent.target as Node)) {
-				// User scrolled up
-				disableAutoScrollRef.current = true
-			}
+		// Reset autoscroll when agent starts responding (new agent message after user message)
+		if (currentMessageType === "agent" && lastMessageTypeRef.current === "user" && !hasActiveSubagentsRef.current) {
+			console.log("[ChatView] Agent started responding, re-enabling autoscroll")
+			disableAutoScrollRef.current = false
+			userScrolledDuringSubagentsRef.current = false
 		}
-	}, [])
+
+		// Update the last message type
+		lastMessageTypeRef.current = currentMessageType
+
+		// Autoscroll if conditions are met
+		if (!hasActiveSubagentsRef.current && !disableAutoScrollRef.current) {
+			setTimeout(() => scrollToBottomSmooth(), 100)
+		} else {
+			// console.log(
+			// 	`[ChatView] Messages updated, NOT auto-scrolling (subagents: ${hasActiveSubagentsRef.current}, disabled: ${disableAutoScrollRef.current})`,
+			// )
+		}
+	}, [groupedMessages.length, modifiedMessages, scrollToBottomSmooth])
+
+	// Auto-scroll when new subagents are added (if user hasn't scrolled)
+	useEffect(() => {
+		const currentLength = parallelTasks?.length || 0
+		const prevLength = prevParallelTasksLengthRef.current
+
+		// Update the ref for next comparison
+		prevParallelTasksLengthRef.current = currentLength
+
+		// Auto-scroll when new subagent is added, but only if user hasn't scrolled at all
+		if (currentLength > prevLength && !userScrolledDuringSubagentsRef.current && !disableAutoScrollRef.current) {
+			console.log(
+				`[ChatView] New subagent added (${prevLength} -> ${currentLength}), auto-scrolling (user hasn't scrolled)`,
+			)
+			setTimeout(() => scrollToBottomSmooth(), 100)
+		} else if (currentLength > prevLength) {
+			console.log(
+				`[ChatView] New subagent added (${prevLength} -> ${currentLength}), NOT auto-scrolling (user has scrolled or autoscroll disabled)`,
+			)
+		}
+	}, [parallelTasks?.length, scrollToBottomSmooth]) // Track length changes
+
+	const handleWheel = useCallback(
+		(event: Event) => {
+			const wheelEvent = event as WheelEvent
+
+			// Only disable autoscroll if user is actively scrolling UP
+			// Don't disable for small movements or when already at bottom
+			if (wheelEvent.deltaY && scrollContainerRef.current?.contains(wheelEvent.target as Node)) {
+				// User is scrolling up (negative deltaY)
+				// OR scrolling down while not at bottom (manual scroll)
+				if (wheelEvent.deltaY < 0 || (wheelEvent.deltaY > 0 && !isAtBottom)) {
+					// Only disable if it's a significant scroll (not just a minor adjustment)
+					if (Math.abs(wheelEvent.deltaY) > 10) {
+						console.log("[ChatView] User scrolled manually, disabling autoscroll")
+						disableAutoScrollRef.current = true
+
+						// Track if user scrolled while subagents are active
+						// This flag persists until all subagents complete
+						if (hasActiveSubagentsRef.current) {
+							console.log(
+								"[ChatView] User scrolled during subagents, disabling ALL autoscroll until subagents complete",
+							)
+							userScrolledDuringSubagentsRef.current = true
+						}
+					}
+				}
+			}
+		},
+		[isAtBottom],
+	)
 
 	useEvent("wheel", handleWheel, window, { passive: true }) // passive improves scrolling performance
+
+	// Also handle scroll events (for touch/trackpad scrolling)
+	const handleScroll = useCallback(() => {
+		// Only disable autoscroll if user has scrolled away from bottom
+		// AND it's been more than a small threshold (to avoid false positives)
+		const scrollContainer = scrollContainerRef.current?.querySelector(".scrollable")
+		if (!isAtBottom && scrollContainer) {
+			disableAutoScrollRef.current = true
+
+			// Track if user scrolled while subagents are active
+			if (hasActiveSubagentsRef.current) {
+				console.log(
+					"[ChatView] User scrolled (via scroll event) during subagents, disabling ALL autoscroll until subagents complete",
+				)
+				userScrolledDuringSubagentsRef.current = true
+			}
+		}
+	}, [isAtBottom])
+
+	useEvent("scroll", handleScroll, scrollContainerRef.current, { passive: true })
 
 	// Effect to handle showing the checkpoint warning after a delay
 	useEffect(() => {
@@ -1510,10 +1807,22 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 		[handleSendMessage, setInputValue, switchToMode, alwaysAllowModeSwitch, clineAsk, markFollowUpAsAnswered],
 	)
 
-	const handleBatchFileResponse = useCallback((response: { [key: string]: boolean }) => {
-		// Handle batch file response, e.g., for file uploads
-		vscode.postMessage({ type: "askResponse", askResponse: "objectResponse", text: JSON.stringify(response) })
-	}, [])
+	const handleBatchFileResponse = useCallback(
+		(response: { [key: string]: boolean }) => {
+			// Handle batch file response, e.g., for file uploads
+			// Find the task ID from the current ask message
+			const askMessage = messages.findLast((m) => m.type === "ask")
+			const taskId = activeTaskId || askMessage?.taskId
+
+			vscode.postMessage({
+				type: "askResponse",
+				askResponse: "objectResponse",
+				text: JSON.stringify(response),
+				taskId: taskId, // Include task ID
+			})
+		},
+		[messages, activeTaskId],
+	)
 
 	// Handler for when FollowUpSuggest component unmounts
 	const handleFollowUpUnmount = useCallback(() => {
@@ -1679,7 +1988,16 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 					})
 				}
 
-				vscode.postMessage({ type: "askResponse", askResponse: "yesButtonClicked" })
+				// Find the task ID from the current ask message for auto-approval
+				const askMessage = messages.findLast((m) => m.type === "ask")
+				const taskId = activeTaskId || askMessage?.taskId
+
+				vscode.postMessage({
+					type: "askResponse",
+					askResponse: "yesButtonClicked",
+					taskId: taskId, // Include task ID for auto-approval
+				})
+				raceLog("[ChatView post askResponse yesButtonClicked by autoapprover]", { taskId: taskId })
 
 				setSendingDisabled(true)
 				setClineAsk(undefined)
@@ -1714,6 +2032,7 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 		lastMessage,
 		writeDelayMs,
 		isWriteToolAction,
+		activeTaskId,
 		alwaysAllowFollowupQuestions,
 		handleSuggestionClickInRow,
 		isAllowedCommand,
@@ -1867,17 +2186,17 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 				</div>
 			)}
 
-			{/* 
+			{/*
 			// Flex layout explanation:
 			// 1. Content div above uses flex: "1 1 0" to:
-			//    - Grow to fill available space (flex-grow: 1) 
+			//    - Grow to fill available space (flex-grow: 1)
 			//    - Shrink when AutoApproveMenu needs space (flex-shrink: 1)
 			//    - Start from zero size (flex-basis: 0) to ensure proper distribution
 			//    minHeight: 0 allows it to shrink below its content height
 			//
 			// 2. AutoApproveMenu uses flex: "0 1 auto" to:
 			//    - Not grow beyond its content (flex-grow: 0)
-			//    - Shrink when viewport is small (flex-shrink: 1) 
+			//    - Shrink when viewport is small (flex-shrink: 1)
 			//    - Use its content size as basis (flex-basis: auto)
 			//    This ensures it takes its natural height when there's space
 			//    but becomes scrollable when the viewport is too small
@@ -1898,15 +2217,46 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 							increaseViewportBy={{ top: 3_000, bottom: 1000 }}
 							data={groupedMessages}
 							itemContent={itemContent}
-							atBottomStateChange={(isAtBottom: boolean) => {
-								setIsAtBottom(isAtBottom)
-								if (isAtBottom) {
-									disableAutoScrollRef.current = false
+							atBottomStateChange={(atBottom) => {
+								console.log(
+									`[Virtuoso] atBottomStateChange: ${atBottom}, disableAutoScrollRef.current: ${disableAutoScrollRef.current}`,
+								)
+								setIsAtBottom(atBottom)
+
+								// Re-enable autoscroll if user scrolls back to bottom manually
+								// but only if no subagents are active OR user hasn't scrolled during subagents
+								if (atBottom) {
+									if (!hasActiveSubagentsRef.current) {
+										console.log("[Virtuoso] At bottom with no subagents, re-enabling autoscroll")
+										disableAutoScrollRef.current = false
+									} else if (!userScrolledDuringSubagentsRef.current) {
+										console.log(
+											"[Virtuoso] At bottom with subagents but user hasn't scrolled, keeping autoscroll enabled",
+										)
+										disableAutoScrollRef.current = false
+									}
 								}
-								setShowScrollToBottom(disableAutoScrollRef.current && !isAtBottom)
+
+								setShowScrollToBottom(disableAutoScrollRef.current && !atBottom)
 							}}
-							atBottomThreshold={10}
+							atBottomThreshold={10} // anything lower causes issues with followOutput
 							initialTopMostItemIndex={groupedMessages.length - 1}
+							components={{
+								Footer: () => {
+									if (parallelTasks && parallelTasks.length > 0) {
+										return (
+											<div className="px-3">
+												<SubagentStack 
+													subagents={parallelTasks} 
+													isAutoScrollEnabled={!disableAutoScrollRef.current && !userScrolledDuringSubagentsRef.current}
+													onScrollToBottom={scrollToBottomSmooth}
+												/>
+											</div>
+										)
+									}
+									return null
+								},
+							}}
 						/>
 					</div>
 					<div className={`flex-initial min-h-0 ${!areButtonsVisible ? "mb-1" : ""}`}>
@@ -2016,9 +2366,14 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 				onSelectImages={selectImages}
 				shouldDisableImages={shouldDisableImages}
 				onHeightChange={() => {
-					if (isAtBottom) {
-						scrollToBottomAuto()
-					}
+					// COMPLETELY DISABLED - This was causing unwanted autoscroll
+					console.log(
+						`[ChatTextArea] onHeightChange triggered, isAtBottom: ${isAtBottom} - BUT NOT SCROLLING (disabled)`,
+					)
+					// Original code completely disabled:
+					// if (isAtBottom) {
+					// 	scrollToBottomAuto()
+					// }
 				}}
 				mode={mode}
 				setMode={setMode}

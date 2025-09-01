@@ -573,4 +573,129 @@ This directory contains various files and subdirectories for testing the list_fi
 			api.off(RooCodeEventName.TaskCompleted, taskCompletedHandler)
 		}
 	})
+
+	test("Should ignore files based on ignore patterns", async function () {
+		const api = globalThis.api
+		const messages: ClineMessage[] = []
+		let taskCompleted = false
+		let toolExecuted = false
+		let listResults: string | null = null
+
+		// Listen for messages
+		const messageHandler = ({ message }: { message: ClineMessage }) => {
+			messages.push(message)
+
+			// Check for tool execution and capture results
+			if (message.type === "say" && message.say === "api_req_started") {
+				const text = message.text || ""
+				if (text.includes("list_files")) {
+					toolExecuted = true
+					console.log("list_files tool executed (ignore patterns):", text.substring(0, 200))
+
+					// Extract list results from the tool execution
+					try {
+						const jsonMatch = text.match(/\{"request":".*?"\}/)
+						if (jsonMatch) {
+							const requestData = JSON.parse(jsonMatch[0])
+							if (requestData.request && requestData.request.includes("Result:")) {
+								listResults = requestData.request
+								console.log("Captured ignore pattern results:", listResults?.substring(0, 300))
+							}
+						}
+					} catch (e) {
+						console.log("Failed to parse ignore pattern results:", e)
+					}
+				}
+			}
+		}
+		api.on(RooCodeEventName.Message, messageHandler)
+
+		// Listen for task completion
+		const taskCompletedHandler = (id: string) => {
+			if (id === taskId) {
+				taskCompleted = true
+			}
+		}
+		api.on(RooCodeEventName.TaskCompleted, taskCompletedHandler)
+
+		let taskId: string
+		try {
+			// Create additional test files with patterns to ignore
+			const testDirName = path.basename(path.dirname(testFiles.rootFile1))
+			const testDir = path.dirname(testFiles.rootFile1)
+
+			// Create files that should be ignored
+			const ignoredFile1 = path.join(testDir, "test.log")
+			const ignoredFile2 = path.join(testDir, "debug.tmp")
+			const ignoredFile3 = path.join(testDir, "backup.bak")
+			const keepFile = path.join(testDir, "keep-this.txt")
+
+			await fs.writeFile(ignoredFile1, "Log file content")
+			await fs.writeFile(ignoredFile2, "Temporary file content")
+			await fs.writeFile(ignoredFile3, "Backup file content")
+			await fs.writeFile(keepFile, "This file should not be ignored")
+
+			// Start task to list files with ignore patterns
+			taskId = await api.startNewTask({
+				configuration: {
+					mode: "code",
+					autoApprovalEnabled: true,
+					alwaysAllowReadOnly: true,
+					alwaysAllowReadOnlyOutsideWorkspace: true,
+				},
+				text: `I have created a test directory structure in the workspace at "${testDirName}" with various files including .log, .tmp, and .bak files that should be ignored. Use the list_files tool to list the contents of this directory with ignore patterns to exclude log files, temporary files, and backup files. Use these ignore patterns: ["*.log", "*.tmp", "*.bak"]. The tool should show regular files but not the ignored ones.`,
+			})
+
+			console.log("Ignore patterns test Task ID:", taskId)
+
+			// Wait for task completion
+			await waitFor(() => taskCompleted, { timeout: 60_000 })
+
+			// Verify the list_files tool was executed
+			assert.ok(toolExecuted, "The list_files tool should have been executed")
+
+			// Verify the tool returned results
+			assert.ok(listResults, "Tool execution results should be captured")
+
+			const results = listResults as string
+			console.log("Ignore patterns test results:", results)
+
+			// Verify ignored files are NOT included
+			const ignoredFiles = ["test.log", "debug.tmp", "backup.bak"]
+			for (const file of ignoredFiles) {
+				assert.ok(!results.includes(file), `Tool results should NOT include ignored file ${file}`)
+			}
+
+			// Verify non-ignored files ARE still included
+			const shouldIncludeFiles = [
+				"root-file-1.txt",
+				"root-file-2.js",
+				"config.yaml",
+				"README.md",
+				"keep-this.txt",
+			]
+			for (const file of shouldIncludeFiles) {
+				assert.ok(results.includes(file), `Tool results should include ${file}`)
+			}
+
+			// Verify directories are still included
+			assert.ok(results.includes("nested/"), "Tool results should include nested/ directory")
+
+			console.log("Test passed! Ignore patterns working correctly")
+
+			// Cleanup additional test files
+			try {
+				await fs.unlink(ignoredFile1)
+				await fs.unlink(ignoredFile2)
+				await fs.unlink(ignoredFile3)
+				await fs.unlink(keepFile)
+			} catch (e) {
+				console.log("Failed to cleanup additional test files:", e)
+			}
+		} finally {
+			// Clean up
+			api.off(RooCodeEventName.Message, messageHandler)
+			api.off(RooCodeEventName.TaskCompleted, taskCompletedHandler)
+		}
+	})
 })

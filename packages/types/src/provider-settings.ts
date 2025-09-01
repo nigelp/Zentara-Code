@@ -34,6 +34,7 @@ import {
 export const providerNames = [
 	"anthropic",
 	"claude-code",
+	"claude-max",
 	"glama",
 	"openrouter",
 	"bedrock",
@@ -44,6 +45,7 @@ export const providerNames = [
 	"lmstudio",
 	"gemini",
 	"gemini-cli",
+	"g-cli",
 	"openai-native",
 	"mistral",
 	"moonshot",
@@ -93,7 +95,7 @@ export type ProviderSettingsEntry = z.infer<typeof providerSettingsEntrySchema>
 /**
  * Default value for consecutive mistake limit
  */
-export const DEFAULT_CONSECUTIVE_MISTAKE_LIMIT = 3
+export const DEFAULT_CONSECUTIVE_MISTAKE_LIMIT = 20
 
 const baseProviderSettingsSchema = z.object({
 	includeMaxTokens: z.boolean().optional(),
@@ -129,6 +131,12 @@ const anthropicSchema = apiModelIdProviderModelSchema.extend({
 const claudeCodeSchema = apiModelIdProviderModelSchema.extend({
 	claudeCodePath: z.string().optional(),
 	claudeCodeMaxOutputTokens: z.number().int().min(1).max(200000).optional(),
+})
+
+const claudeMaxSchema = apiModelIdProviderModelSchema.extend({
+	claudeCodeModelId: z.string().optional(),
+	claudeCodeMaxOutputTokens: z.number().int().min(1).max(200000).optional(),
+	userDataDir: z.string().optional(),
 })
 
 const glamaSchema = baseProviderSettingsSchema.extend({
@@ -219,6 +227,13 @@ const geminiSchema = apiModelIdProviderModelSchema.extend({
 const geminiCliSchema = apiModelIdProviderModelSchema.extend({
 	geminiCliOAuthPath: z.string().optional(),
 	geminiCliProjectId: z.string().optional(),
+})
+
+const gCliSchema = apiModelIdProviderModelSchema.extend({
+	gCliClientId: z.string().optional(),
+	gCliClientSecret: z.string().optional(),
+	gCliCredentialsPath: z.string().optional(),
+	gCliProjectId: z.string().optional(),
 })
 
 const openAiNativeSchema = apiModelIdProviderModelSchema.extend({
@@ -336,6 +351,7 @@ const defaultSchema = z.object({
 export const providerSettingsSchemaDiscriminated = z.discriminatedUnion("apiProvider", [
 	anthropicSchema.merge(z.object({ apiProvider: z.literal("anthropic") })),
 	claudeCodeSchema.merge(z.object({ apiProvider: z.literal("claude-code") })),
+	claudeMaxSchema.merge(z.object({ apiProvider: z.literal("claude-max") })),
 	glamaSchema.merge(z.object({ apiProvider: z.literal("glama") })),
 	openRouterSchema.merge(z.object({ apiProvider: z.literal("openrouter") })),
 	bedrockSchema.merge(z.object({ apiProvider: z.literal("bedrock") })),
@@ -346,6 +362,7 @@ export const providerSettingsSchemaDiscriminated = z.discriminatedUnion("apiProv
 	lmStudioSchema.merge(z.object({ apiProvider: z.literal("lmstudio") })),
 	geminiSchema.merge(z.object({ apiProvider: z.literal("gemini") })),
 	geminiCliSchema.merge(z.object({ apiProvider: z.literal("gemini-cli") })),
+	gCliSchema.merge(z.object({ apiProvider: z.literal("g-cli") })),
 	openAiNativeSchema.merge(z.object({ apiProvider: z.literal("openai-native") })),
 	mistralSchema.merge(z.object({ apiProvider: z.literal("mistral") })),
 	deepSeekSchema.merge(z.object({ apiProvider: z.literal("deepseek") })),
@@ -376,6 +393,7 @@ export const providerSettingsSchema = z.object({
 	apiProvider: providerNamesSchema.optional(),
 	...anthropicSchema.shape,
 	...claudeCodeSchema.shape,
+	...claudeMaxSchema.shape,
 	...glamaSchema.shape,
 	...openRouterSchema.shape,
 	...bedrockSchema.shape,
@@ -386,6 +404,7 @@ export const providerSettingsSchema = z.object({
 	...lmStudioSchema.shape,
 	...geminiSchema.shape,
 	...geminiCliSchema.shape,
+	...gCliSchema.shape,
 	...openAiNativeSchema.shape,
 	...mistralSchema.shape,
 	...deepSeekSchema.shape,
@@ -446,7 +465,7 @@ export const getModelId = (settings: ProviderSettings): string | undefined => {
 }
 
 // Providers that use Anthropic-style API protocol.
-export const ANTHROPIC_STYLE_PROVIDERS: ProviderName[] = ["anthropic", "claude-code", "bedrock"]
+export const ANTHROPIC_STYLE_PROVIDERS: ProviderName[] = ["anthropic", "claude-code", "claude-max", "bedrock"]
 
 export const getApiProtocol = (provider: ProviderName | undefined, modelId?: string): "anthropic" | "openai" => {
 	if (provider && ANTHROPIC_STYLE_PROVIDERS.includes(provider)) {
@@ -466,7 +485,10 @@ export const getApiProtocol = (provider: ProviderName | undefined, modelId?: str
 }
 
 export const MODELS_BY_PROVIDER: Record<
-	Exclude<ProviderName, "fake-ai" | "human-relay" | "gemini-cli" | "lmstudio" | "openai" | "ollama">,
+	Exclude<
+		ProviderName,
+		"fake-ai" | "human-relay" | "gemini-cli" | "lmstudio" | "openai" | "ollama" | "claude-max" | "g-cli"
+	>,
 	{ id: ProviderName; label: string; models: string[] }
 > = {
 	anthropic: {

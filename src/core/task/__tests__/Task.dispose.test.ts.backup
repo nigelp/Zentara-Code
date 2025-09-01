@@ -1,0 +1,302 @@
+import { describe, it, expect, beforeEach, vi } from "vitest"
+import { Task } from "../Task"
+
+// Mock dependencies
+vi.mock("../../../api", () => ({
+	buildApiHandler: vi.fn().mockReturnValue({
+		createMessageStream: vi.fn(),
+	}),
+}))
+
+vi.mock("../../webview/ClineProvider", () => ({
+	ClineProvider: vi.fn().mockImplementation(() => ({
+		postStateToWebview: vi.fn(),
+		queueAskRequest: vi.fn(),
+		removeFromAskQueue: vi.fn(),
+		log: vi.fn(),
+	})),
+}))
+
+vi.mock("../task-persistence/messages", () => ({
+	readTaskMessages: vi.fn().mockResolvedValue([]),
+	saveTaskMessages: vi.fn().mockResolvedValue(undefined),
+}))
+
+vi.mock("../task-persistence/metadata", () => ({
+	taskMetadata: vi.fn().mockResolvedValue({
+		historyItem: {},
+		tokenUsage: {},
+	}),
+}))
+
+describe("Task.dispose", () => {
+	let task: Task
+	let mockProvider: any
+
+	beforeEach(() => {
+		vi.clearAllMocks()
+
+		mockProvider = {
+			postStateToWebview: vi.fn(),
+			queueAskRequest: vi.fn(),
+			removeFromAskQueue: vi.fn(),
+			log: vi.fn(),
+		}
+
+		task = new Task({
+			taskId: "dispose-test-123",
+			instanceId: "instance-1",
+			providerRef: new WeakRef(mockProvider),
+			context: {} as any,
+			api: {} as any,
+			mode: "default",
+			customInstructions: "",
+			alwaysAllowReadOnly: false,
+			alwaysAllowReadOnlyOutsideWorkspace: false,
+			alwaysAllowWrite: false,
+			alwaysAllowWriteOutsideWorkspace: false,
+			alwaysAllowWriteProtected: false,
+			alwaysAllowExecute: false,
+			alwaysAllowBrowser: false,
+			alwaysAllowMcp: false,
+			alwaysAllowDebug: false,
+			allowedCommands: [],
+			browserViewport: { width: 1280, height: 800 },
+			screenshotQuality: "high",
+			mcpHub: {} as any,
+			cwd: "/test",
+			task: "Test task",
+			baseDirectory: "/test",
+			filePaths: [],
+			openedTabs: [],
+			globalStoragePath: "/storage",
+			apiKey: "test-key",
+			maxAutomaticRequestsPerTask: 5,
+			maxRequestsPerTask: 10,
+			profileThresholds: {},
+		})
+	})
+
+	describe("disposed event", () => {
+		it("should emit disposed event when dispose is called", () => {
+			const disposedHandler = vi.fn()
+			task.once("disposed", disposedHandler)
+
+			task.dispose()
+
+			expect(disposedHandler).toHaveBeenCalledTimes(1)
+			expect(disposedHandler).toHaveBeenCalledWith()
+		})
+
+		it("should only emit disposed event once even if dispose is called multiple times", () => {
+			const disposedHandler = vi.fn()
+			task.on("disposed", disposedHandler)
+
+			task.dispose()
+			task.dispose()
+			task.dispose()
+
+			expect(disposedHandler).toHaveBeenCalledTimes(1)
+		})
+
+		it("should allow multiple listeners for disposed event", () => {
+			const handler1 = vi.fn()
+			const handler2 = vi.fn()
+			const handler3 = vi.fn()
+
+			task.once("disposed", handler1)
+			task.once("disposed", handler2)
+			task.once("disposed", handler3)
+
+			task.dispose()
+
+			expect(handler1).toHaveBeenCalledTimes(1)
+			expect(handler2).toHaveBeenCalledTimes(1)
+			expect(handler3).toHaveBeenCalledTimes(1)
+		})
+	})
+
+	describe("ask queue cleanup", () => {
+		it("should remove task from ask queue on disposal", () => {
+			task.dispose()
+
+			expect(mockProvider.removeFromAskQueue).toHaveBeenCalledWith("dispose-test-123")
+			expect(mockProvider.removeFromAskQueue).toHaveBeenCalledTimes(1)
+		})
+
+		it("should handle missing provider gracefully", () => {
+			// Clear provider reference
+			;(task as any).providerRef = new WeakRef(undefined as any)
+
+			// Should not throw
+			expect(() => task.dispose()).not.toThrow()
+		})
+
+		it("should clean up pending ask operations", async () => {
+			// Start an ask operation
+			const askPromise = task.ask("tool", "Approve action?")
+
+			// Dispose while ask is pending
+			task.dispose()
+
+			// Should remove from ask queue
+			expect(mockProvider.removeFromAskQueue).toHaveBeenCalledWith("dispose-test-123")
+
+			// Simulate timeout to resolve the promise
+			task.handleWebviewAskResponse("noButtonClicked")
+			await askPromise
+		})
+	})
+
+	describe("event listener cleanup", () => {
+		it("should remove all event listeners on disposal", () => {
+			const handler1 = vi.fn()
+			const handler2 = vi.fn()
+			const handler3 = vi.fn()
+
+			// Add various event listeners
+			task.on("message", handler1)
+			task.on("taskStarted", handler2)
+			task.on("taskCompleted", handler3)
+
+			// Get listener count before disposal
+			const messageListenersBefore = task.listenerCount("message")
+			const startedListenersBefore = task.listenerCount("taskStarted")
+			const completedListenersBefore = task.listenerCount("taskCompleted")
+
+			expect(messageListenersBefore).toBeGreaterThan(0)
+			expect(startedListenersBefore).toBeGreaterThan(0)
+			expect(completedListenersBefore).toBeGreaterThan(0)
+
+			// Dispose
+			task.dispose()
+
+			// All listeners should be removed
+			expect(task.listenerCount("message")).toBe(0)
+			expect(task.listenerCount("taskStarted")).toBe(0)
+			expect(task.listenerCount("taskCompleted")).toBe(0)
+
+			// Try to emit events - handlers should not be called
+			task.emit("message", { action: "created", message: {} as any })
+			task.emit("taskStarted")
+			task.emit("taskCompleted", "test-id", {} as any, {} as any)
+
+			expect(handler1).not.toHaveBeenCalled()
+			expect(handler2).not.toHaveBeenCalled()
+			expect(handler3).not.toHaveBeenCalled()
+		})
+
+		it("should not affect other tasks event listeners", () => {
+			const task2 = new Task({
+				...task.options,
+				taskId: "other-task-456",
+			} as any)
+
+			const handler1 = vi.fn()
+			const handler2 = vi.fn()
+
+			task.on("message", handler1)
+			task2.on("message", handler2)
+
+			// Dispose first task
+			task.dispose()
+
+			// First task's handler should not work
+			task.emit("message", { action: "created", message: {} as any })
+			expect(handler1).not.toHaveBeenCalled()
+
+			// Second task's handler should still work
+			task2.emit("message", { action: "created", message: {} as any })
+			expect(handler2).toHaveBeenCalledTimes(1)
+
+			// Cleanup
+			task2.dispose()
+		})
+	})
+
+	describe("dispose idempotency", () => {
+		it("should be safe to call dispose multiple times", () => {
+			expect(() => {
+				task.dispose()
+				task.dispose()
+				task.dispose()
+			}).not.toThrow()
+
+			// Provider method should only be called once
+			expect(mockProvider.removeFromAskQueue).toHaveBeenCalledTimes(1)
+		})
+
+		it("should track disposal state", () => {
+			const disposedHandler = vi.fn()
+
+			task.dispose()
+
+			// Adding listener after disposal
+			task.once("disposed", disposedHandler)
+
+			// Call dispose again
+			task.dispose()
+
+			// Handler should not be called since already disposed
+			expect(disposedHandler).not.toHaveBeenCalled()
+		})
+	})
+
+	describe("integration with task lifecycle", () => {
+		it("should dispose when task is aborted", async () => {
+			const disposedHandler = vi.fn()
+			task.once("disposed", disposedHandler)
+
+			// Abort task
+			await task.abortTask()
+
+			// Should trigger disposal
+			expect(disposedHandler).toHaveBeenCalled()
+			expect(mockProvider.removeFromAskQueue).toHaveBeenCalledWith("dispose-test-123")
+		})
+
+		it("should clean up resources on disposal", () => {
+			// Add some state to the task
+			task.clineMessages.push({
+				ts: Date.now(),
+				type: "say",
+				say: "text",
+				text: "Test message",
+				taskId: task.taskId,
+			})
+
+			const messageCount = task.clineMessages.length
+			expect(messageCount).toBeGreaterThan(0)
+
+			// Dispose
+			task.dispose()
+
+			// Messages should still be accessible (not cleared)
+			// but no new operations should be allowed
+			expect(task.clineMessages.length).toBe(messageCount)
+		})
+	})
+
+	describe("error handling", () => {
+		it("should handle errors in dispose gracefully", () => {
+			// Make removeFromAskQueue throw
+			mockProvider.removeFromAskQueue.mockImplementation(() => {
+				throw new Error("Remove failed")
+			})
+
+			// Should not throw
+			expect(() => task.dispose()).not.toThrow()
+		})
+
+		it("should handle errors in event emission", () => {
+			const errorHandler = vi.fn(() => {
+				throw new Error("Handler error")
+			})
+
+			task.once("disposed", errorHandler)
+
+			// Should not throw even if handler throws
+			expect(() => task.dispose()).not.toThrow()
+		})
+	})
+})

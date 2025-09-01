@@ -1,0 +1,139 @@
+/* Subagent Stack Animations */
+.subagent-item {
+	transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+	position: relative;
+}
+
+/* Force collapsed height with !important to override any other styles */
+.subagent-item.collapsed {
+	height: 40px !important;
+	min-height: 40px !important;
+	max-height: 40px !important;
+	overflow: hidden !important;
+	/* Ensure flexbox children don't expand */
+	flex-shrink: 0 !important;
+	flex-grow: 0 !important;
+}
+
+/* Ensure inner content is clipped when collapsed */
+.subagent-item.collapsed > * {
+	max-height: 24px !important;
+	overflow: hidden !important;
+}
+
+.subagent-item.completed {
+	opacity: 0.95;
+}
+
+.subagent-item.completed:hover {
+	opacity: 1;
+	background-color: var(--vscode-button-hoverBackground);
+}
+
+/* Chevron rotation animation */
+.codicon-chevron-up,
+.codicon-chevron-down {
+	transition: transform 0.3s ease;
+}
+
+/* Activity indicator fade */
+.subagent-item.collapsed .activity-indicator {
+	opacity: 0;
+	width: 0;
+	transition: all 0.3s ease;
+}
+
+/* Ensure smooth text truncation */
+.subagent-item .truncate {
+	transition: all 0.3s ease;
+}
+
+/* Extra specificity for collapsed state - target the exact structure */
+.subagent-stack .flex.flex-col .subagent-item.collapsed {
+	height: 40px !important;
+	min-height: 40px !important;
+	max-height: 40px !important;
+}
+
+/* Ensure the parent flex container respects child heights */
+.subagent-stack .flex.flex-col {
+	align-items: stretch;
+}
+
+/* Feedback area styling */
+[data-feedback-area] {
+	position: relative;
+	min-height: 80px;
+	transition: all 0.3s ease;
+}
+
+/* Ensure feedback area stays visible when scrolling */
+.subagent-item:has([data-feedback-area]) {
+	scroll-margin-bottom: 100px;
+	position: relative;
+}
+
+/* Prevent feedback area from being cut off at viewport edge */
+.subagent-stack {
+	/* Large bottom padding ensures last subagent never touches viewport bottom */
+	/* This padding is set inline in the component for 200px */
+	overflow: visible;
+	position: relative;
+}
+
+/* Add visual indicator for the padding area (optional - can be removed if not wanted) */
+.subagent-stack::after {
+	content: "";
+	position: absolute;
+	bottom: 0;
+	left: 0;
+	right: 0;
+	height: 180px;
+	background: linear-gradient(to bottom, transparent, var(--vscode-editor-background) 20%);
+	pointer-events: none;
+	z-index: -1;
+}
+
+/* Keep expanded subagent with feedback in view */
+.subagent-item:not(.collapsed):has([data-feedback-area]) {
+	min-height: fit-content;
+	margin-bottom: 10px;
+}
+
+/* Ensure the last subagent has extra space when expanded */
+.subagent-item:last-child:not(.collapsed) {
+	margin-bottom: 20px;
+}
+
+/* Subagent Type Badge Styles */
+.subagent-type-badge {
+	display: inline-block;
+	padding: 2px 6px;
+	border-radius: 4px;
+	font-size: 11px;
+	font-weight: 600;
+	margin-right: 8px;
+	border: 1px solid;
+	transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+	white-space: nowrap;
+	flex-shrink: 0;
+}
+
+.subagent-type-badge:hover {
+	transform: scale(1.02);
+	cursor: help;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+	.subagent-type-badge {
+		border-width: 2px;
+		font-weight: 700;
+	}
+}
+
+/* Focus styles for accessibility */
+.subagent-type-badge:focus {
+	outline: 2px solid var(--vscode-focusBorder);
+	outline-offset: 2px;
+}

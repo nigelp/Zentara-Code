@@ -15,6 +15,7 @@ import {
 	OpenAiHandler,
 	LmStudioHandler,
 	GeminiHandler,
+	GCliHandler,
 	OpenAiNativeHandler,
 	DeepSeekHandler,
 	MoonshotHandler,
@@ -30,6 +31,7 @@ import {
 	ChutesHandler,
 	LiteLLMHandler,
 	ClaudeCodeHandler,
+	ClaudeMaxHandler,
 	QwenCodeHandler,
 	SambaNovaHandler,
 	IOIntelligenceHandler,
@@ -94,6 +96,8 @@ export function buildApiHandler(configuration: ProviderSettings): ApiHandler {
 			return new AnthropicHandler(options)
 		case "claude-code":
 			return new ClaudeCodeHandler(options)
+		case "claude-max":
+			return new ClaudeMaxHandler(options)
 		case "glama":
 			return new GlamaHandler(options)
 		case "openrouter":
@@ -112,6 +116,8 @@ export function buildApiHandler(configuration: ProviderSettings): ApiHandler {
 			return new LmStudioHandler(options)
 		case "gemini":
 			return new GeminiHandler(options)
+		case "g-cli":
+			return new GCliHandler(options)
 		case "openai-native":
 			return new OpenAiNativeHandler(options)
 		case "deepseek":
