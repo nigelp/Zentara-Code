@@ -29,16 +29,20 @@ import {
 	type TerminalActionId,
 	type TerminalActionPromptType,
 	type HistoryItem,
-	type ClineAsk,
+	type CloudUserInfo,
+	type CreateTaskOptions,
+	type ClineMessage,
 	RooCodeEventName,
 	requestyDefaultModelId,
 	openRouterDefaultModelId,
 	glamaDefaultModelId,
 	DEFAULT_TERMINAL_OUTPUT_CHARACTER_LIMIT,
 	DEFAULT_WRITE_DELAY_MS,
+	ORGANIZATION_ALLOW_ALL,
+	DEFAULT_MODES,
 } from "@roo-code/types"
 import { TelemetryService } from "@roo-code/telemetry"
-import { type CloudUserInfo, CloudService, ORGANIZATION_ALLOW_ALL, getRooCodeApiUrl } from "@roo-code/cloud"
+import { CloudService, BridgeOrchestrator, getRooCodeApiUrl } from "@roo-code/cloud"
 
 import { safeWriteJson } from "../../utils/safeWriteJson"
 import { Package } from "../../shared/package"
@@ -127,9 +131,6 @@ export class ClineProvider
 	extends EventEmitter
 	implements vscode.WebviewViewProvider, TelemetryPropertiesProvider, TaskProviderLike
 {
-	override on(eventName: keyof TaskProviderEvents, listener: (...args: any[]) => void): this {
-		return super.on(eventName, listener)
-	}
 	// Used in package.json as the view's id. This value cannot be changed due
 	// to how VSCode caches views based on their id, and updating the id would
 	// break existing instances of the extension.
@@ -164,7 +165,7 @@ export class ClineProvider
 
 	public isViewLaunched = false
 	public settingsImportedAt?: number
-	public readonly latestAnnouncementId = "aug-20-2025-stealth-model" // Update for stealth model announcement
+	public readonly latestAnnouncementId = "aug-25-2025-grok-code-fast" // Update for Grok Code Fast announcement
 	public readonly providerSettingsManager: ProviderSettingsManager
 	public readonly customModesManager: CustomModesManager
 	private updating_state = false
@@ -182,7 +183,7 @@ export class ClineProvider
 		ClineProvider.activeInstances.add(this)
 
 		this.mdmService = mdmService
-		this.cloudService = CloudService.getInstance()
+		this.cloudService = CloudService.instance
 		this.updateGlobalState("codebaseIndexModels", EMBEDDING_MODEL_PROFILES)
 
 		// Start health check monitoring
@@ -306,28 +307,29 @@ export class ClineProvider
 	}
 
 	/**
-	 * Synchronize cloud profiles with local profiles
+	 * Synchronize cloud profiles with local profiles.
 	 */
 	private async syncCloudProfiles() {
 		try {
-			if (!this.cloudService) return
-			const settings = this.cloudService.getOrganizationSettings()
+			const settings = CloudService.instance.getOrganizationSettings()
+
 			if (!settings?.providerProfiles) {
 				return
 			}
 
 			const currentApiConfigName = this.getGlobalState("currentApiConfigName")
+
 			const result = await this.providerSettingsManager.syncCloudProfiles(
 				settings.providerProfiles,
 				currentApiConfigName,
 			)
 
 			if (result.hasChanges) {
-				// Update list
+				// Update list.
 				await this.updateGlobalState("listApiConfigMeta", await this.providerSettingsManager.listConfig())
 
 				if (result.activeProfileChanged && result.activeProfileId) {
-					// Reload full settings for new active profile
+					// Reload full settings for new active profile.
 					const profile = await this.providerSettingsManager.getProfile({
 						id: result.activeProfileId,
 					})
@@ -343,11 +345,11 @@ export class ClineProvider
 
 	// Adds a new Task instance to clineStack, marking the start of a new task.
 	// The instance is pushed to the top of the stack (LIFO order).
-	// When the task is completed, the top instance is removed, reactivating the previous task.
+	// When the task is completed, the top instance is removed, reactivating the
+	// previous task.
 	async addClineToStack(task: Task) {
-		console.log(`[subtasks] adding task ${task.taskId}.${task.instanceId} to stack`)
-
-		// Add this cline instance into the stack that represents the order of all the called tasks.
+		// Add this cline instance into the stack that represents the order of
+		// all the called tasks.
 		this.clineStack.push(task)
 		this.registerTask(task) // Register in dictionary
 		task.emit(RooCodeEventName.TaskFocused)
@@ -410,7 +412,8 @@ export class ClineProvider
 		let task = this.clineStack.pop()
 
 		if (task) {
-			console.log(`[subtasks] removing task ${task.taskId}.${task.instanceId} from stack`)
+			task.emit(RooCodeEventName.TaskUnfocused)
+
 			this.unregisterTask(task.taskId) // Unregister from dictionary
 
 			try {
@@ -991,9 +994,11 @@ export class ClineProvider
 			task.isStreamingPaused = false
 		}
 	}
-	// remove the current task/cline instance (at the top of the stack), so this task is finished
-	// and resume the previous task/cline instance (if it exists)
-	// this is used when a sub task is finished and the parent task needs to be resumed
+	// Remove the current task/cline instance (at the top of the stack), so this
+	// task is finished and resume the previous task/cline instance (if it
+	// exists).
+	// This is used when a subtask is finished and the parent task needs to be
+	// resumed.
 	async finishSubTask(lastMessage: string, cline: Task | undefined = undefined, cancelledByUser: boolean = false) {
 		console.log(`[subtasks] finishing subtask ${lastMessage} (cancelledByUser: ${cancelledByUser})`)
 
@@ -1061,63 +1066,6 @@ export class ClineProvider
 		}
 	}
 
-	// Clear the current task without treating it as a subtask
-	// This is used when the user cancels a task that is not a subtask
-	async clearTask() {
-		await this.removeClineFromStack()
-	}
-
-	resumeTask(taskId: string): void {
-		// Use the existing showTaskWithId method which handles both current and historical tasks
-		this.showTaskWithId(taskId).catch((error) => {
-			this.log(`Failed to resume task ${taskId}: ${error.message}`)
-		})
-	}
-
-	getRecentTasks(): string[] {
-		if (this.recentTasksCache) {
-			return this.recentTasksCache
-		}
-
-		const history = this.getGlobalState("taskHistory") ?? []
-		const workspaceTasks: HistoryItem[] = []
-
-		for (const item of history) {
-			if (!item.ts || !item.task || item.workspace !== this.cwd) {
-				continue
-			}
-
-			workspaceTasks.push(item)
-		}
-
-		if (workspaceTasks.length === 0) {
-			this.recentTasksCache = []
-			return this.recentTasksCache
-		}
-
-		workspaceTasks.sort((a, b) => b.ts - a.ts)
-		let recentTaskIds: string[] = []
-
-		if (workspaceTasks.length >= 100) {
-			// If we have at least 100 tasks, return tasks from the last 7 days.
-			const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000
-
-			for (const item of workspaceTasks) {
-				// Stop when we hit tasks older than 7 days.
-				if (item.ts < sevenDaysAgo) {
-					break
-				}
-
-				recentTaskIds.push(item.id)
-			}
-		} else {
-			// Otherwise, return the most recent 100 tasks (or all if less than 100).
-			recentTaskIds = workspaceTasks.slice(0, Math.min(100, workspaceTasks.length)).map((item) => item.id)
-		}
-
-		this.recentTasksCache = recentTaskIds
-		return this.recentTasksCache
-	}
 
 	// Update activity timestamp for a specific subagent
 	async updateSubagentActivity(taskId: string) {
@@ -1473,8 +1421,6 @@ export class ClineProvider
 	}
 
 	async resolveWebviewView(webviewView: vscode.WebviewView | vscode.WebviewPanel) {
-		this.log("Resolving webview view")
-
 		this.view = webviewView
 
 		// Set panel reference according to webview type
@@ -1615,92 +1561,6 @@ export class ClineProvider
 
 		// If the extension is starting a new session, clear previous task state.
 		await this.removeClineFromStack()
-
-		this.log("Webview view resolved")
-	}
-
-	// When initializing a new task, (not from history but from a tool command
-	// new_task) there is no need to remove the previous task since the new
-	// task is a subtask of the previous one, and when it finishes it is removed
-	// from the stack and the caller is resumed in this way we can have a chain
-	// of tasks, each one being a sub task of the previous one until the main
-	// task is finished.
-	public async createTask(
-		text?: string,
-		images?: string[],
-		parentTask?: Task,
-		options: Partial<
-			Pick<
-				TaskOptions,
-				| "enableDiff"
-				| "enableCheckpoints"
-				| "fuzzyMatchThreshold"
-				| "consecutiveMistakeLimit"
-				| "experiments"
-				| "initialTodos"
-			>
-		> = {},
-		is_parallel: boolean = false, // New parameter to indicate parallel execution
-	) {
-		raceLog("INIT_CLINE_WITH_TASK", {
-			hasTask: !!text,
-			hasImages: !!images,
-			parentTaskId: parentTask?.taskId,
-			is_parallel,
-			stackSize: this.clineStack.length,
-			setSize: this.clineSet.size,
-			task: text,
-		})
-
-		const {
-			apiConfiguration,
-			organizationAllowList,
-			diffEnabled: enableDiff,
-			enableCheckpoints,
-			fuzzyMatchThreshold,
-			experiments,
-			cloudUserInfo,
-			remoteControlEnabled,
-		} = await this.getState()
-
-		if (!ProfileValidator.isProfileAllowed(apiConfiguration, organizationAllowList)) {
-			throw new OrganizationAllowListViolationError(t("common:errors.violated_organization_allowlist"))
-		}
-
-		const cline = new Task({
-			provider: this,
-			apiConfiguration,
-			enableDiff,
-			enableCheckpoints,
-			fuzzyMatchThreshold,
-			consecutiveMistakeLimit: apiConfiguration.consecutiveMistakeLimit,
-			task: text,
-			images,
-			experiments,
-			rootTask: this.clineStack.length > 0 ? this.clineStack[0] : undefined,
-			parentTask,
-			taskNumber: this.clineStack.length + 1,
-			isParallel: is_parallel,
-			onCreated: this.taskCreationCallback,
-			enableTaskBridge: isRemoteControlEnabled(cloudUserInfo, remoteControlEnabled),
-			initialTodos: options.initialTodos,
-			...options,
-		})
-		// If the task is parallel, add it to the set for parallel execution
-		if (is_parallel) {
-			raceLog("ADD_CLINE_TO_SET", { taskId: cline.taskId })
-			await this.addClineToSet(cline)
-		} else {
-			// Otherwise, add it to the stack for sequential execution
-			raceLog("ADD_CLINE_TO_STACK", { taskId: cline.taskId })
-			await this.addClineToStack(cline)
-		}
-
-		this.log(
-			`[subtasks] ${cline.parentTask ? "child" : "parent"} task ${cline.taskId}.${cline.instanceId} instantiated`,
-		)
-
-		return cline
 	}
 
 	public async createTaskWithHistoryItem(historyItem: HistoryItem & { rootTask?: Task; parentTask?: Task }) {
@@ -3509,50 +3369,6 @@ export class ClineProvider
 		return this.clineStack[this.clineStack.length - 1]
 	}
 
-	public getRecentTasks(): string[] {
-		if (this.recentTasksCache) {
-			return this.recentTasksCache
-		}
-
-		const history = this.getGlobalState("taskHistory") ?? []
-		const workspaceTasks: HistoryItem[] = []
-
-		for (const item of history) {
-			if (!item.ts || !item.task || item.workspace !== this.cwd) {
-				continue
-			}
-
-			workspaceTasks.push(item)
-		}
-
-		if (workspaceTasks.length === 0) {
-			this.recentTasksCache = []
-			return this.recentTasksCache
-		}
-
-		workspaceTasks.sort((a, b) => b.ts - a.ts)
-		let recentTaskIds: string[] = []
-
-		if (workspaceTasks.length >= 100) {
-			// If we have at least 100 tasks, return tasks from the last 7 days.
-			const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000
-
-			for (const item of workspaceTasks) {
-				// Stop when we hit tasks older than 7 days.
-				if (item.ts < sevenDaysAgo) {
-					break
-				}
-
-				recentTaskIds.push(item.id)
-			}
-		} else {
-			// Otherwise, return the most recent 100 tasks (or all if less than 100).
-			recentTaskIds = workspaceTasks.slice(0, Math.min(100, workspaceTasks.length)).map((item) => item.id)
-		}
-
-		this.recentTasksCache = recentTaskIds
-		return this.recentTasksCache
-	}
 
 	// When initializing a new task, (not from history but from a tool command
 	// new_task) there is no need to remove the previous task since the new
@@ -3565,6 +3381,7 @@ export class ClineProvider
 		images?: string[],
 		parentTask?: Task,
 		options: CreateTaskOptions = {},
+		is_parallel: boolean = false, // New parameter to indicate parallel execution
 		configuration: RooCodeSettings = {},
 	): Promise<Task> {
 		if (configuration) {
@@ -3625,81 +3442,29 @@ export class ClineProvider
 			rootTask: this.clineStack.length > 0 ? this.clineStack[0] : undefined,
 			parentTask,
 			taskNumber: this.clineStack.length + 1,
+			isParallel: is_parallel,
 			onCreated: this.taskCreationCallback,
 			enableBridge: BridgeOrchestrator.isEnabled(cloudUserInfo, remoteControlEnabled),
 			initialTodos: options.initialTodos,
 			...options,
 		})
 
-		await this.addClineToStack(task)
 
-		this.log(
-			`[createTask] ${task.parentTask ? "child" : "parent"} task ${task.taskId}.${task.instanceId} instantiated`,
-		)
 
+		// If the task is parallel, add it to the set for parallel execution
+		if (is_parallel) {
+			raceLog("ADD_CLINE_TO_SET", { taskId: task.taskId })
+			await this.addClineToSet(task)
+		} else {
+			// Otherwise, add it to the stack for sequential execution
+			raceLog("ADD_CLINE_TO_STACK", { taskId: task.taskId })
+			await this.addClineToStack(task)
+		}
 		return task
 	}
 
-	public async cancelTask(): Promise<void> {
-		const cline = this.getCurrentTask()
 
-		if (!cline) {
-			return
-		}
 
-		console.log(`[cancelTask] cancelling task ${cline.taskId}.${cline.instanceId}`)
-
-		const { historyItem } = await this.getTaskWithId(cline.taskId)
-		// Preserve parent and root task information for history item.
-		const rootTask = cline.rootTask
-		const parentTask = cline.parentTask
-
-		cline.abortTask()
-
-		await pWaitFor(
-			() =>
-				this.getCurrentTask()! === undefined ||
-				this.getCurrentTask()!.isStreaming === false ||
-				this.getCurrentTask()!.didFinishAbortingStream ||
-				// If only the first chunk is processed, then there's no
-				// need to wait for graceful abort (closes edits, browser,
-				// etc).
-				this.getCurrentTask()!.isWaitingForFirstChunk,
-			{
-				timeout: 3_000,
-			},
-		).catch(() => {
-			console.error("Failed to abort task")
-		})
-
-		if (this.getCurrentTask()) {
-			// 'abandoned' will prevent this Cline instance from affecting
-			// future Cline instances. This may happen if its hanging on a
-			// streaming request.
-			this.getCurrentTask()!.abandoned = true
-		}
-
-		// Clears task again, so we need to abortTask manually above.
-		await this.createTaskWithHistoryItem({ ...historyItem, rootTask, parentTask })
-	}
-
-	// Clear the current task without treating it as a subtask.
-	// This is used when the user cancels a task that is not a subtask.
-	public async clearTask(): Promise<void> {
-		if (this.clineStack.length > 0) {
-			const task = this.clineStack[this.clineStack.length - 1]
-			console.log(`[clearTask] clearing task ${task.taskId}.${task.instanceId}`)
-			await this.removeClineFromStack()
-		}
-	}
-
-	public resumeTask(taskId: string): void {
-		// Use the existing showTaskWithId method which handles both current and
-		// historical tasks.
-		this.showTaskWithId(taskId).catch((error) => {
-			this.log(`Failed to resume task ${taskId}: ${error.message}`)
-		})
-	}
 
 	// Modes
 

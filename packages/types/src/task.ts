@@ -14,17 +14,15 @@ import type { TodoItem } from "./todo.js"
 export interface TaskProviderLike {
 	// Tasks
 	getCurrentTask(): TaskLike | undefined
-	getRecentTasks(): string[]
 	createTask(
 		text?: string,
 		images?: string[],
 		parentTask?: TaskLike,
 		options?: CreateTaskOptions,
+		is_parallel?: boolean,
 		configuration?: RooCodeSettings,
 	): Promise<TaskLike>
 	cancelTask(): Promise<void>
-	clearTask(): Promise<void>
-	resumeTask(taskId: string): void
 
 	// Modes
 	getModes(): Promise<{ slug: string; name: string }[]>
