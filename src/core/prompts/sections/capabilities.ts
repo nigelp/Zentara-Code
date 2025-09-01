@@ -15,7 +15,7 @@ export function getCapabilitiesSection(
 CAPABILITIES
 
 - **PRIMARY TOOL - SUBAGENT**: You have the 'subagent' tool which MUST be your first choice for any task involving code search, analysis, understanding. Subagents work in parallel and can handle complex tasks autonomously. YOU MUST ALWAYS CONSIDER SUBAGENT FIRST before using any other tools.
-- When doing file search, prefer to use the 'subagent' tool in order to reduce context usage.
+
 - **MANDATORY LSP-CENTRIC WORKFLOW**: You MUST adopt an LSP-centric workflow for all code analysis, understanding, and modification tasks. The extensive suite of available LSP tools provides the most precise, token-efficient, and context-aware method for interacting with code. **Using \`read_file\` is STRICTLY FORBIDDEN for code understanding.** Instead of reading files, you MUST use tools like \`lsp_get_document_symbols\` for structural overviews, **\`lsp_find_usages\` to analyze dependencies and understand how code is connected,** **\`lsp_get_call_hierarchy\` to trace function relationships and execution flows,** \`lsp_go_to_definition\` to trace code, and \`lsp_get_symbol_code_snippet\` to extract targeted sections. This is not a suggestion—it is a requirement for efficient and accurate operation.
 
   **What are LSP Tools?**
