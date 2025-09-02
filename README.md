@@ -2,6 +2,12 @@
 
 Zentara Code turns chat instructions into precise, auditable changes in your codebase. It is optimized for speed, safety, and correctness through parallel execution, LSP semantics, and integrated runtime debugging.
 
+## 🎥 Demo
+
+Watch Zentara Code in action:
+
+[![Zentara Code Release Demo](https://img.youtube.com/vi/YWezcsj-CHc/0.jpg)](https://youtu.be/YWezcsj-CHc)
+
 ## What Makes Zentara Different
 
 - **Parallel subagents**: Independent workers run simultaneously with strict scope separation, opt‑in write permissions, and per‑agent timeouts for high throughput without conflicts.
