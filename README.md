@@ -184,4 +184,6 @@ Zentara Code is licensed under the [Apache License 2.0](./LICENSE).
 
 © 2025 ZentarAI
 
-This project is a fork of [ZentaraCodeInc/Zentara-Code)](https://github.com/ZentaraCodeInc/Zentara-Code). We gratefully acknowledge all contributions made to the original project.
+## Acknowledgments
+
+Zentara Code is a mod from the great [Roo-Code](https://github.com/RooCodeInc/Roo-Code). We greatly thank the contributors of the RooCode community and the original Cline community that RooCode developed from.
