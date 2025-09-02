@@ -60,7 +60,7 @@ graph TD
 When multiple agents have the same name, the system uses this priority order:
 
 1. **System Agents** (Highest Priority)
-   - Built into Roo Code
+   - Built into Zentara Code
    - Maintained by the development team
    - Cannot be overridden
 
@@ -502,7 +502,7 @@ The system agent will be used due to highest priority.
 
 ## Summary
 
-Predefined agents provide a powerful way to standardize and reuse proven workflows in Roo Code. They combine the flexibility of subagents with the consistency of expert methodologies, making them ideal for recurring development tasks.
+Predefined agents provide a powerful way to standardize and reuse proven workflows in Zentara Code. They combine the flexibility of subagents with the consistency of expert methodologies, making them ideal for recurring development tasks.
 
 **Key Takeaways:**
 - **Two Types**: General subagents (custom) vs Predefined agents (templated)

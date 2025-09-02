@@ -13,5 +13,5 @@ export const HUGGINGFACE_SLIDER_MIN = 1
 export const HUGGINGFACE_TEMPERATURE_MAX_VALUE = 2
 
 // API constants
-export const HUGGINGFACE_API_URL = "https://router.huggingface.co/v1/models?collection=roocode"
+export const HUGGINGFACE_API_URL = "https://router.huggingface.co/v1/models?collection=zentaracode"
 export const HUGGINGFACE_CACHE_DURATION = 1000 * 60 * 60 // 1 hour

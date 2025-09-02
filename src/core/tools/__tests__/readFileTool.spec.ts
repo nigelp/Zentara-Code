@@ -94,17 +94,17 @@ vi.mock("../../prompts/responses", () => ({
 			(feedback?: string) =>
 				`The user approved this operation and provided the following context:\n<feedback>\n${feedback}\n</feedback>`,
 		),
-		rooIgnoreError: vi.fn(
+		zentaraIgnoreError: vi.fn(
 			(path: string) =>
-				`Access to ${path} is blocked by the .rooignore file settings. You must try to continue in the task without using this file, or ask the user to update the .rooignore file.`,
+				`Access to ${path} is blocked by the .zentaraignore file settings. You must try to continue in the task without using this file, or ask the user to update the .zentaraignore file.`,
 		),
 		toolResult: toolResultMock,
 		imageBlocks: imageBlocksMock,
 	},
 }))
 
-vi.mock("../../ignore/RooIgnoreController", () => ({
-	RooIgnoreController: class {
+vi.mock("../../ignore/ZentaraIgnoreController", () => ({
+	ZentaraIgnoreController: class {
 		initialize() {
 			return Promise.resolve()
 		}
@@ -186,7 +186,7 @@ function createMockCline(): any {
 		cwd: "/",
 		task: "Test",
 		providerRef: mockProvider,
-		rooIgnoreController: {
+		zentaraIgnoreController: {
 			validateAccess: vi.fn().mockReturnValue(true),
 		},
 		say: vi.fn().mockResolvedValue(undefined),
@@ -560,7 +560,7 @@ describe("read_file tool XML output structure", () => {
 		mockProvider.getState.mockResolvedValue({ maxReadFileLine, maxImageFileSize: 20, maxTotalImageSize: 20 })
 		mockedCountFileLines.mockResolvedValue(totalLines)
 		mockedIsBinaryFile.mockResolvedValue(isBinary)
-		mockCline.rooIgnoreController.validateAccess = vi.fn().mockReturnValue(validateAccess)
+		mockCline.zentaraIgnoreController.validateAccess = vi.fn().mockReturnValue(validateAccess)
 
 		let argsContent = `<file><path>${testFilePath}</path></file>`
 
@@ -720,7 +720,7 @@ describe("read_file tool XML output structure", () => {
 				mockCline.cwd = "/"
 				mockCline.task = "Test"
 				mockCline.providerRef = mockProvider
-				mockCline.rooIgnoreController = {
+				mockCline.zentaraIgnoreController = {
 					validateAccess: vi.fn().mockReturnValue(true),
 				}
 				mockCline.say = vi.fn().mockResolvedValue(undefined)
@@ -793,7 +793,7 @@ describe("read_file tool XML output structure", () => {
 				mockCline.cwd = "/"
 				mockCline.task = "Test"
 				mockCline.providerRef = mockProvider
-				mockCline.rooIgnoreController = {
+				mockCline.zentaraIgnoreController = {
 					validateAccess: vi.fn().mockReturnValue(true),
 				}
 				mockCline.say = vi.fn().mockResolvedValue(undefined)
@@ -879,7 +879,7 @@ describe("read_file tool XML output structure", () => {
 				mockCline.cwd = "/"
 				mockCline.task = "Test"
 				mockCline.providerRef = mockProvider
-				mockCline.rooIgnoreController = {
+				mockCline.zentaraIgnoreController = {
 					validateAccess: vi.fn().mockReturnValue(true),
 				}
 				mockCline.say = vi.fn().mockResolvedValue(undefined)
@@ -952,7 +952,7 @@ describe("read_file tool XML output structure", () => {
 				mockCline.cwd = "/"
 				mockCline.task = "Test"
 				mockCline.providerRef = mockProvider
-				mockCline.rooIgnoreController = {
+				mockCline.zentaraIgnoreController = {
 					validateAccess: vi.fn().mockReturnValue(true),
 				}
 				mockCline.say = vi.fn().mockResolvedValue(undefined)
@@ -1077,7 +1077,7 @@ describe("read_file tool XML output structure", () => {
 				mockCline.cwd = "/"
 				mockCline.task = "Test"
 				mockCline.providerRef = mockProvider
-				mockCline.rooIgnoreController = {
+				mockCline.zentaraIgnoreController = {
 					validateAccess: vi.fn().mockReturnValue(true),
 				}
 				mockCline.say = vi.fn().mockResolvedValue(undefined)
@@ -1124,7 +1124,7 @@ describe("read_file tool XML output structure", () => {
 				mockCline.cwd = "/"
 				mockCline.task = "Test"
 				mockCline.providerRef = mockProvider
-				mockCline.rooIgnoreController = {
+				mockCline.zentaraIgnoreController = {
 					validateAccess: vi.fn().mockReturnValue(true),
 				}
 				mockCline.say = vi.fn().mockResolvedValue(undefined)
@@ -1316,13 +1316,13 @@ describe("read_file tool XML output structure", () => {
 			expect(toolResult).toBe(`<files><error>Missing required parameter</error></files>`)
 		})
 
-		it("should include error tag for RooIgnore error", async () => {
+		it("should include error tag for ZentaraIgnore error", async () => {
 			// Execute - skip addLineNumbers check as it returns early with an error
 			const result = await executeReadFileTool({}, { validateAccess: false })
 
 			// Verify
 			expect(result).toBe(
-				`<files>\n<file><path>${testFilePath}</path><error>Access to ${testFilePath} is blocked by the .rooignore file settings. You must try to continue in the task without using this file, or ask the user to update the .rooignore file.</error></file>\n</files>`,
+				`<files>\n<file><path>${testFilePath}</path><error>Access to ${testFilePath} is blocked by the .zentaraignore file settings. You must try to continue in the task without using this file, or ask the user to update the .zentaraignore file.</error></file>\n</files>`,
 			)
 		})
 	})

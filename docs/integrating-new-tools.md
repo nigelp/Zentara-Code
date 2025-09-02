@@ -1,6 +1,6 @@
-# Tool Integration Guide for Roo Code
+# Tool Integration Guide for Zentara Code
 
-This guide provides a comprehensive walkthrough for integrating new tools into Roo Code, from simple standalone tools to complex tool groups with multiple operations. The system uses a robust, type-safe architecture with JSON-based parameters.
+This guide provides a comprehensive walkthrough for integrating new tools into Zentara Code, from simple standalone tools to complex tool groups with multiple operations. The system uses a robust, type-safe architecture with JSON-based parameters.
 
 ## Table of Contents
 
@@ -13,7 +13,7 @@ This guide provides a comprehensive walkthrough for integrating new tools into R
 
 ## Architecture Overview
 
-Roo Code's tool system is built on a modular, type-safe architecture with clear separation of concerns:
+Zentara Code's tool system is built on a modular, type-safe architecture with clear separation of concerns:
 
 ### Core Components
 
@@ -590,4 +590,4 @@ Test the full tool flow including registration and dispatch.
 - Validate parameter handling
 - Test integration with the broader system
 
-This guide provides the foundation for integrating new tools into Roo Code. Follow the patterns established by existing tools and refer to their implementations for additional guidance.
+This guide provides the foundation for integrating new tools into Zentara Code. Follow the patterns established by existing tools and refer to their implementations for additional guidance.

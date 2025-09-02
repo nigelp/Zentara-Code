@@ -69,10 +69,10 @@ import { lspTool } from "../lspTool"
 import { Task } from "../../task/Task"
 import { LspToolUse } from "../../../shared/tools"
 import { formatResponse } from "../../prompts/responses"
-import { outputChannel } from "../../../roo_debug/src/vscodeUtils"
+import { outputChannel } from "../../../zentara_debug/src/vscodeUtils"
 import { lspController } from "../../../zentara_lsp"
 
-vi.mock("../../../roo_debug/src/vscodeUtils", () => ({
+vi.mock("../../../zentara_debug/src/vscodeUtils", () => ({
 	outputChannel: {
 		appendLine: vi.fn(),
 	},
@@ -199,7 +199,7 @@ describe("LSP Tool Diagnostics Integration", () => {
 			// Verify file tracking
 			expect(mockTask.fileContextTracker.trackFileContext).toHaveBeenCalledWith(
 				"src/app.ts",
-				"roo_edited"
+				"zentara_edited"
 			)
 			expect(mockTask.didEditFile).toBe(true)
 
@@ -277,7 +277,7 @@ describe("LSP Tool Diagnostics Integration", () => {
 			expect(mockTask.diffViewProvider.pushToolWriteResult).toHaveBeenCalled()
 			expect(mockTask.fileContextTracker.trackFileContext).toHaveBeenCalledWith(
 				"lib/utils.py",
-				"roo_edited"
+				"zentara_edited"
 			)
 		})
 
@@ -546,7 +546,7 @@ describe("LSP Tool Diagnostics Integration", () => {
 			expect(mockTask.diffViewProvider.relPath).toBe("src/components/ui/buttons/PrimaryButton.tsx")
 			expect(mockTask.fileContextTracker.trackFileContext).toHaveBeenCalledWith(
 				"src/components/ui/buttons/PrimaryButton.tsx",
-				"roo_edited"
+				"zentara_edited"
 			)
 		})
 	})

@@ -14,7 +14,7 @@ vi.mock("../applyDiffTool", () => ({
 }))
 
 // Mock TelemetryService
-vi.mock("@roo-code/telemetry", () => ({
+vi.mock("@zentara-code/telemetry", () => ({
 	TelemetryService: {
 		get instance() {
 			return {
@@ -81,10 +81,10 @@ describe("multiApplyDiffTool", () => {
 			api: {
 				getModel: vi.fn().mockReturnValue({ id: "test-model" }),
 			},
-			rooIgnoreController: {
+			zentaraIgnoreController: {
 				validateAccess: vi.fn().mockReturnValue(true),
 			},
-			rooProtectedController: {
+			zentaraProtectedController: {
 				isWriteProtected: vi.fn().mockReturnValue(false),
 			},
 			fileContextTracker: {

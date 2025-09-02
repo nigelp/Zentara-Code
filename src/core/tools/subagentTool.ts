@@ -2,7 +2,7 @@ import { ToolUse, AskApproval, HandleError, PushToolResult, RemoveClosingTag } f
 import { Task } from "../task/Task"
 import { formatResponse } from "../prompts/responses"
 import { t } from "../../i18n"
-import { validateSubAgentParams } from "../../roo_subagent/src/subagentValidation"
+import { validateSubAgentParams } from "../../zentara_subagent/src/subagentValidation"
 import delay from "delay"
 
 interface SubAgentParams {
@@ -142,7 +142,7 @@ export async function subagentTool(
 			if (params.subagent_type && discovered) {
 				try {
 					// Dynamic import to get the findAgentByName function
-					const mod = await import("../../roo_subagent/src/agentDiscovery")
+					const mod = await import("../../zentara_subagent/src/agentDiscovery")
 					const foundAgent = mod.findAgentByName(discovered.agents, params.subagent_type)
 
 					if (foundAgent && foundAgent.systemPrompt) {

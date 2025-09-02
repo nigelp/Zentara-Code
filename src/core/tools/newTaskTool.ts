@@ -1,7 +1,7 @@
 import delay from "delay"
 import * as vscode from "vscode"
 
-import { RooCodeEventName, TodoItem } from "@roo-code/types"
+import { ZentaraCodeEventName, TodoItem } from "@zentara-code/types"
 
 import { ToolUse, AskApproval, HandleError, PushToolResult, RemoveClosingTag } from "../../shared/tools"
 import { Task } from "../task/Task"
@@ -148,7 +148,7 @@ export async function newTaskTool(
 			// Delay to allow mode change to take effect
 			await delay(500)
 
-			cline.emit(RooCodeEventName.TaskSpawned, newCline.taskId)
+			cline.emit(ZentaraCodeEventName.TaskSpawned, newCline.taskId)
 
 			pushToolResult(
 				`Successfully created new task in ${targetMode.name} mode with message: ${unescapedMessage} and ${todoItems.length} todo items`,
@@ -157,7 +157,7 @@ export async function newTaskTool(
 			// Set the isPaused flag to true so the parent
 			// task can wait for the sub-task to finish.
 			cline.isPaused = true
-			cline.emit(RooCodeEventName.TaskPaused)
+			cline.emit(ZentaraCodeEventName.TaskPaused)
 
 			return
 		}

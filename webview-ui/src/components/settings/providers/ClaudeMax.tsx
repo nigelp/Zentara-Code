@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react"
 import { VSCodeButton, VSCodeTextField } from "@vscode/webview-ui-toolkit/react"
-import { type ProviderSettings } from "@roo-code/types"
+import { type ProviderSettings } from "@zentara-code/types"
 import { useAppTranslation } from "@src/i18n/TranslationContext"
 import { vscode } from "@src/utils/vscode"
 import { Slider } from "@src/components/ui"

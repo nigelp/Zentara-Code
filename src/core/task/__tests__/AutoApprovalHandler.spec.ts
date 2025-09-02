@@ -1,4 +1,4 @@
-import { GlobalState, ClineMessage } from "@roo-code/types"
+import { GlobalState, ClineMessage } from "@zentara-code/types"
 
 import { AutoApprovalHandler } from "../AutoApprovalHandler"
 

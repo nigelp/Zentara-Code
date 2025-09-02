@@ -8,7 +8,7 @@ import {
 	type MarketplaceItem,
 	type ShareVisibility,
 	marketplaceItemSchema,
-} from "@roo-code/types"
+} from "@zentara-code/types"
 
 import { Mode } from "./modes"
 
@@ -162,7 +162,7 @@ export interface WebviewMessage {
 		| "browserToolEnabled"
 		| "codebaseIndexEnabled"
 		| "telemetrySetting"
-		| "showRooIgnoredFiles"
+		| "showZentaraIgnoredFiles"
 		| "testBrowserConnection"
 		| "browserConnectionResult"
 		| "remoteBrowserEnabled"
@@ -178,8 +178,8 @@ export interface WebviewMessage {
 		| "setHistoryPreviewCollapsed"
 		| "hasOpenedModeSelector"
 		| "cloudButtonClicked"
-		| "rooCloudSignIn"
-		| "rooCloudSignOut"
+		| "zentaraCloudSignIn"
+		| "zentaraCloudSignOut"
 		| "condenseTaskContextRequest"
 		| "requestIndexingStatus"
 		| "startIndexing"

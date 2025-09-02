@@ -7,7 +7,7 @@ import {
 	OrganizationSettings,
 	organizationSettingsSchema,
 	ORGANIZATION_ALLOW_ALL,
-} from "@roo-code/types"
+} from "@zentara-code/types"
 
 export class StaticSettingsService implements SettingsService {
 	private settings: OrganizationSettings
@@ -42,12 +42,12 @@ export class StaticSettingsService implements SettingsService {
 	}
 
 	/**
-	 * Returns static user settings with roomoteControlEnabled and extensionBridgeEnabled as true
+	 * Returns static user settings with zentaramoteControlEnabled and extensionBridgeEnabled as true
 	 */
 	public getUserSettings(): UserSettingsData | undefined {
 		return {
 			features: {
-				roomoteControlEnabled: true,
+				zentaramoteControlEnabled: true,
 			},
 			settings: {
 				extensionBridgeEnabled: true,
@@ -58,7 +58,7 @@ export class StaticSettingsService implements SettingsService {
 
 	public getUserFeatures(): UserFeatures {
 		return {
-			roomoteControlEnabled: true,
+			zentaramoteControlEnabled: true,
 		}
 	}
 

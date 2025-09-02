@@ -12,14 +12,14 @@ vi.mock("../../i18n", () => ({
 // Mock DEFAULT_HEADERS
 vi.mock("../constants", () => ({
 	DEFAULT_HEADERS: {
-		"HTTP-Referer": "https://github.com/RooVetGit/Roo-Cline",
-		"X-Title": "Roo Code",
-		"User-Agent": "RooCode/1.0.0",
+		"HTTP-Referer": "https://github.com/ZentaraVetGit/Zentara-Cline",
+		"X-Title": "Zentara Code",
+		"User-Agent": "ZentaraCode/1.0.0",
 	},
 }))
 
 import { CerebrasHandler } from "../cerebras"
-import { cerebrasModels, type CerebrasModelId } from "@roo-code/types"
+import { cerebrasModels, type CerebrasModelId } from "@zentara-code/types"
 
 // Mock fetch globally
 global.fetch = vi.fn()
@@ -102,9 +102,9 @@ describe("CerebrasHandler", () => {
 					headers: expect.objectContaining({
 						"Content-Type": "application/json",
 						Authorization: "Bearer test-api-key",
-						"HTTP-Referer": "https://github.com/RooVetGit/Roo-Cline",
-						"X-Title": "Roo Code",
-						"User-Agent": "RooCode/1.0.0",
+						"HTTP-Referer": "https://github.com/ZentaraVetGit/Zentara-Cline",
+						"X-Title": "Zentara Code",
+						"User-Agent": "ZentaraCode/1.0.0",
 					}),
 				}),
 			)

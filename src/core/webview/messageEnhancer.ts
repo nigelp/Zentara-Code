@@ -1,5 +1,5 @@
-import { ProviderSettings, ClineMessage, GlobalState, TelemetryEventName } from "@roo-code/types"
-import { TelemetryService } from "@roo-code/telemetry"
+import { ProviderSettings, ClineMessage, GlobalState, TelemetryEventName } from "@zentara-code/types"
+import { TelemetryService } from "@zentara-code/telemetry"
 import { supportPrompt } from "../../shared/support-prompt"
 import { singleCompletionHandler } from "../../utils/single-completion-handler"
 import { ProviderSettingsManager } from "../config/ProviderSettingsManager"

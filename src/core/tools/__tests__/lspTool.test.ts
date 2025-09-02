@@ -4,7 +4,7 @@ import { describe, it, expect, beforeEach, vi } from "vitest"
 import { lspTool } from "../lspTool"
 import { Task } from "../../task/Task"
 import type { LspToolUse, ToolResponse } from "../../../shared/tools"
-import type { ClineAsk, ToolProgressStatus } from "@roo-code/types"
+import type { ClineAsk, ToolProgressStatus } from "@zentara-code/types"
 
 // Mock dependencies
 vi.mock("vscode", () => {
@@ -64,7 +64,7 @@ vi.mock("../lspToolValidation", () => ({
 	validateLspOperationArgs: vi.fn(),
 }))
 
-vi.mock("../../../roo_debug/src/vscodeUtils", () => ({
+vi.mock("../../../zentara_debug/src/vscodeUtils", () => ({
 	outputChannel: {
 		appendLine: vi.fn(),
 		show: vi.fn(),

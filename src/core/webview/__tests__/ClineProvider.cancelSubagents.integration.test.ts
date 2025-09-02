@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest"
 import { EventEmitter } from "events"
 import { ClineProvider } from "../ClineProvider"
 import { Task } from "../../task/Task"
-import { RooCodeEventName } from "@roo-code/types"
+import { ZentaraCodeEventName } from "@zentara-code/types"
 
 // Mock VS Code API
 vi.mock("vscode", () => ({

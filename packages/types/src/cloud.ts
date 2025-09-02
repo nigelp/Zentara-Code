@@ -2,7 +2,7 @@ import EventEmitter from "events"
 
 import { z } from "zod"
 
-import { RooCodeEventName } from "./events.js"
+import { ZentaraCodeEventName } from "./events.js"
 import { TaskStatus, taskMetadataSchema } from "./task.js"
 import { globalSettingsSchema } from "./global-settings.js"
 import { providerSettingsWithIdSchema } from "./provider-settings.js"
@@ -98,7 +98,7 @@ export const organizationDefaultSettingsSchema = globalSettingsSchema
 		maxOpenTabsContext: true,
 		maxReadFileLine: true,
 		maxWorkspaceFiles: true,
-		showRooIgnoredFiles: true,
+		showZentaraIgnoredFiles: true,
 		terminalCommandDelay: true,
 		terminalCompressProgressBar: true,
 		terminalOutputLineLimit: true,
@@ -155,7 +155,7 @@ export type OrganizationSettings = z.infer<typeof organizationSettingsSchema>
  */
 
 export const userFeaturesSchema = z.object({
-	roomoteControlEnabled: z.boolean().optional(),
+	zentaramoteControlEnabled: z.boolean().optional(),
 })
 
 export type UserFeatures = z.infer<typeof userFeaturesSchema>
@@ -391,19 +391,19 @@ export type ExtensionInstance = z.infer<typeof extensionInstanceSchema>
  */
 
 export enum ExtensionBridgeEventName {
-	TaskCreated = RooCodeEventName.TaskCreated,
-	TaskStarted = RooCodeEventName.TaskStarted,
-	TaskCompleted = RooCodeEventName.TaskCompleted,
-	TaskAborted = RooCodeEventName.TaskAborted,
-	TaskFocused = RooCodeEventName.TaskFocused,
-	TaskUnfocused = RooCodeEventName.TaskUnfocused,
-	TaskActive = RooCodeEventName.TaskActive,
-	TaskInteractive = RooCodeEventName.TaskInteractive,
-	TaskResumable = RooCodeEventName.TaskResumable,
-	TaskIdle = RooCodeEventName.TaskIdle,
+	TaskCreated = ZentaraCodeEventName.TaskCreated,
+	TaskStarted = ZentaraCodeEventName.TaskStarted,
+	TaskCompleted = ZentaraCodeEventName.TaskCompleted,
+	TaskAborted = ZentaraCodeEventName.TaskAborted,
+	TaskFocused = ZentaraCodeEventName.TaskFocused,
+	TaskUnfocused = ZentaraCodeEventName.TaskUnfocused,
+	TaskActive = ZentaraCodeEventName.TaskActive,
+	TaskInteractive = ZentaraCodeEventName.TaskInteractive,
+	TaskResumable = ZentaraCodeEventName.TaskResumable,
+	TaskIdle = ZentaraCodeEventName.TaskIdle,
 
-	ModeChanged = RooCodeEventName.ModeChanged,
-	ProviderProfileChanged = RooCodeEventName.ProviderProfileChanged,
+	ModeChanged = ZentaraCodeEventName.ModeChanged,
+	ProviderProfileChanged = ZentaraCodeEventName.ProviderProfileChanged,
 
 	InstanceRegistered = "instance_registered",
 	InstanceUnregistered = "instance_unregistered",
@@ -535,9 +535,9 @@ export type ExtensionBridgeCommand = z.infer<typeof extensionBridgeCommandSchema
  */
 
 export enum TaskBridgeEventName {
-	Message = RooCodeEventName.Message,
-	TaskModeSwitched = RooCodeEventName.TaskModeSwitched,
-	TaskInteractive = RooCodeEventName.TaskInteractive,
+	Message = ZentaraCodeEventName.Message,
+	TaskModeSwitched = ZentaraCodeEventName.TaskModeSwitched,
+	TaskInteractive = ZentaraCodeEventName.TaskInteractive,
 }
 
 export const taskBridgeEventSchema = z.discriminatedUnion("type", [

@@ -3,7 +3,7 @@ import { Fzf } from "fzf"
 import { ChevronUp } from "lucide-react"
 
 import { cn } from "@/lib/utils"
-import { useRooPortal } from "@/components/ui/hooks/useRooPortal"
+import { useZentaraPortal } from "@/components/ui/hooks/useZentaraPortal"
 import { Popover, PopoverContent, PopoverTrigger, StandardTooltip } from "@/components/ui"
 import { useAppTranslation } from "@/i18n/TranslationContext"
 import { vscode } from "@/utils/vscode"
@@ -37,7 +37,7 @@ export const ApiConfigSelector = ({
 	const { t } = useAppTranslation()
 	const [open, setOpen] = useState(false)
 	const [searchValue, setSearchValue] = useState("")
-	const portalContainer = useRooPortal("roo-portal")
+	const portalContainer = useZentaraPortal("zentara-portal")
 
 	// Create searchable items for fuzzy search.
 	const searchableItems = useMemo(

@@ -13,7 +13,7 @@
 
 ## Introduction
 
-The **subagent tool** is a powerful parallel execution mechanism in Roo Code, designed to enable simultaneous, autonomous task execution. It allows any mode to decompose complex tasks into smaller, independent subtasks that can be executed in parallel by specialized AI agents.
+The **subagent tool** is a powerful parallel execution mechanism in Zentara Code, designed to enable simultaneous, autonomous task execution. It allows any mode to decompose complex tasks into smaller, independent subtasks that can be executed in parallel by specialized AI agents.
 
 ### Key Distinction: Subagent Tool vs Orchestrator Mode
 
@@ -74,7 +74,7 @@ The **subagent tool** is a powerful parallel execution mechanism in Roo Code, de
 
 ### Types of Subagents
 
-Roo Code supports two types of subagents, each designed for different use cases:
+Zentara Code supports two types of subagents, each designed for different use cases:
 
 **1. General Subagents**
 - **Custom Instructions**: You provide complete task instructions
@@ -486,7 +486,7 @@ graph TD
 
 ## Summary
 
-The subagent tool is your primary weapon for **parallel task execution** across all modes in Roo Code. Unlike Orchestrator mode's sequential approach, subagents excel at **independent, simultaneous processing** of well-isolated subtasks.
+The subagent tool is your primary weapon for **parallel task execution** across all modes in Zentara Code. Unlike Orchestrator mode's sequential approach, subagents excel at **independent, simultaneous processing** of well-isolated subtasks.
 
 **Key Takeaways:**
 - Use for **independent, parallel tasks**

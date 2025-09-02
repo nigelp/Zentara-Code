@@ -5,10 +5,10 @@ import type { Socket } from "socket.io-client"
 import {
 	type TaskProviderLike,
 	type TaskProviderEvents,
-	RooCodeEventName,
+	ZentaraCodeEventName,
 	ExtensionBridgeEventName,
 	ExtensionSocketEvents,
-} from "@roo-code/types"
+} from "@zentara-code/types"
 
 import { ExtensionChannel } from "../ExtensionChannel.js"
 
@@ -90,17 +90,17 @@ describe("ExtensionChannel", () => {
 	describe("Event Listener Management", () => {
 		it("should register event listeners on initialization", () => {
 			// Verify that listeners were registered for all expected events
-			const expectedEvents: RooCodeEventName[] = [
-				RooCodeEventName.TaskCreated,
-				RooCodeEventName.TaskStarted,
-				RooCodeEventName.TaskCompleted,
-				RooCodeEventName.TaskAborted,
-				RooCodeEventName.TaskFocused,
-				RooCodeEventName.TaskUnfocused,
-				RooCodeEventName.TaskActive,
-				RooCodeEventName.TaskInteractive,
-				RooCodeEventName.TaskResumable,
-				RooCodeEventName.TaskIdle,
+			const expectedEvents: ZentaraCodeEventName[] = [
+				ZentaraCodeEventName.TaskCreated,
+				ZentaraCodeEventName.TaskStarted,
+				ZentaraCodeEventName.TaskCompleted,
+				ZentaraCodeEventName.TaskAborted,
+				ZentaraCodeEventName.TaskFocused,
+				ZentaraCodeEventName.TaskUnfocused,
+				ZentaraCodeEventName.TaskActive,
+				ZentaraCodeEventName.TaskInteractive,
+				ZentaraCodeEventName.TaskResumable,
+				ZentaraCodeEventName.TaskIdle,
 			]
 
 			// Check that on() was called for each event
@@ -195,7 +195,7 @@ describe("ExtensionChannel", () => {
 			;(mockSocket.emit as any).mockClear()
 
 			// Get a listener that was registered for TaskStarted
-			const taskStartedListeners = eventListeners.get(RooCodeEventName.TaskStarted)
+			const taskStartedListeners = eventListeners.get(ZentaraCodeEventName.TaskStarted)
 			expect(taskStartedListeners).toBeDefined()
 			expect(taskStartedListeners!.size).toBe(1)
 

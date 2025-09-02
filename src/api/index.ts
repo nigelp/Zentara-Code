@@ -1,6 +1,6 @@
 import { Anthropic } from "@anthropic-ai/sdk"
 
-import type { ProviderSettings, ModelInfo } from "@roo-code/types"
+import type { ProviderSettings, ModelInfo } from "@zentara-code/types"
 
 import { ApiStream } from "./transform/stream"
 
@@ -38,7 +38,7 @@ import {
 	DoubaoHandler,
 	ZAiHandler,
 	FireworksHandler,
-	RooHandler,
+	ZentaraHandler,
 	FeatherlessHandler,
 	VercelAiGatewayHandler,
 } from "./providers"
@@ -160,10 +160,10 @@ export function buildApiHandler(configuration: ProviderSettings): ApiHandler {
 			return new FireworksHandler(options)
 		case "io-intelligence":
 			return new IOIntelligenceHandler(options)
-		case "roo":
+		case "zentara":
 			// Never throw exceptions from provider constructors
 			// The provider-proxy server will handle authentication and return appropriate error codes
-			return new RooHandler(options)
+			return new ZentaraHandler(options)
 		case "featherless":
 			return new FeatherlessHandler(options)
 		case "vercel-ai-gateway":

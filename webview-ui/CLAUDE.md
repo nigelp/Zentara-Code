@@ -52,8 +52,8 @@ src/
 ### Import Path Aliases
 - `@/` → `src/`
 - `@src/` → `../src/` (extension source)
-- `@roo/` → `../packages/roo-` 
-- `@roo-code/` → `../packages/roo-code-`
+- `@zentara/` → `../packages/zentara-` 
+- `@zentara-code/` → `../packages/zentara-code-`
 
 ### State Management
 - Uses React Context API with custom providers

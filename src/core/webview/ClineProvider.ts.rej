@@ -6,7 +6,7 @@ diff a/src/core/webview/ClineProvider.ts b/src/core/webview/ClineProvider.ts	(re
 -	type ClineAsk,
 +	type CloudUserInfo,
 +	type CreateTaskOptions,
- 	RooCodeEventName,
+ 	ZentaraCodeEventName,
  	requestyDefaultModelId,
  	openRouterDefaultModelId,
  	glamaDefaultModelId,
@@ -14,10 +14,10 @@ diff a/src/core/webview/ClineProvider.ts b/src/core/webview/ClineProvider.ts	(re
  	DEFAULT_WRITE_DELAY_MS,
 +	ORGANIZATION_ALLOW_ALL,
 +	DEFAULT_MODES,
- } from "@roo-code/types"
- import { TelemetryService } from "@roo-code/telemetry"
--import { type CloudUserInfo, CloudService, ORGANIZATION_ALLOW_ALL, getRooCodeApiUrl } from "@roo-code/cloud"
-+import { CloudService, BridgeOrchestrator, getRooCodeApiUrl } from "@roo-code/cloud"
+ } from "@zentara-code/types"
+ import { TelemetryService } from "@zentara-code/telemetry"
+-import { type CloudUserInfo, CloudService, ORGANIZATION_ALLOW_ALL, getZentaraCodeApiUrl } from "@zentara-code/cloud"
++import { CloudService, BridgeOrchestrator, getZentaraCodeApiUrl } from "@zentara-code/cloud"
  
  import { Package } from "../../shared/package"
  import { findLast } from "../../shared/array"
@@ -77,14 +77,14 @@ diff a/src/core/webview/ClineProvider.ts b/src/core/webview/ClineProvider.ts	(re
 +		// Add this cline instance into the stack that represents the order of
 +		// all the called tasks.
  		this.clineStack.push(task)
- 		task.emit(RooCodeEventName.TaskFocused)
+ 		task.emit(ZentaraCodeEventName.TaskFocused)
  
 @@ -347,7 +353,7 @@ export class ClineProvider
  		let task = this.clineStack.pop()
  
  		if (task) {
 -			console.log(`[subtasks] removing task ${task.taskId}.${task.instanceId} from stack`)
-+			task.emit(RooCodeEventName.TaskUnfocused)
++			task.emit(ZentaraCodeEventName.TaskUnfocused)
  
  			try {
  				// Abort the running task and set isAbandoned to true so
@@ -285,7 +285,7 @@ diff a/src/core/webview/ClineProvider.ts b/src/core/webview/ClineProvider.ts	(re
 -		if (!cline) {
 -			return
 +		if (providerSettings.apiProvider) {
-+			this.emit(RooCodeEventName.ProviderProfileChanged, { name, provider: providerSettings.apiProvider })
++			this.emit(ZentaraCodeEventName.ProviderProfileChanged, { name, provider: providerSettings.apiProvider })
  		}
 -
 -		console.log(`[subtasks] cancelling task ${cline.taskId}.${cline.instanceId}`)

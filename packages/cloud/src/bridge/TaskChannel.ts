@@ -8,11 +8,11 @@ import {
 	type TaskBridgeEvent,
 	type JoinResponse,
 	type LeaveResponse,
-	RooCodeEventName,
+	ZentaraCodeEventName,
 	TaskBridgeEventName,
 	TaskBridgeCommandName,
 	TaskSocketEvents,
-} from "@roo-code/types"
+} from "@zentara-code/types"
 
 import { BaseChannel } from "./BaseChannel.js"
 
@@ -41,7 +41,7 @@ export class TaskChannel extends BaseChannel<
 
 	private readonly eventMapping: readonly TaskEventMapping[] = [
 		{
-			from: RooCodeEventName.Message,
+			from: ZentaraCodeEventName.Message,
 			to: TaskBridgeEventName.Message,
 			createPayload: (task: TaskLike, data: { action: string; message: ClineMessage }) => ({
 				type: TaskBridgeEventName.Message,
@@ -51,7 +51,7 @@ export class TaskChannel extends BaseChannel<
 			}),
 		},
 		{
-			from: RooCodeEventName.TaskModeSwitched,
+			from: ZentaraCodeEventName.TaskModeSwitched,
 			to: TaskBridgeEventName.TaskModeSwitched,
 			createPayload: (task: TaskLike, mode: string) => ({
 				type: TaskBridgeEventName.TaskModeSwitched,
@@ -60,7 +60,7 @@ export class TaskChannel extends BaseChannel<
 			}),
 		},
 		{
-			from: RooCodeEventName.TaskInteractive,
+			from: ZentaraCodeEventName.TaskInteractive,
 			to: TaskBridgeEventName.TaskInteractive,
 			createPayload: (task: TaskLike, _taskId: string) => ({
 				type: TaskBridgeEventName.TaskInteractive,

@@ -1,17 +1,17 @@
 import * as assert from "assert"
 
-import { RooCodeEventName } from "@roo-code/types"
+import { ZentaraCodeEventName } from "@zentara-code/types"
 
 import { waitUntilCompleted } from "./utils"
 import { setDefaultSuiteTimeout } from "./test-utils"
 
-suite("Roo Code Modes", function () {
+suite("Zentara Code Modes", function () {
 	setDefaultSuiteTimeout(this)
 
 	test("Should handle switching modes correctly", async () => {
 		const modes: string[] = []
 
-		globalThis.api.on(RooCodeEventName.TaskModeSwitched, (_taskId, mode) => modes.push(mode))
+		globalThis.api.on(ZentaraCodeEventName.TaskModeSwitched, (_taskId, mode) => modes.push(mode))
 
 		const switchModesTaskId = await globalThis.api.startNewTask({
 			configuration: { mode: "code", alwaysAllowModeSwitch: true, autoApprovalEnabled: true },

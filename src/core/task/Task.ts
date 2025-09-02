@@ -1,5 +1,5 @@
 import * as path from "path"
-import { outputChannel } from "../../roo_debug/src/vscodeUtils"
+import { outputChannel } from "../../zentara_debug/src/vscodeUtils"
 import * as vscode from "vscode"
 import os from "os"
 import crypto from "crypto"
@@ -21,7 +21,7 @@ const raceLog = (context: string, taskId: string, data: any = {}) => {
 }
 
 import {
-	type RooCodeSettings,
+	type ZentaraCodeSettings,
 	type TaskLike,
 	type TaskMetadata,
 	type TaskEvents,
@@ -36,7 +36,7 @@ import {
 	type ToolProgressStatus,
 	type HistoryItem,
 	type CreateTaskOptions,
-	RooCodeEventName,
+	ZentaraCodeEventName,
 	TelemetryEventName,
 	TaskStatus,
 	TodoItem,
@@ -46,9 +46,9 @@ import {
 	isIdleAsk,
 	isInteractiveAsk,
 	isResumableAsk,
-} from "@roo-code/types"
-import { TelemetryService } from "@roo-code/telemetry"
-import { CloudService, BridgeOrchestrator } from "@roo-code/cloud"
+} from "@zentara-code/types"
+import { TelemetryService } from "@zentara-code/telemetry"
+import { CloudService, BridgeOrchestrator } from "@zentara-code/cloud"
 
 // api
 import { ApiHandler, ApiHandlerCreateMessageMetadata, buildApiHandler } from "../../api"
@@ -77,7 +77,7 @@ import { RepoPerTaskCheckpointService } from "../../services/checkpoints"
 // integrations
 import { DiffViewProvider } from "../../integrations/editor/DiffViewProvider"
 import { findToolName, formatContentBlockToMarkdown } from "../../integrations/misc/export-markdown"
-import { RooTerminalProcess } from "../../integrations/terminal/types"
+import { ZentaraTerminalProcess } from "../../integrations/terminal/types"
 import { TerminalRegistry } from "../../integrations/terminal/TerminalRegistry"
 
 // utils
@@ -91,8 +91,8 @@ import { SYSTEM_PROMPT } from "../prompts/system"
 // core modules
 import { ToolRepetitionDetector } from "../tools/ToolRepetitionDetector"
 import { FileContextTracker } from "../context-tracking/FileContextTracker"
-import { RooIgnoreController } from "../ignore/RooIgnoreController"
-import { RooProtectedController } from "../protect/RooProtectedController"
+import { ZentaraIgnoreController } from "../ignore/ZentaraIgnoreController"
+import { ZentaraProtectedController } from "../protect/ZentaraProtectedController"
 import { type AssistantMessageContent, presentAssistantMessage } from "../assistant-message"
 import { AssistantMessageParser } from "../assistant-message/AssistantMessageParser"
 import { truncateConversationIfNeeded } from "../sliding-window"
@@ -233,11 +233,11 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 	}
 
 	toolRepetitionDetector: ToolRepetitionDetector
-	rooIgnoreController?: RooIgnoreController
-	rooProtectedController?: RooProtectedController
+	zentaraIgnoreController?: ZentaraIgnoreController
+	zentaraProtectedController?: ZentaraProtectedController
 	fileContextTracker: FileContextTracker
 	urlContentFetcher: UrlContentFetcher
-	terminalProcess?: RooTerminalProcess
+	terminalProcess?: ZentaraTerminalProcess
 
 	// Computer User
 	browserSession: BrowserSession
@@ -337,12 +337,12 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 		this.instanceId = crypto.randomUUID().slice(0, 8)
 		this.taskNumber = -1
 
-		this.rooIgnoreController = new RooIgnoreController(this.cwd)
-		this.rooProtectedController = new RooProtectedController(this.cwd)
+		this.zentaraIgnoreController = new ZentaraIgnoreController(this.cwd)
+		this.zentaraProtectedController = new ZentaraProtectedController(this.cwd)
 		this.fileContextTracker = new FileContextTracker(provider, this.taskId)
 
-		this.rooIgnoreController.initialize().catch((error) => {
-			console.error("Failed to initialize RooIgnoreController:", error)
+		this.zentaraIgnoreController.initialize().catch((error) => {
+			console.error("Failed to initialize ZentaraIgnoreController:", error)
 		})
 
 		this.apiConfiguration = apiConfiguration
@@ -653,7 +653,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 			await provider?.postStateToWebview()
 		}
 
-		this.emit(RooCodeEventName.Message, { action: "created", message: messageWithTaskId })
+		this.emit(ZentaraCodeEventName.Message, { action: "created", message: messageWithTaskId })
 		await this.saveClineMessages()
 
 		const shouldCaptureMessage = message.partial !== true && CloudService.isEnabled()
@@ -707,7 +707,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 			await provider?.postMessageToWebview({ type: "messageUpdated", clineMessage: messageWithTaskId })
 		}
 
-		this.emit(RooCodeEventName.Message, { action: "updated", message })
+		this.emit(ZentaraCodeEventName.Message, { action: "updated", message })
 
 		const shouldCaptureMessage = message.partial !== true && CloudService.isEnabled()
 
@@ -744,11 +744,11 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 				mode: this._taskMode || defaultModeSlug, // Use the task's own mode, not the current provider mode
 			})
 
-			this.emit(RooCodeEventName.TaskTokenUsageUpdated, this.taskId, tokenUsage)
+			this.emit(ZentaraCodeEventName.TaskTokenUsageUpdated, this.taskId, tokenUsage)
 
 			await this.providerRef.deref()?.updateTaskHistory(historyItem)
 		} catch (error) {
-			console.error("Failed to save Roo messages:", error)
+			console.error("Failed to save Zentara messages:", error)
 		}
 	}
 
@@ -792,7 +792,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 		// simply removes the reference to this instance, but the instance is
 		// still alive until this promise resolves or rejects.)
 		if (this.abort) {
-			throw new Error(`[RooCode#ask] task ${this.taskId}.${this.instanceId} aborted`)
+			throw new Error(`[ZentaraCode#ask] task ${this.taskId}.${this.instanceId} aborted`)
 		}
 
 		let askTs: number
@@ -885,7 +885,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 
 						if (message) {
 							this.interactiveAsk = message
-							this.emit(RooCodeEventName.TaskInteractive, this.taskId)
+							this.emit(ZentaraCodeEventName.TaskInteractive, this.taskId)
 						}
 					}, 1_000),
 				)
@@ -896,7 +896,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 
 						if (message) {
 							this.resumableAsk = message
-							this.emit(RooCodeEventName.TaskResumable, this.taskId)
+							this.emit(ZentaraCodeEventName.TaskResumable, this.taskId)
 						}
 					}, 1_000),
 				)
@@ -907,7 +907,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 
 						if (message) {
 							this.idleAsk = message
-							this.emit(RooCodeEventName.TaskIdle, this.taskId)
+							this.emit(ZentaraCodeEventName.TaskIdle, this.taskId)
 						}
 					}, 1_000),
 				)
@@ -940,10 +940,10 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 			this.idleAsk = undefined
 			this.resumableAsk = undefined
 			this.interactiveAsk = undefined
-			this.emit(RooCodeEventName.TaskActive, this.taskId)
+			this.emit(ZentaraCodeEventName.TaskActive, this.taskId)
 		}
 
-		this.emit(RooCodeEventName.TaskAskResponded)
+		this.emit(ZentaraCodeEventName.TaskAskResponded)
 		return result
 	}
 
@@ -974,7 +974,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 			hasText: !!this.askResponseText,
 			hasImages: !!this.askResponseImages,
 		})
-		this.emit(RooCodeEventName.TaskAskResponded)
+		this.emit(ZentaraCodeEventName.TaskAskResponded)
 	}
 
 	public approveAsk({ text, images }: { text?: string; images?: string[] } = {}) {
@@ -1114,7 +1114,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 		contextCondense?: ContextCondense,
 	): Promise<undefined> {
 		if (this.abort) {
-			throw new Error(`[RooCode#say] task ${this.taskId}.${this.instanceId} aborted`)
+			throw new Error(`[ZentaraCode#say] task ${this.taskId}.${this.instanceId} aborted`)
 		}
 
 		// Update activity indicator for parallel tasks
@@ -1235,7 +1235,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 		)
 		await this.say(
 			"error",
-			`Roo tried to use ${toolName}${
+			`Zentara tried to use ${toolName}${
 				relPath ? ` for '${relPath.toPosix()}'` : ""
 			} without value for required parameter '${paramName}'. Retrying...`,
 		)
@@ -1287,7 +1287,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 
 	public async resumePausedTask(lastMessage: string, say_subtask_result: boolean = true): Promise<void> {
 		this.isPaused = false
-		this.emit(RooCodeEventName.TaskUnpaused)
+		this.emit(ZentaraCodeEventName.TaskUnpaused)
 
 		// Fake an answer from the subtask that it has completed running and
 		// this is the result of what it has done add the message to the chat
@@ -1624,12 +1624,12 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 		}
 
 		try {
-			if (this.rooIgnoreController) {
-				this.rooIgnoreController.dispose()
-				this.rooIgnoreController = undefined
+			if (this.zentaraIgnoreController) {
+				this.zentaraIgnoreController.dispose()
+				this.zentaraIgnoreController = undefined
 			}
 		} catch (error) {
-			console.error("Error disposing RooIgnoreController:", error)
+			console.error("Error disposing ZentaraIgnoreController:", error)
 			// This is the critical one for the leak fix.
 		}
 
@@ -1685,7 +1685,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 
 		// Emit abort event in a try-catch to ensure abort continues even if listeners fail
 		try {
-			this.emit(RooCodeEventName.TaskAborted)
+			this.emit(ZentaraCodeEventName.TaskAborted)
 		} catch (error) {
 			console.error(`Error emitting TaskAborted event for task ${this.taskId}.${this.instanceId}:`, error)
 		}
@@ -1736,7 +1736,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 		let nextUserContent = userContent
 		let includeFileDetails = true
 
-		this.emit(RooCodeEventName.TaskStarted)
+		this.emit(ZentaraCodeEventName.TaskStarted)
 
 		while (!this.abort) {
 			const didEndLoop = await this.recursivelyMakeClineRequests(nextUserContent, includeFileDetails)
@@ -1781,7 +1781,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 			const currentIncludeFileDetails = currentItem.includeFileDetails
 
 			if (this.abort) {
-				throw new Error(`[RooCode#recursivelyMakeRooRequests] task ${this.taskId}.${this.instanceId} aborted`)
+				throw new Error(`[ZentaraCode#recursivelyMakeZentaraRequests] task ${this.taskId}.${this.instanceId} aborted`)
 			}
 
 			if (this.consecutiveMistakeLimit > 0 && this.consecutiveMistakeCount >= this.consecutiveMistakeLimit) {
@@ -1850,7 +1850,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 			)
 
 			const {
-				showRooIgnoredFiles = false,
+				showZentaraIgnoredFiles = false,
 				includeDiagnosticMessages = true,
 				maxDiagnosticMessages = 50,
 				maxReadFileLine = -1,
@@ -1861,8 +1861,8 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 				cwd: this.cwd,
 				urlContentFetcher: this.urlContentFetcher,
 				fileContextTracker: this.fileContextTracker,
-				rooIgnoreController: this.rooIgnoreController,
-				showRooIgnoredFiles,
+				zentaraIgnoreController: this.zentaraIgnoreController,
+				showZentaraIgnoredFiles,
 				includeDiagnosticMessages,
 				maxDiagnosticMessages,
 				maxReadFileLine,
@@ -2286,7 +2286,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 				// Need to call here in case the stream was aborted.
 				if (this.abort || this.abandoned) {
 					throw new Error(
-						`[RooCode#recursivelyMakeRooRequests] task ${this.taskId}.${this.instanceId} aborted`,
+						`[ZentaraCode#recursivelyMakeZentaraRequests] task ${this.taskId}.${this.instanceId} aborted`,
 					)
 				}
 
@@ -2431,7 +2431,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 		// Start discovery and cache the promise to prevent duplicate calls
 		this.discoveredAgentsCachePromise = (async () => {
 			try {
-				const mod = await import("../../roo_subagent/src/agentDiscovery")
+				const mod = await import("../../zentara_subagent/src/agentDiscovery")
 				const ctx = mod.createAgentLoadingContext()
 				const discovered = await mod.discoverAgents(ctx)
 				this.discoveredAgentsCache = discovered
@@ -2471,7 +2471,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 			})
 		}
 
-		const rooIgnoreInstructions = this.rooIgnoreController?.getInstructions()
+		const zentaraIgnoreInstructions = this.zentaraIgnoreController?.getInstructions()
 
 		const state = await this.providerRef.deref()?.getState()
 
@@ -2515,14 +2515,14 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 				experiments,
 				enableMcpServerCreation,
 				language,
-				rooIgnoreInstructions,
+				zentaraIgnoreInstructions,
 				maxReadFileLine !== -1,
 				{
 					maxConcurrentFileReads: maxConcurrentFileReads ?? 5,
 					todoListEnabled: apiConfiguration?.todoListEnabled ?? true,
-					useAgentRules: vscode.workspace.getConfiguration("roo-cline").get<boolean>("useAgentRules") ?? true,
+					useAgentRules: vscode.workspace.getConfiguration("zentara-cline").get<boolean>("useAgentRules") ?? true,
 					newTaskRequireTodos: vscode.workspace
-						.getConfiguration("roo-cline")
+						.getConfiguration("zentara-cline")
 						.get<boolean>("newTaskRequireTodos", false),
 				},
 				undefined, // todoList
@@ -2948,7 +2948,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 		this.toolUsage[toolName].failures++
 
 		if (error) {
-			this.emit(RooCodeEventName.TaskToolFailed, this.taskId, toolName, error)
+			this.emit(ZentaraCodeEventName.TaskToolFailed, this.taskId, toolName, error)
 		}
 	}
 

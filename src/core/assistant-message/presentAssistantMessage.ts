@@ -1,9 +1,9 @@
 import cloneDeep from "clone-deep"
 import { serializeError } from "serialize-error"
-import { outputChannel } from "../../roo_debug/src/vscodeUtils"
+import { outputChannel } from "../../zentara_debug/src/vscodeUtils"
 import { logIncomingMessage } from "../logging/messageLogger"
-import type { ToolName, ClineAsk, ToolProgressStatus, ModeConfig } from "@roo-code/types"
-import { TelemetryService } from "@roo-code/telemetry"
+import type { ToolName, ClineAsk, ToolProgressStatus, ModeConfig } from "@zentara-code/types"
+import { TelemetryService } from "@zentara-code/telemetry"
 
 import { defaultModeSlug, getModeBySlug } from "../../shared/modes"
 import type {
@@ -16,14 +16,14 @@ import type {
 	HandleError,
 	PushToolResult,
 } from "../../shared/tools"
-import { trackToolUsage } from "../../roo_tool_prompt_management/tool-optimization-integration"
+import { trackToolUsage } from "../../zentara_tool_prompt_management/tool-optimization-integration"
 
 import { fetchInstructionsTool } from "../tools/fetchInstructionsTool"
 import { listFilesTool } from "../tools/listFilesTool"
 import { globTool } from "../tools/globTool"
 import { getReadFileToolDescription, readFileTool } from "../tools/readFileTool"
 import { getSimpleReadFileToolDescription, simpleReadFileTool } from "../tools/simpleReadFileTool"
-import { shouldUseSingleFileRead } from "@roo-code/types"
+import { shouldUseSingleFileRead } from "@zentara-code/types"
 import { writeToFileTool } from "../tools/writeToFileTool"
 import { applyDiffTool } from "../tools/multiApplyDiffTool"
 import { insertContentTool } from "../tools/insertContentTool"

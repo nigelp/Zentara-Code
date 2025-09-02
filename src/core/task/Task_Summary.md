@@ -15,7 +15,7 @@ The core purpose of the `Task` class is to manage the complete execution flow of
 - **Operational State:** `workspacePath`, `abort`, `isPaused`, and `isInitialized` reflect the task's current environment and operational status.
 - **AI Model Interaction:** `apiConfiguration`, `api`, `apiConversationHistory`, `assistantMessageContent`, and `userMessageContent` manage the settings, handler, and content of the conversation with the AI model.
 - **User Interface Integration:** `providerRef` (a `WeakRef` to `ClineProvider`) provides a link to the VSCode webview, while `clineMessages`, `askResponse`, `askResponseText`, and `askResponseImages` handle user-facing messages and responses.
-- **Integrated Tooling and Services:** Properties like `toolRepetitionDetector`, `rooIgnoreController`, `rooProtectedController`, `fileContextTracker`, `urlContentFetcher`, `browserSession`, `diffViewProvider`, `diffStrategy`, and `checkpointService` enable interaction with various system functionalities and development tools.
+- **Integrated Tooling and Services:** Properties like `toolRepetitionDetector`, `zentaraIgnoreController`, `zentaraProtectedController`, `fileContextTracker`, `urlContentFetcher`, `browserSession`, `diffViewProvider`, `diffStrategy`, and `checkpointService` enable interaction with various system functionalities and development tools.
 - **Metrics and Error Management:** `toolUsage` and `consecutiveMistakeCount` are used for tracking tool execution statistics and managing the AI's behavior in response to repeated errors.
 
 **Key Methods:**

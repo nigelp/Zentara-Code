@@ -58,10 +58,10 @@ export async function generateImageTool(
 	}
 
 	// Validate access permissions
-	const accessAllowed = cline.rooIgnoreController?.validateAccess(relPath)
+	const accessAllowed = cline.zentaraIgnoreController?.validateAccess(relPath)
 	if (!accessAllowed) {
-		await cline.say("rooignore_error", relPath)
-		pushToolResult(formatResponse.toolError(formatResponse.rooIgnoreError(relPath)))
+		await cline.say("zentaraignore_error", relPath)
+		pushToolResult(formatResponse.toolError(formatResponse.zentaraIgnoreError(relPath)))
 		return
 	}
 
@@ -81,10 +81,10 @@ export async function generateImageTool(
 		}
 
 		// Validate input image access permissions
-		const inputImageAccessAllowed = cline.rooIgnoreController?.validateAccess(inputImagePath)
+		const inputImageAccessAllowed = cline.zentaraIgnoreController?.validateAccess(inputImagePath)
 		if (!inputImageAccessAllowed) {
-			await cline.say("rooignore_error", inputImagePath)
-			pushToolResult(formatResponse.toolError(formatResponse.rooIgnoreError(inputImagePath)))
+			await cline.say("zentaraignore_error", inputImagePath)
+			pushToolResult(formatResponse.toolError(formatResponse.zentaraIgnoreError(inputImagePath)))
 			return
 		}
 
@@ -126,7 +126,7 @@ export async function generateImageTool(
 	}
 
 	// Check if file is write-protected
-	const isWriteProtected = cline.rooProtectedController?.isWriteProtected(relPath) || false
+	const isWriteProtected = cline.zentaraProtectedController?.isWriteProtected(relPath) || false
 
 	// Get OpenRouter API key from global settings (experimental image generation)
 	const openRouterApiKey = state?.openRouterImageApiKey
@@ -231,7 +231,7 @@ export async function generateImageTool(
 
 			// Track file creation
 			if (finalPath) {
-				await cline.fileContextTracker.trackFileContext(finalPath, "roo_edited")
+				await cline.fileContextTracker.trackFileContext(finalPath, "zentara_edited")
 			}
 
 			cline.didEditFile = true

@@ -6,13 +6,13 @@ body:
     attributes:
       value: |
         **Thanks for your report!** Please check existing issues first:  
-        👉 https://github.com/Zentar-AI/Roo-Code/issues
+        👉 https://github.com/Zentar-AI/Zentara-Code/issues
 
   - type: input
     id: version
     attributes:
       label: App Version
-      description: What version of Roo Code are you using? (e.g., v0.1.0)
+      description: What version of Zentara Code are you using? (e.g., v0.1.0)
     validations:
       required: true
 
@@ -57,14 +57,14 @@ body:
       required: true
 
   - type: textarea
-    id: roo-code-tasks
+    id: zentara-code-tasks
     attributes:
-      label: Roo Code Task Links (Optional)
+      label: Zentara Code Task Links (Optional)
       description: |
         If you have any publicly shared task links that demonstrate the issue, please paste them here.
         This helps maintainers understand the context.
-        Example: https://app.roocode.com/share/task-id
-      placeholder: Paste your Roo Code share links here, one per line
+        Example: https://app.zentaracode.com/share/task-id
+      placeholder: Paste your Zentara Code share links here, one per line
 
   - type: textarea
     id: steps

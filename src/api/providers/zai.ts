@@ -6,7 +6,7 @@ import {
 	type InternationalZAiModelId,
 	type MainlandZAiModelId,
 	ZAI_DEFAULT_TEMPERATURE,
-} from "@roo-code/types"
+} from "@zentara-code/types"
 
 import type { ApiHandlerOptions } from "../../shared/api"
 

@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from "vitest"
 import { Task } from "../Task"
-import type { ClineMessage } from "@roo-code/types"
+import type { ClineMessage } from "@zentara-code/types"
 
 // Mock VS Code APIs first
 vi.mock("vscode", () => ({
@@ -76,7 +76,7 @@ vi.mock("../../../api", () => ({
 	}),
 }))
 
-vi.mock("@roo-code/cloud", () => ({
+vi.mock("@zentara-code/cloud", () => ({
 	CloudService: {
 		isEnabled: vi.fn().mockReturnValue(false),
 		instance: {
@@ -85,7 +85,7 @@ vi.mock("@roo-code/cloud", () => ({
 	},
 }))
 
-vi.mock("@roo-code/telemetry", () => ({
+vi.mock("@zentara-code/telemetry", () => ({
 	TelemetryService: {
 		instance: {
 			logEvent: vi.fn(),
@@ -255,12 +255,12 @@ describe("Task.addToClineMessages", () => {
 
 	describe("CloudService integration", () => {
 		beforeEach(async () => {
-			const { CloudService } = await import("@roo-code/cloud")
+			const { CloudService } = await import("@zentara-code/cloud")
 			vi.mocked(CloudService.isEnabled).mockReturnValue(true)
 		})
 
 		it("should capture non-partial messages when CloudService is enabled", async () => {
-			const { CloudService } = await import("@roo-code/cloud")
+			const { CloudService } = await import("@zentara-code/cloud")
 
 			await task.say("text", "Captured message")
 
@@ -276,7 +276,7 @@ describe("Task.addToClineMessages", () => {
 		})
 
 		it("should not capture partial messages", async () => {
-			const { CloudService } = await import("@roo-code/cloud")
+			const { CloudService } = await import("@zentara-code/cloud")
 
 			const partialMessage: ClineMessage = {
 				ts: Date.now(),
@@ -292,7 +292,7 @@ describe("Task.addToClineMessages", () => {
 		})
 
 		it("should not capture when CloudService is disabled", async () => {
-			const { CloudService } = await import("@roo-code/cloud")
+			const { CloudService } = await import("@zentara-code/cloud")
 			vi.mocked(CloudService.isEnabled).mockReturnValue(false)
 
 			await task.say("text", "Not captured")

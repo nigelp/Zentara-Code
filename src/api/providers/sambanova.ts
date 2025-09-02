@@ -1,4 +1,4 @@
-import { type SambaNovaModelId, sambaNovaDefaultModelId, sambaNovaModels } from "@roo-code/types"
+import { type SambaNovaModelId, sambaNovaDefaultModelId, sambaNovaModels } from "@zentara-code/types"
 
 import type { ApiHandlerOptions } from "../../shared/api"
 

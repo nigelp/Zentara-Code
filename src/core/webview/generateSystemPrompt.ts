@@ -42,7 +42,7 @@ export const generateSystemPrompt = async (provider: ClineProvider, message: Web
 	const mode = message.mode ?? defaultModeSlug
 	const customModes = await provider.customModesManager.getCustomModes()
 
-	const rooIgnoreInstructions = provider.getCurrentTask()?.rooIgnoreController?.getInstructions()
+	const zentaraIgnoreInstructions = provider.getCurrentTask()?.zentaraIgnoreController?.getInstructions()
 
 	// Determine if browser tools can be used based on model support, mode, and user settings
 	let modelSupportsComputerUse = false
@@ -79,14 +79,14 @@ export const generateSystemPrompt = async (provider: ClineProvider, message: Web
 		experiments,
 		enableMcpServerCreation,
 		language,
-		rooIgnoreInstructions,
+		zentaraIgnoreInstructions,
 		maxReadFileLine !== -1,
 		{
 			maxConcurrentFileReads: maxConcurrentFileReads ?? 5,
 			todoListEnabled: apiConfiguration?.todoListEnabled ?? true,
-			useAgentRules: vscode.workspace.getConfiguration("roo-cline").get<boolean>("useAgentRules") ?? true,
+			useAgentRules: vscode.workspace.getConfiguration("zentara-cline").get<boolean>("useAgentRules") ?? true,
 			newTaskRequireTodos: vscode.workspace
-				.getConfiguration("roo-cline")
+				.getConfiguration("zentara-cline")
 				.get<boolean>("newTaskRequireTodos", false),
 		},
 		false, // subagent parameter

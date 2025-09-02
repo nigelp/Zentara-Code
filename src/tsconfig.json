@@ -24,8 +24,8 @@
 		"src/**/*",
 		"scripts/**/*",
 		".changeset/**/*",
-		"src/roo_debug/**/*",
-		"src/roo_subagent/**/*",
+		"src/zentara_debug/**/*",
+		"src/zentara_subagent/**/*",
 		"src/zentara_lsp/src/__tests__/**/*"
 	],
 	"exclude": [

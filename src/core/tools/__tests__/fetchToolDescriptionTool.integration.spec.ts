@@ -5,8 +5,8 @@ import {
 	fetch_tool_description,
 	getAvailableToolNames,
 	toolExists,
-} from "../../../roo_tool_prompt_management/fetch-tool-description"
-import { clearAllCaches } from "../../../roo_tool_prompt_management/tool-optimization-integration"
+} from "../../../zentara_tool_prompt_management/fetch-tool-description"
+import { clearAllCaches } from "../../../zentara_tool_prompt_management/tool-optimization-integration"
 
 describe("fetchToolDescriptionTool Integration Tests", () => {
 	let mockCline: any

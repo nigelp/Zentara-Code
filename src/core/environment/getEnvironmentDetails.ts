@@ -5,8 +5,8 @@ import * as vscode from "vscode"
 import pWaitFor from "p-wait-for"
 import delay from "delay"
 
-import type { ExperimentId } from "@roo-code/types"
-import { DEFAULT_TERMINAL_OUTPUT_CHARACTER_LIMIT } from "@roo-code/types"
+import type { ExperimentId } from "@zentara-code/types"
+import { DEFAULT_TERMINAL_OUTPUT_CHARACTER_LIMIT } from "@zentara-code/types"
 
 import { EXPERIMENT_IDS, experiments as Experiments } from "../../shared/experiments"
 import { formatLanguage } from "../../shared/language"
@@ -42,9 +42,9 @@ export async function getEnvironmentDetails(cline: Task, includeFileDetails: boo
 		.map((absolutePath) => path.relative(cline.cwd, absolutePath))
 		.slice(0, maxWorkspaceFiles)
 
-	// Filter paths through rooIgnoreController
-	const allowedVisibleFiles = cline.rooIgnoreController
-		? cline.rooIgnoreController.filterPaths(visibleFilePaths)
+	// Filter paths through zentaraIgnoreController
+	const allowedVisibleFiles = cline.zentaraIgnoreController
+		? cline.zentaraIgnoreController.filterPaths(visibleFilePaths)
 		: visibleFilePaths.map((p) => p.toPosix()).join("\n")
 
 	if (allowedVisibleFiles) {
@@ -64,9 +64,9 @@ export async function getEnvironmentDetails(cline: Task, includeFileDetails: boo
 		.map((absolutePath) => path.relative(cline.cwd, absolutePath).toPosix())
 		.slice(0, maxTabs)
 
-	// Filter paths through rooIgnoreController
-	const allowedOpenTabs = cline.rooIgnoreController
-		? cline.rooIgnoreController.filterPaths(openTabPaths)
+	// Filter paths through zentaraIgnoreController
+	const allowedOpenTabs = cline.zentaraIgnoreController
+		? cline.zentaraIgnoreController.filterPaths(openTabPaths)
 		: openTabPaths.map((p) => p.toPosix()).join("\n")
 
 	if (allowedOpenTabs) {
@@ -253,14 +253,14 @@ export async function getEnvironmentDetails(cline: Task, includeFileDetails: boo
 				details += "(Workspace files context disabled. Use list_files to explore if needed.)"
 			} else {
 				const [files, didHitLimit] = await listFiles(cline.cwd, true, maxFiles)
-				const { showRooIgnoredFiles = false } = state ?? {}
+				const { showZentaraIgnoredFiles = false } = state ?? {}
 
 				const result = formatResponse.formatFilesList(
 					cline.cwd,
 					files,
 					didHitLimit,
-					cline.rooIgnoreController,
-					showRooIgnoredFiles,
+					cline.zentaraIgnoreController,
+					showZentaraIgnoredFiles,
 				)
 
 				details += result

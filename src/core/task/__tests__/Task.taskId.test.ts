@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from "vitest"
 import { Task } from "../Task"
-import type { ClineMessage } from "@roo-code/types"
+import type { ClineMessage } from "@zentara-code/types"
 
 // Mock VS Code APIs first
 vi.mock("vscode", () => ({
@@ -59,7 +59,7 @@ vi.mock("vscode", () => ({
 	RelativePattern: vi.fn(),
 }))
 
-vi.mock("@roo-code/telemetry", async (importOriginal) => {
+vi.mock("@zentara-code/telemetry", async (importOriginal) => {
 	const actual = await importOriginal()
 	return {
 		...actual,
@@ -93,7 +93,7 @@ vi.mock("../../../api", () => ({
 	}),
 }))
 
-vi.mock("@roo-code/cloud", () => ({
+vi.mock("@zentara-code/cloud", () => ({
 	CloudService: {
 		isEnabled: vi.fn().mockReturnValue(false),
 		instance: {

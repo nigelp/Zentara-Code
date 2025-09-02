@@ -5,7 +5,7 @@ import { Trans } from "react-i18next"
 import { useAppTranslation } from "@/i18n/TranslationContext"
 import { useExtensionState } from "@/context/ExtensionStateContext"
 import { Button, Popover, PopoverContent, PopoverTrigger, StandardTooltip } from "@/components/ui"
-import { useRooPortal } from "@/components/ui/hooks/useRooPortal"
+import { useZentaraPortal } from "@/components/ui/hooks/useZentaraPortal"
 import { cn } from "@/lib/utils"
 import { vscode } from "@/utils/vscode"
 import { buildDocLink } from "@/utils/docLinks"
@@ -20,7 +20,7 @@ export const SlashCommandsPopover: React.FC<SlashCommandsPopoverProps> = ({ clas
 	const { t } = useAppTranslation()
 	const { commands } = useExtensionState()
 	const [isOpen, setIsOpen] = useState(false)
-	const portalContainer = useRooPortal("roo-portal")
+	const portalContainer = useZentaraPortal("zentara-portal")
 
 	// Request commands when popover opens
 	useEffect(() => {

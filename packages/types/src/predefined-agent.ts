@@ -17,7 +17,7 @@ export interface BaseAgentDefinition {
 
 /**
  * System agent definition format (TypeScript files)
- * Used for built-in agents in src/roo_subagent/src/agents/
+ * Used for built-in agents in src/zentara_subagent/src/agents/
  */
 export interface SystemAgentDefinition extends BaseAgentDefinition {
 	/** The system prompt content for the specialized subagent */
@@ -45,7 +45,7 @@ export type AgentDefinition = SystemAgentDefinition | UserAgentDefinition
  */
 export const AGENT_DISCOVERY_LOCATIONS = {
 	/** Built-in TypeScript agents (highest priority) */
-	SYSTEM: "src/roo_subagent/src/agents/",
+	SYSTEM: "src/zentara_subagent/src/agents/",
 	/** Project-specific Markdown agents */
 	PROJECT: ".zentara/agents/",
 	/** User-global Markdown agents (lowest priority) */

@@ -12,7 +12,7 @@ import type {
 	HandleError,
 	PushToolResult,
 } from "../../../shared/tools"
-import type { ClineAsk, ToolProgressStatus } from "@roo-code/types"
+import type { ClineAsk, ToolProgressStatus } from "@zentara-code/types"
 
 // Mock dependencies
 vi.mock("vscode", () => {
@@ -81,7 +81,7 @@ vi.mock("../../tools/debugTool")
 vi.mock("../../tools/lspTool")
 
 // Mock outputChannel
-vi.mock("../../../roo_debug/src/vscodeUtils", () => ({
+vi.mock("../../../zentara_debug/src/vscodeUtils", () => ({
 	outputChannel: {
 		appendLine: vi.fn(),
 		show: vi.fn(),

@@ -13,14 +13,14 @@ vi.mock("../index", () => ({
 describe("processUserContentMentions", () => {
 	let mockUrlContentFetcher: UrlContentFetcher
 	let mockFileContextTracker: FileContextTracker
-	let mockRooIgnoreController: any
+	let mockZentaraIgnoreController: any
 
 	beforeEach(() => {
 		vi.clearAllMocks()
 
 		mockUrlContentFetcher = {} as UrlContentFetcher
 		mockFileContextTracker = {} as FileContextTracker
-		mockRooIgnoreController = {}
+		mockZentaraIgnoreController = {}
 
 		// Default mock implementation
 		vi.mocked(parseMentions).mockImplementation(async (text) => `parsed: ${text}`)
@@ -40,7 +40,7 @@ describe("processUserContentMentions", () => {
 				cwd: "/test",
 				urlContentFetcher: mockUrlContentFetcher,
 				fileContextTracker: mockFileContextTracker,
-				rooIgnoreController: mockRooIgnoreController,
+				zentaraIgnoreController: mockZentaraIgnoreController,
 				maxReadFileLine: 100,
 			})
 
@@ -49,7 +49,7 @@ describe("processUserContentMentions", () => {
 				"/test",
 				mockUrlContentFetcher,
 				mockFileContextTracker,
-				mockRooIgnoreController,
+				mockZentaraIgnoreController,
 				false,
 				true, // includeDiagnosticMessages
 				50, // maxDiagnosticMessages
@@ -70,7 +70,7 @@ describe("processUserContentMentions", () => {
 				cwd: "/test",
 				urlContentFetcher: mockUrlContentFetcher,
 				fileContextTracker: mockFileContextTracker,
-				rooIgnoreController: mockRooIgnoreController,
+				zentaraIgnoreController: mockZentaraIgnoreController,
 			})
 
 			expect(parseMentions).toHaveBeenCalledWith(
@@ -78,7 +78,7 @@ describe("processUserContentMentions", () => {
 				"/test",
 				mockUrlContentFetcher,
 				mockFileContextTracker,
-				mockRooIgnoreController,
+				mockZentaraIgnoreController,
 				false,
 				true, // includeDiagnosticMessages
 				50, // maxDiagnosticMessages
@@ -99,7 +99,7 @@ describe("processUserContentMentions", () => {
 				cwd: "/test",
 				urlContentFetcher: mockUrlContentFetcher,
 				fileContextTracker: mockFileContextTracker,
-				rooIgnoreController: mockRooIgnoreController,
+				zentaraIgnoreController: mockZentaraIgnoreController,
 				maxReadFileLine: -1,
 			})
 
@@ -108,7 +108,7 @@ describe("processUserContentMentions", () => {
 				"/test",
 				mockUrlContentFetcher,
 				mockFileContextTracker,
-				mockRooIgnoreController,
+				mockZentaraIgnoreController,
 				false,
 				true, // includeDiagnosticMessages
 				50, // maxDiagnosticMessages
@@ -291,8 +291,8 @@ describe("processUserContentMentions", () => {
 		})
 	})
 
-	describe("showRooIgnoredFiles parameter", () => {
-		it("should default showRooIgnoredFiles to false", async () => {
+	describe("showZentaraIgnoredFiles parameter", () => {
+		it("should default showZentaraIgnoredFiles to false", async () => {
 			const userContent = [
 				{
 					type: "text" as const,
@@ -313,14 +313,14 @@ describe("processUserContentMentions", () => {
 				mockUrlContentFetcher,
 				mockFileContextTracker,
 				undefined,
-				false, // showRooIgnoredFiles should default to false
+				false, // showZentaraIgnoredFiles should default to false
 				true, // includeDiagnosticMessages
 				50, // maxDiagnosticMessages
 				undefined,
 			)
 		})
 
-		it("should respect showRooIgnoredFiles when explicitly set to false", async () => {
+		it("should respect showZentaraIgnoredFiles when explicitly set to false", async () => {
 			const userContent = [
 				{
 					type: "text" as const,
@@ -333,7 +333,7 @@ describe("processUserContentMentions", () => {
 				cwd: "/test",
 				urlContentFetcher: mockUrlContentFetcher,
 				fileContextTracker: mockFileContextTracker,
-				showRooIgnoredFiles: false,
+				showZentaraIgnoredFiles: false,
 			})
 
 			expect(parseMentions).toHaveBeenCalledWith(

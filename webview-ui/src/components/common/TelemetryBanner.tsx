@@ -3,7 +3,7 @@ import { VSCodeButton, VSCodeLink } from "@vscode/webview-ui-toolkit/react"
 import styled from "styled-components"
 import { Trans } from "react-i18next"
 
-import type { TelemetrySetting } from "@roo-code/types"
+import type { TelemetrySetting } from "@zentara-code/types"
 
 import { vscode } from "@src/utils/vscode"
 import { useAppTranslation } from "@src/i18n/TranslationContext"
@@ -57,7 +57,7 @@ const TelemetryBanner = () => {
 					<Trans
 						i18nKey="welcome:telemetry.anonymousTelemetry"
 						components={{
-							privacyLink: <VSCodeLink href="https://roocode.com/privacy" />,
+							privacyLink: <VSCodeLink href="https://zentaracode.com/privacy" />,
 						}}
 					/>
 					<div className="mt-1">

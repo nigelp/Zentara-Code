@@ -11,8 +11,8 @@ export async function processUserContentMentions({
 	cwd,
 	urlContentFetcher,
 	fileContextTracker,
-	rooIgnoreController,
-	showRooIgnoredFiles = false,
+	zentaraIgnoreController,
+	showZentaraIgnoredFiles = false,
 	includeDiagnosticMessages = true,
 	maxDiagnosticMessages = 50,
 	maxReadFileLine,
@@ -21,8 +21,8 @@ export async function processUserContentMentions({
 	cwd: string
 	urlContentFetcher: UrlContentFetcher
 	fileContextTracker: FileContextTracker
-	rooIgnoreController?: any
-	showRooIgnoredFiles?: boolean
+	zentaraIgnoreController?: any
+	showZentaraIgnoredFiles?: boolean
 	includeDiagnosticMessages?: boolean
 	maxDiagnosticMessages?: number
 	maxReadFileLine?: number
@@ -54,8 +54,8 @@ export async function processUserContentMentions({
 							cwd,
 							urlContentFetcher,
 							fileContextTracker,
-							rooIgnoreController,
-							showRooIgnoredFiles,
+							zentaraIgnoreController,
+							showZentaraIgnoredFiles,
 							includeDiagnosticMessages,
 							maxDiagnosticMessages,
 							maxReadFileLine,
@@ -74,8 +74,8 @@ export async function processUserContentMentions({
 								cwd,
 								urlContentFetcher,
 								fileContextTracker,
-								rooIgnoreController,
-								showRooIgnoredFiles,
+								zentaraIgnoreController,
+								showZentaraIgnoredFiles,
 								includeDiagnosticMessages,
 								maxDiagnosticMessages,
 								maxReadFileLine,
@@ -95,8 +95,8 @@ export async function processUserContentMentions({
 										cwd,
 										urlContentFetcher,
 										fileContextTracker,
-										rooIgnoreController,
-										showRooIgnoredFiles,
+										zentaraIgnoreController,
+										showZentaraIgnoredFiles,
 										includeDiagnosticMessages,
 										maxDiagnosticMessages,
 										maxReadFileLine,

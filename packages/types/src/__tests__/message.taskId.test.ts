@@ -283,7 +283,7 @@ describe("ClineMessage schema with taskId", () => {
 				"mcp_server_response",
 				"subtask_result",
 				"checkpoint_saved",
-				"rooignore_error",
+				"zentaraignore_error",
 				"diff_error",
 				"condense_context",
 				"condense_context_error",

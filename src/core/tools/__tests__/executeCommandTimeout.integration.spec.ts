@@ -20,7 +20,7 @@ vitest.mock("../../task/Task")
 vitest.mock("../../prompts/responses", () => ({
 	formatResponse: {
 		toolError: vitest.fn((msg) => `Tool Error: ${msg}`),
-		rooIgnoreError: vitest.fn((msg) => `RooIgnore Error: ${msg}`),
+		zentaraIgnoreError: vitest.fn((msg) => `ZentaraIgnore Error: ${msg}`),
 	},
 }))
 vitest.mock("../../../utils/text-normalization", () => ({
@@ -28,7 +28,7 @@ vitest.mock("../../../utils/text-normalization", () => ({
 }))
 vitest.mock("../../../shared/package", () => ({
 	Package: {
-		name: "roo-cline",
+		name: "zentara-cline",
 	},
 }))
 
@@ -245,7 +245,7 @@ describe("Command Execution Timeout Integration", () => {
 				consecutiveMistakeCount: 0,
 				recordToolError: vitest.fn(),
 				sayAndCreateMissingParamError: vitest.fn(),
-				rooIgnoreController: {
+				zentaraIgnoreController: {
 					validateCommand: vitest.fn().mockReturnValue(null),
 				},
 				lastMessageTs: Date.now(),

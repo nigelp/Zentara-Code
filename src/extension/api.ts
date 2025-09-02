@@ -5,26 +5,26 @@ import * as path from "path"
 import * as os from "os"
 
 import {
-	type RooCodeAPI,
-	type RooCodeSettings,
-	type RooCodeEvents,
+	type ZentaraCodeAPI,
+	type ZentaraCodeSettings,
+	type ZentaraCodeEvents,
 	type ProviderSettings,
 	type ProviderSettingsEntry,
 	type TaskEvent,
 	type CreateTaskOptions,
-	RooCodeEventName,
+	ZentaraCodeEventName,
 	TaskCommandName,
 	isSecretStateKey,
 	IpcOrigin,
 	IpcMessageType,
-} from "@roo-code/types"
-import { IpcServer } from "@roo-code/ipc"
+} from "@zentara-code/types"
+import { IpcServer } from "@zentara-code/ipc"
 
 import { Package } from "../shared/package"
 import { ClineProvider } from "../core/webview/ClineProvider"
 import { openClineInNewTab } from "../activate/registerCommands"
 
-export class API extends EventEmitter<RooCodeEvents> implements RooCodeAPI {
+export class API extends EventEmitter<ZentaraCodeEvents> implements ZentaraCodeAPI {
 	private readonly outputChannel: vscode.OutputChannel
 	private readonly sidebarProvider: ClineProvider
 	private readonly context: vscode.ExtensionContext
@@ -51,7 +51,7 @@ export class API extends EventEmitter<RooCodeEvents> implements RooCodeAPI {
 				console.log(args)
 			}
 
-			this.logfile = path.join(os.tmpdir(), "roo-code-messages.log")
+			this.logfile = path.join(os.tmpdir(), "zentara-code-messages.log")
 		} else {
 			this.log = () => {}
 		}
@@ -95,11 +95,11 @@ export class API extends EventEmitter<RooCodeEvents> implements RooCodeAPI {
 		}
 	}
 
-	public override emit<K extends keyof RooCodeEvents>(
+	public override emit<K extends keyof ZentaraCodeEvents>(
 		eventName: K,
-		...args: K extends keyof RooCodeEvents ? RooCodeEvents[K] : never
+		...args: K extends keyof ZentaraCodeEvents ? ZentaraCodeEvents[K] : never
 	) {
-		const data = { eventName: eventName as RooCodeEventName, payload: args } as TaskEvent
+		const data = { eventName: eventName as ZentaraCodeEventName, payload: args } as TaskEvent
 		this.ipc?.broadcast({ type: IpcMessageType.TaskEvent, origin: IpcOrigin.Server, data })
 		return super.emit(eventName, ...args)
 	}
@@ -110,7 +110,7 @@ export class API extends EventEmitter<RooCodeEvents> implements RooCodeAPI {
 		images,
 		newTab,
 	}: {
-		configuration?: RooCodeSettings // Made configuration optional to match interface
+		configuration?: ZentaraCodeSettings // Made configuration optional to match interface
 		text?: string
 		images?: string[]
 		newTab?: boolean
@@ -201,23 +201,23 @@ export class API extends EventEmitter<RooCodeEvents> implements RooCodeAPI {
 	}
 
 	private registerListeners(provider: ClineProvider) {
-		provider.on(RooCodeEventName.TaskCreated, (task: any) => {
+		provider.on(ZentaraCodeEventName.TaskCreated, (task: any) => {
 			// Task Lifecycle
 
-			task.on(RooCodeEventName.TaskStarted, async () => {
-				this.emit(RooCodeEventName.TaskStarted, task.taskId)
+			task.on(ZentaraCodeEventName.TaskStarted, async () => {
+				this.emit(ZentaraCodeEventName.TaskStarted, task.taskId)
 				this.taskMap.set(task.taskId, provider)
 				await this.fileLog(`[${new Date().toISOString()}] taskStarted -> ${task.taskId}\n`)
 			})
 
-			task.on(RooCodeEventName.TaskCompleted, async (_: any, tokenUsage: any, toolUsage: any) => {
+			task.on(ZentaraCodeEventName.TaskCompleted, async (_: any, tokenUsage: any, toolUsage: any) => {
 				let isSubtask = false
 
 				if (typeof task.rootTask !== "undefined") {
 					isSubtask = true
 				}
 
-				this.emit(RooCodeEventName.TaskCompleted, task.taskId, tokenUsage, toolUsage, { isSubtask: isSubtask })
+				this.emit(ZentaraCodeEventName.TaskCompleted, task.taskId, tokenUsage, toolUsage, { isSubtask: isSubtask })
 				this.taskMap.delete(task.taskId)
 
 				await this.fileLog(
@@ -225,80 +225,80 @@ export class API extends EventEmitter<RooCodeEvents> implements RooCodeAPI {
 				)
 			})
 
-			task.on(RooCodeEventName.TaskAborted, () => {
-				this.emit(RooCodeEventName.TaskAborted, task.taskId)
+			task.on(ZentaraCodeEventName.TaskAborted, () => {
+				this.emit(ZentaraCodeEventName.TaskAborted, task.taskId)
 				this.taskMap.delete(task.taskId)
 			})
 
-			task.on(RooCodeEventName.TaskFocused, () => {
-				this.emit(RooCodeEventName.TaskFocused, task.taskId)
+			task.on(ZentaraCodeEventName.TaskFocused, () => {
+				this.emit(ZentaraCodeEventName.TaskFocused, task.taskId)
 			})
 
-			task.on(RooCodeEventName.TaskUnfocused, () => {
-				this.emit(RooCodeEventName.TaskUnfocused, task.taskId)
+			task.on(ZentaraCodeEventName.TaskUnfocused, () => {
+				this.emit(ZentaraCodeEventName.TaskUnfocused, task.taskId)
 			})
 
-			task.on(RooCodeEventName.TaskActive, () => {
-				this.emit(RooCodeEventName.TaskActive, task.taskId)
+			task.on(ZentaraCodeEventName.TaskActive, () => {
+				this.emit(ZentaraCodeEventName.TaskActive, task.taskId)
 			})
 
-			task.on(RooCodeEventName.TaskInteractive, () => {
-				this.emit(RooCodeEventName.TaskInteractive, task.taskId)
+			task.on(ZentaraCodeEventName.TaskInteractive, () => {
+				this.emit(ZentaraCodeEventName.TaskInteractive, task.taskId)
 			})
 
-			task.on(RooCodeEventName.TaskResumable, () => {
-				this.emit(RooCodeEventName.TaskResumable, task.taskId)
+			task.on(ZentaraCodeEventName.TaskResumable, () => {
+				this.emit(ZentaraCodeEventName.TaskResumable, task.taskId)
 			})
 
-			task.on(RooCodeEventName.TaskIdle, () => {
-				this.emit(RooCodeEventName.TaskIdle, task.taskId)
+			task.on(ZentaraCodeEventName.TaskIdle, () => {
+				this.emit(ZentaraCodeEventName.TaskIdle, task.taskId)
 			})
 
 			// Subtask Lifecycle
 
-			task.on(RooCodeEventName.TaskPaused, () => {
-				this.emit(RooCodeEventName.TaskPaused, task.taskId)
+			task.on(ZentaraCodeEventName.TaskPaused, () => {
+				this.emit(ZentaraCodeEventName.TaskPaused, task.taskId)
 			})
 
-			task.on(RooCodeEventName.TaskUnpaused, () => {
-				this.emit(RooCodeEventName.TaskUnpaused, task.taskId)
+			task.on(ZentaraCodeEventName.TaskUnpaused, () => {
+				this.emit(ZentaraCodeEventName.TaskUnpaused, task.taskId)
 			})
 
-			task.on(RooCodeEventName.TaskSpawned, (childTaskId: any) => {
-				this.emit(RooCodeEventName.TaskSpawned, task.taskId, childTaskId)
+			task.on(ZentaraCodeEventName.TaskSpawned, (childTaskId: any) => {
+				this.emit(ZentaraCodeEventName.TaskSpawned, task.taskId, childTaskId)
 			})
 
 			// Task Execution
 
-			task.on(RooCodeEventName.Message, async (message: any) => {
-				this.emit(RooCodeEventName.Message, { taskId: task.taskId, ...message })
+			task.on(ZentaraCodeEventName.Message, async (message: any) => {
+				this.emit(ZentaraCodeEventName.Message, { taskId: task.taskId, ...message })
 
 				if (message.message.partial !== true) {
 					await this.fileLog(`[${new Date().toISOString()}] ${JSON.stringify(message.message, null, 2)}\n`)
 				}
 			})
 
-			task.on(RooCodeEventName.TaskModeSwitched, (taskId: any, mode: any) => {
-				this.emit(RooCodeEventName.TaskModeSwitched, taskId, mode)
+			task.on(ZentaraCodeEventName.TaskModeSwitched, (taskId: any, mode: any) => {
+				this.emit(ZentaraCodeEventName.TaskModeSwitched, taskId, mode)
 			})
 
-			task.on(RooCodeEventName.TaskAskResponded, () => {
-				this.emit(RooCodeEventName.TaskAskResponded, task.taskId)
+			task.on(ZentaraCodeEventName.TaskAskResponded, () => {
+				this.emit(ZentaraCodeEventName.TaskAskResponded, task.taskId)
 			})
 
 			// Task Analytics
 
-			task.on(RooCodeEventName.TaskToolFailed, (taskId: any, tool: any, error: any) => {
-				this.emit(RooCodeEventName.TaskToolFailed, taskId, tool, error)
+			task.on(ZentaraCodeEventName.TaskToolFailed, (taskId: any, tool: any, error: any) => {
+				this.emit(ZentaraCodeEventName.TaskToolFailed, taskId, tool, error)
 			})
 
-			task.on(RooCodeEventName.TaskTokenUsageUpdated, (_: any, usage: any) => {
-				this.emit(RooCodeEventName.TaskTokenUsageUpdated, task.taskId, usage)
+			task.on(ZentaraCodeEventName.TaskTokenUsageUpdated, (_: any, usage: any) => {
+				this.emit(ZentaraCodeEventName.TaskTokenUsageUpdated, task.taskId, usage)
 			})
 
 			// Let's go!
 
-			this.emit(RooCodeEventName.TaskCreated, task.taskId)
+			this.emit(ZentaraCodeEventName.TaskCreated, task.taskId)
 		})
 	}
 
@@ -349,13 +349,13 @@ export class API extends EventEmitter<RooCodeEvents> implements RooCodeAPI {
 
 	// Global Settings Management
 
-	public getConfiguration(): RooCodeSettings {
+	public getConfiguration(): ZentaraCodeSettings {
 		return Object.fromEntries(
 			Object.entries(this.sidebarProvider.getValues()).filter(([key]) => !isSecretStateKey(key)),
 		)
 	}
 
-	public async setConfiguration(values: RooCodeSettings) {
+	public async setConfiguration(values: ZentaraCodeSettings) {
 		await this.sidebarProvider.contextProxy.setValues(values)
 		await this.sidebarProvider.providerSettingsManager.saveConfig(values.currentApiConfigName || "default", values)
 		await this.sidebarProvider.postStateToWebview()

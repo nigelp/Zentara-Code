@@ -1,6 +1,6 @@
 import { render, screen } from "@/utils/test-utils"
 
-import { Package } from "@roo/package"
+import { Package } from "@zentara/package"
 
 import Announcement from "../Announcement"
 
@@ -22,16 +22,16 @@ vi.mock("@src/i18n/TranslationContext", () => ({
 	useAppTranslation: () => ({
 		t: (key: string, options?: { version: string }) => {
 			if (key === "chat:announcement.title") {
-				return `🎉 Roo Code ${options?.version} Released`
+				return `🎉 Zentara Code ${options?.version} Released`
 			}
 			if (key === "chat:announcement.stealthModel.feature") {
 				return "The Sonic stealth model is now Grok Code Fast!"
 			}
 			if (key === "chat:announcement.stealthModel.note") {
-				return "As a thank you for all the helpful feedback about Sonic, you'll also continue to have free access to the grok-code-fast-1 model for another week through the Roo Code Cloud provider."
+				return "As a thank you for all the helpful feedback about Sonic, you'll also continue to have free access to the grok-code-fast-1 model for another week through the Zentara Code Cloud provider."
 			}
 			if (key === "chat:announcement.stealthModel.connectButton") {
-				return "Connect to Roo Code Cloud"
+				return "Connect to Zentara Code Cloud"
 			}
 			// Return key for other translations not relevant to this test
 			return key
@@ -57,7 +57,7 @@ vi.mock("react-i18next", () => ({
 			return (
 				<>
 					As a thank you for all the helpful feedback about Sonic, you&rsquo;ll also continue to have free
-					access to the grok-code-fast-1 model for another week through the Roo Code Cloud provider.
+					access to the grok-code-fast-1 model for another week through the Zentara Code Cloud provider.
 				</>
 			)
 		}
@@ -88,7 +88,7 @@ describe("Announcement", () => {
 		render(<Announcement hideAnnouncement={mockHideAnnouncement} />)
 
 		// Check if the mocked version number is present in the title
-		expect(screen.getByText(`🎉 Roo Code ${expectedVersion} Released`)).toBeInTheDocument()
+		expect(screen.getByText(`🎉 Zentara Code ${expectedVersion} Released`)).toBeInTheDocument()
 
 		// Check if the Grok Code Fast feature is displayed
 		expect(screen.getByText(/The Sonic stealth model is now Grok Code Fast!/)).toBeInTheDocument()
@@ -97,6 +97,6 @@ describe("Announcement", () => {
 		expect(screen.getByText(/As a thank you for all the helpful feedback about Sonic/)).toBeInTheDocument()
 
 		// Check if the connect button is displayed (since cloudIsAuthenticated is false in the mock)
-		expect(screen.getByText("Connect to Roo Code Cloud")).toBeInTheDocument()
+		expect(screen.getByText("Connect to Zentara Code Cloud")).toBeInTheDocument()
 	})
 })

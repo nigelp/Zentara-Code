@@ -4,9 +4,9 @@ import { Trans } from "react-i18next"
 import { Info, Download, Upload, TriangleAlert } from "lucide-react"
 import { VSCodeCheckbox, VSCodeLink } from "@vscode/webview-ui-toolkit/react"
 
-import type { TelemetrySetting } from "@roo-code/types"
+import type { TelemetrySetting } from "@zentara-code/types"
 
-import { Package } from "@roo/package"
+import { Package } from "@zentara/package"
 
 import { vscode } from "@/utils/vscode"
 import { cn } from "@/lib/utils"
@@ -51,7 +51,7 @@ export const About = ({ telemetrySetting, setTelemetrySetting, className, ...pro
 						<Trans
 							i18nKey="settings:footer.telemetry.description"
 							components={{
-								privacyLink: <VSCodeLink href="https://roocode.com/privacy" />,
+								privacyLink: <VSCodeLink href="https://zentaracode.com/privacy" />,
 							}}
 						/>
 					</p>
@@ -61,7 +61,7 @@ export const About = ({ telemetrySetting, setTelemetrySetting, className, ...pro
 					<Trans
 						i18nKey="settings:footer.feedback"
 						components={{
-							githubLink: <VSCodeLink href="https://github.com/Zentqar-Ai/Roo-Code" />,
+							githubLink: <VSCodeLink href="https://github.com/Zentqar-Ai/Zentara-Code" />,
 						}}
 					/>
 				</div>

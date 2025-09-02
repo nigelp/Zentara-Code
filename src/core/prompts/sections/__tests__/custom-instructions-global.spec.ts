@@ -1,14 +1,14 @@
 import * as path from "path"
 
 // Use vi.hoisted to ensure mocks are available during hoisting
-const { mockHomedir, mockStat, mockReadFile, mockReaddir, mockGetRooDirectoriesForCwd, mockGetGlobalRooDirectory } =
+const { mockHomedir, mockStat, mockReadFile, mockReaddir, mockGetZentaraDirectoriesForCwd, mockGetGlobalZentaraDirectory } =
 	vi.hoisted(() => ({
 		mockHomedir: vi.fn(),
 		mockStat: vi.fn(),
 		mockReadFile: vi.fn(),
 		mockReaddir: vi.fn(),
-		mockGetRooDirectoriesForCwd: vi.fn(),
-		mockGetGlobalRooDirectory: vi.fn(),
+		mockGetZentaraDirectoriesForCwd: vi.fn(),
+		mockGetGlobalZentaraDirectory: vi.fn(),
 	}))
 
 // Mock os module
@@ -28,25 +28,25 @@ vi.mock("fs/promises", () => ({
 	},
 }))
 
-// Mock the roo-config service
-vi.mock("../../../../services/roo-config", () => ({
-	getRooDirectoriesForCwd: mockGetRooDirectoriesForCwd,
-	getGlobalRooDirectory: mockGetGlobalRooDirectory,
+// Mock the zentara-config service
+vi.mock("../../../../services/zentara-config", () => ({
+	getZentaraDirectoriesForCwd: mockGetZentaraDirectoriesForCwd,
+	getGlobalZentaraDirectory: mockGetGlobalZentaraDirectory,
 }))
 
 import { loadRuleFiles, addCustomInstructions } from "../custom-instructions"
 
-describe("custom-instructions global .roo support", () => {
+describe("custom-instructions global .zentara support", () => {
 	const mockCwd = "/mock/project"
 	const mockHomeDir = "/mock/home"
-	const globalRooDir = path.join(mockHomeDir, ".roo")
-	const projectRooDir = path.join(mockCwd, ".roo")
+	const globalZentaraDir = path.join(mockHomeDir, ".zentara")
+	const projectZentaraDir = path.join(mockCwd, ".zentara")
 
 	beforeEach(() => {
 		vi.clearAllMocks()
 		mockHomedir.mockReturnValue(mockHomeDir)
-		mockGetRooDirectoriesForCwd.mockReturnValue([globalRooDir, projectRooDir])
-		mockGetGlobalRooDirectory.mockReturnValue(globalRooDir)
+		mockGetZentaraDirectoriesForCwd.mockReturnValue([globalZentaraDir, projectZentaraDir])
+		mockGetGlobalZentaraDirectory.mockReturnValue(globalZentaraDir)
 	})
 
 	afterEach(() => {
@@ -132,7 +132,7 @@ describe("custom-instructions global .roo support", () => {
 			expect(globalIndex).toBeLessThan(projectIndex)
 		})
 
-		it("should fall back to legacy .roorules file when no .roo/rules directories exist", async () => {
+		it("should fall back to legacy .zentararules file when no .zentara/rules directories exist", async () => {
 			// Mock directory existence - neither exist
 			mockStat
 				.mockRejectedValueOnce(new Error("ENOENT")) // global rules dir doesn't exist
@@ -143,7 +143,7 @@ describe("custom-instructions global .roo support", () => {
 
 			const result = await loadRuleFiles(mockCwd)
 
-			expect(result).toContain("# Rules from .roorules:")
+			expect(result).toContain("# Rules from .zentararules:")
 			expect(result).toContain("legacy rule content")
 		})
 
@@ -157,7 +157,7 @@ describe("custom-instructions global .roo support", () => {
 			// The safeReadFile function catches ENOENT errors and returns empty string
 			// So we don't need to mock rejections, just empty responses
 			mockReadFile
-				.mockResolvedValueOnce("") // .roorules returns empty (simulating ENOENT caught by safeReadFile)
+				.mockResolvedValueOnce("") // .zentararules returns empty (simulating ENOENT caught by safeReadFile)
 				.mockResolvedValueOnce("") // .clinerules returns empty (simulating ENOENT caught by safeReadFile)
 
 			const result = await loadRuleFiles(mockCwd)
@@ -193,7 +193,7 @@ describe("custom-instructions global .roo support", () => {
 				.mockResolvedValueOnce("global mode rule content")
 				.mockResolvedValueOnce("project mode rule content")
 				.mockResolvedValueOnce("") // AGENTS.md file (empty)
-				.mockResolvedValueOnce("") // .roorules legacy file (empty)
+				.mockResolvedValueOnce("") // .zentararules legacy file (empty)
 				.mockResolvedValueOnce("") // .clinerules legacy file (empty)
 
 			const result = await addCustomInstructions("", "", mockCwd, mode)
@@ -217,14 +217,14 @@ describe("custom-instructions global .roo support", () => {
 
 			// Mock legacy mode file reading
 			mockReadFile
-				.mockResolvedValueOnce("legacy mode rule content") // .roorules-code
+				.mockResolvedValueOnce("legacy mode rule content") // .zentararules-code
 				.mockResolvedValueOnce("") // AGENTS.md file (empty)
-				.mockResolvedValueOnce("") // generic .roorules (empty)
+				.mockResolvedValueOnce("") // generic .zentararules (empty)
 				.mockResolvedValueOnce("") // generic .clinerules (empty)
 
 			const result = await addCustomInstructions("", "", mockCwd, mode)
 
-			expect(result).toContain("# Rules from .roorules-code:")
+			expect(result).toContain("# Rules from .zentararules-code:")
 			expect(result).toContain("legacy mode rule content")
 		})
 	})

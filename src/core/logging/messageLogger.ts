@@ -1,10 +1,10 @@
-import { outputChannel } from "../../roo_debug/src/vscodeUtils"
+import { outputChannel } from "../../zentara_debug/src/vscodeUtils"
 import type { Anthropic } from "@anthropic-ai/sdk"
 import type { TextContent, ToolUse } from "../../shared/tools"
 
 /**
  * Message logging utilities for tracking LLM conversations
- * Logs to the "Roo Debug" VSCode output channel
+ * Logs to the "Zentara Debug" VSCode output channel
  */
 
 export interface MessageContent {

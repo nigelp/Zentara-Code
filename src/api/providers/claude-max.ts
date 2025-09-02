@@ -10,7 +10,7 @@ import {
 	claudeCodeDefaultModelId,
 	claudeCodeModels,
 	ANTHROPIC_DEFAULT_MAX_TOKENS,
-} from "@roo-code/types"
+} from "@zentara-code/types"
 
 import type { ApiHandlerOptions } from "../../shared/api"
 import { ApiStream } from "../transform/stream"

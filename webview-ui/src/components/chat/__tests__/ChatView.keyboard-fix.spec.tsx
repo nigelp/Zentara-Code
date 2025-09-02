@@ -44,15 +44,15 @@ vi.mock("@src/components/modals/Announcement", () => ({
 	default: () => null,
 }))
 
-vi.mock("@src/components/welcome/RooCloudCTA", () => ({
+vi.mock("@src/components/welcome/ZentaraCloudCTA", () => ({
 	default: () => null,
 }))
 
-vi.mock("@src/components/welcome/RooTips", () => ({
+vi.mock("@src/components/welcome/ZentaraTips", () => ({
 	default: () => null,
 }))
 
-vi.mock("@src/components/welcome/RooHero", () => ({
+vi.mock("@src/components/welcome/ZentaraHero", () => ({
 	default: () => null,
 }))
 

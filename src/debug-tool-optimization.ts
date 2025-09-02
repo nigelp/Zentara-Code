@@ -5,8 +5,8 @@ import {
 	trackToolUsage,
 	clearAllCaches,
 	getGlobalToolDescriptionManager,
-} from "./roo_tool_prompt_management/tool-optimization-integration"
-import { ToolDescriptionMode } from "./roo_tool_prompt_management/optimization-types"
+} from "./zentara_tool_prompt_management/tool-optimization-integration"
+import { ToolDescriptionMode } from "./zentara_tool_prompt_management/optimization-types"
 
 // Import tool description map directly
 const toolDescriptionMap: Record<string, (args: any) => string | Promise<string> | undefined> = {

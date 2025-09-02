@@ -1,7 +1,7 @@
-import type { RooCodeAPI } from "@roo-code/types"
+import type { ZentaraCodeAPI } from "@zentara-code/types"
 
 declare global {
-	var api: RooCodeAPI
+	var api: ZentaraCodeAPI
 }
 
 export {}

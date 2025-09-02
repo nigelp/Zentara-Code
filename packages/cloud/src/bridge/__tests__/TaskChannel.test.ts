@@ -6,12 +6,12 @@ import type { Socket } from "socket.io-client"
 import {
 	type TaskLike,
 	type ClineMessage,
-	RooCodeEventName,
+	ZentaraCodeEventName,
 	TaskBridgeEventName,
 	TaskBridgeCommandName,
 	TaskSocketEvents,
 	TaskStatus,
-} from "@roo-code/types"
+} from "@zentara-code/types"
 
 import { TaskChannel } from "../TaskChannel.js"
 
@@ -101,13 +101,13 @@ describe("TaskChannel", () => {
 			})
 
 			// Verify specific mappings
-			expect(channel.eventMapping[0].from).toBe(RooCodeEventName.Message)
+			expect(channel.eventMapping[0].from).toBe(ZentaraCodeEventName.Message)
 			expect(channel.eventMapping[0].to).toBe(TaskBridgeEventName.Message)
 
-			expect(channel.eventMapping[1].from).toBe(RooCodeEventName.TaskModeSwitched)
+			expect(channel.eventMapping[1].from).toBe(ZentaraCodeEventName.TaskModeSwitched)
 			expect(channel.eventMapping[1].to).toBe(TaskBridgeEventName.TaskModeSwitched)
 
-			expect(channel.eventMapping[2].from).toBe(RooCodeEventName.TaskInteractive)
+			expect(channel.eventMapping[2].from).toBe(ZentaraCodeEventName.TaskInteractive)
 			expect(channel.eventMapping[2].to).toBe(TaskBridgeEventName.TaskInteractive)
 		})
 
@@ -131,9 +131,9 @@ describe("TaskChannel", () => {
 
 			// Verify listeners were registered for all mapped events
 			const task = mockTask as any
-			expect(task._getListenerCount(RooCodeEventName.Message)).toBe(1)
-			expect(task._getListenerCount(RooCodeEventName.TaskModeSwitched)).toBe(1)
-			expect(task._getListenerCount(RooCodeEventName.TaskInteractive)).toBe(1)
+			expect(task._getListenerCount(ZentaraCodeEventName.Message)).toBe(1)
+			expect(task._getListenerCount(ZentaraCodeEventName.TaskModeSwitched)).toBe(1)
+			expect(task._getListenerCount(ZentaraCodeEventName.TaskInteractive)).toBe(1)
 		})
 
 		it("should correctly transform Message event payloads", async () => {
@@ -164,7 +164,7 @@ describe("TaskChannel", () => {
 				message: { type: "say", text: "Hello" } as ClineMessage,
 			}
 
-			;(mockTask as any)._triggerEvent(RooCodeEventName.Message, messageData)
+			;(mockTask as any)._triggerEvent(ZentaraCodeEventName.Message, messageData)
 
 			// Verify the event was published with correct payload
 			expect(publishCalls.length).toBe(1)
@@ -203,7 +203,7 @@ describe("TaskChannel", () => {
 
 			// Trigger TaskModeSwitched event
 			const mode = "architect"
-			;(mockTask as any)._triggerEvent(RooCodeEventName.TaskModeSwitched, mode)
+			;(mockTask as any)._triggerEvent(ZentaraCodeEventName.TaskModeSwitched, mode)
 
 			// Verify the event was published with correct payload
 			expect(publishCalls.length).toBe(1)
@@ -238,7 +238,7 @@ describe("TaskChannel", () => {
 			publishCalls = []
 
 			// Trigger TaskInteractive event
-			;(mockTask as any)._triggerEvent(RooCodeEventName.TaskInteractive, taskId)
+			;(mockTask as any)._triggerEvent(ZentaraCodeEventName.TaskInteractive, taskId)
 
 			// Verify the event was published with correct payload
 			expect(publishCalls.length).toBe(1)
@@ -271,17 +271,17 @@ describe("TaskChannel", () => {
 
 			// Verify listeners are registered
 			const task = mockTask as any
-			expect(task._getListenerCount(RooCodeEventName.Message)).toBe(1)
-			expect(task._getListenerCount(RooCodeEventName.TaskModeSwitched)).toBe(1)
-			expect(task._getListenerCount(RooCodeEventName.TaskInteractive)).toBe(1)
+			expect(task._getListenerCount(ZentaraCodeEventName.Message)).toBe(1)
+			expect(task._getListenerCount(ZentaraCodeEventName.TaskModeSwitched)).toBe(1)
+			expect(task._getListenerCount(ZentaraCodeEventName.TaskInteractive)).toBe(1)
 
 			// Clean up
 			await taskChannel.cleanup(mockSocket)
 
 			// Verify all listeners were removed
-			expect(task._getListenerCount(RooCodeEventName.Message)).toBe(0)
-			expect(task._getListenerCount(RooCodeEventName.TaskModeSwitched)).toBe(0)
-			expect(task._getListenerCount(RooCodeEventName.TaskInteractive)).toBe(0)
+			expect(task._getListenerCount(ZentaraCodeEventName.Message)).toBe(0)
+			expect(task._getListenerCount(ZentaraCodeEventName.TaskModeSwitched)).toBe(0)
+			expect(task._getListenerCount(ZentaraCodeEventName.TaskInteractive)).toBe(0)
 		})
 
 		it("should handle duplicate listener prevention", async () => {
@@ -304,9 +304,9 @@ describe("TaskChannel", () => {
 
 			// Verify only one set of listeners exists
 			const task = mockTask as any
-			expect(task._getListenerCount(RooCodeEventName.Message)).toBe(1)
-			expect(task._getListenerCount(RooCodeEventName.TaskModeSwitched)).toBe(1)
-			expect(task._getListenerCount(RooCodeEventName.TaskInteractive)).toBe(1)
+			expect(task._getListenerCount(ZentaraCodeEventName.Message)).toBe(1)
+			expect(task._getListenerCount(ZentaraCodeEventName.TaskModeSwitched)).toBe(1)
+			expect(task._getListenerCount(ZentaraCodeEventName.TaskInteractive)).toBe(1)
 
 			warnSpy.mockRestore()
 		})

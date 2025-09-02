@@ -3,7 +3,7 @@ import * as path from "path"
 import * as os from "os"
 import { z } from "zod"
 
-import { CloudService, getClerkBaseUrl, PRODUCTION_CLERK_BASE_URL } from "@roo-code/cloud"
+import { CloudService, getClerkBaseUrl, PRODUCTION_CLERK_BASE_URL } from "@zentara-code/cloud"
 
 import { t } from "../../i18n"
 
@@ -145,19 +145,19 @@ export class MdmService {
 
 		switch (platform) {
 			case "win32": {
-				// Windows: %ProgramData%\RooCode\mdm.json or mdm.dev.json
+				// Windows: %ProgramData%\ZentaraCode\mdm.json or mdm.dev.json
 				const programData = process.env.PROGRAMDATA || "C:\\ProgramData"
-				return path.join(programData, "RooCode", configFileName)
+				return path.join(programData, "ZentaraCode", configFileName)
 			}
 
 			case "darwin":
-				// macOS: /Library/Application Support/RooCode/mdm.json or mdm.dev.json
-				return `/Library/Application Support/RooCode/${configFileName}`
+				// macOS: /Library/Application Support/ZentaraCode/mdm.json or mdm.dev.json
+				return `/Library/Application Support/ZentaraCode/${configFileName}`
 
 			case "linux":
 			default:
-				// Linux: /etc/roo-code/mdm.json or mdm.dev.json
-				return `/etc/roo-code/${configFileName}`
+				// Linux: /etc/zentara-code/mdm.json or mdm.dev.json
+				return `/etc/zentara-code/${configFileName}`
 		}
 	}
 

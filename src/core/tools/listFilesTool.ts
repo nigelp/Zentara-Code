@@ -62,15 +62,15 @@ export async function listFilesTool(
 			cline.consecutiveMistakeCount = 0
 
 			const [files, didHitLimit] = await listFiles(absolutePath, recursive, 200, ignorePatterns)
-			const { showRooIgnoredFiles = false } = (await cline.providerRef.deref()?.getState()) ?? {}
+			const { showZentaraIgnoredFiles = false } = (await cline.providerRef.deref()?.getState()) ?? {}
 
 			const result = formatResponse.formatFilesList(
 				absolutePath,
 				files,
 				didHitLimit,
-				cline.rooIgnoreController,
-				showRooIgnoredFiles,
-				cline.rooProtectedController,
+				cline.zentaraIgnoreController,
+				showZentaraIgnoredFiles,
+				cline.zentaraProtectedController,
 			)
 
 			const completeMessage = JSON.stringify({ ...sharedMessageProps, content: result } satisfies ClineSayTool)

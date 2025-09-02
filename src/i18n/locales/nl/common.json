@@ -1,6 +1,6 @@
 {
 	"extension": {
-		"name": "Roo Code",
+		"name": "Zentara Code",
 		"description": "Een compleet ontwikkelteam van AI-agenten in je editor."
 	},
 	"number_format": {
@@ -85,7 +85,7 @@
 			"processExitedWithError": "Claude Code proces beëindigd met code {{exitCode}}. Foutuitvoer: {{output}}",
 			"stoppedWithReason": "Claude Code gestopt om reden: {{reason}}",
 			"apiKeyModelPlanMismatch": "API keys and subscription plans allow different models. Make sure the selected model is included in your plan.",
-			"notFound": "Claude Code executable '{{claudePath}}' not found.\n\nPlease install Claude Code CLI:\n1. Visit {{installationUrl}} to download Claude Code\n2. Follow the installation instructions for your operating system\n3. Ensure the 'claude' command is available in your PATH\n4. Alternatively, configure a custom path in Roo settings under 'Claude Code Path'\n\nOriginal error: {{originalError}}"
+			"notFound": "Claude Code executable '{{claudePath}}' not found.\n\nPlease install Claude Code CLI:\n1. Visit {{installationUrl}} to download Claude Code\n2. Follow the installation instructions for your operating system\n3. Ensure the 'claude' command is available in your PATH\n4. Alternatively, configure a custom path in Zentara settings under 'Claude Code Path'\n\nOriginal error: {{originalError}}"
 		},
 		"gemini": {
 			"generate_stream": "Fout bij het genereren van contextstream door Gemini: {{error}}",
@@ -101,14 +101,14 @@
 			"noResponseBody": "Cerebras API-fout: Geen responslichaam",
 			"completionError": "Cerebras-voltooiingsfout: {{error}}"
 		},
-		"roo": {
-			"authenticationRequired": "Roo provider vereist cloud authenticatie. Log in bij Roo Code Cloud."
+		"zentara": {
+			"authenticationRequired": "Zentara provider vereist cloud authenticatie. Log in bij Zentara Code Cloud."
 		}
 	},
 	"warnings": {
 		"no_terminal_content": "Geen terminalinhoud geselecteerd",
 		"missing_task_files": "De bestanden van deze taak ontbreken. Wil je deze uit de takenlijst verwijderen?",
-		"auto_import_failed": "Automatisch importeren van RooCode-instellingen mislukt: {{error}}"
+		"auto_import_failed": "Automatisch importeren van ZentaraCode-instellingen mislukt: {{error}}"
 	},
 	"info": {
 		"no_changes": "Geen wijzigingen gevonden.",
@@ -117,7 +117,7 @@
 		"custom_storage_path_set": "Aangepast opslagpad ingesteld: {{path}}",
 		"default_storage_path": "Terug naar standaard opslagpad",
 		"settings_imported": "Instellingen succesvol geïmporteerd.",
-		"auto_import_success": "RooCode-instellingen automatisch geïmporteerd van {{filename}}",
+		"auto_import_success": "ZentaraCode-instellingen automatisch geïmporteerd van {{filename}}",
 		"share_link_copied": "Deellink gekopieerd naar klembord",
 		"image_copied_to_clipboard": "Afbeelding data-URI gekopieerd naar klembord",
 		"image_saved": "Afbeelding opgeslagen naar {{path}}",
@@ -145,12 +145,12 @@
 	},
 	"storage": {
 		"prompt_custom_path": "Voer een aangepast opslagpad voor gespreksgeschiedenis in, laat leeg voor standaardlocatie",
-		"path_placeholder": "D:\\RooCodeStorage",
-		"enter_absolute_path": "Voer een absoluut pad in (bijv. D:\\RooCodeStorage of /home/user/storage)",
+		"path_placeholder": "D:\\ZentaraCodeStorage",
+		"enter_absolute_path": "Voer een absoluut pad in (bijv. D:\\ZentaraCodeStorage of /home/user/storage)",
 		"enter_valid_path": "Voer een geldig pad in"
 	},
 	"input": {
-		"task_prompt": "Wat moet Roo doen?",
+		"task_prompt": "Wat moet Zentara doen?",
 		"task_placeholder": "Typ hier je taak"
 	},
 	"settings": {
@@ -166,8 +166,8 @@
 	},
 	"customModes": {
 		"errors": {
-			"yamlParseError": "Ongeldige YAML in .roomodes bestand op regel {{line}}. Controleer:\n• Juiste inspringing (gebruik spaties, geen tabs)\n• Overeenkomende aanhalingstekens en haakjes\n• Geldige YAML syntaxis",
-			"schemaValidationError": "Ongeldig aangepaste modi formaat in .roomodes:\n{{issues}}",
+			"yamlParseError": "Ongeldige YAML in .zentaramodes bestand op regel {{line}}. Controleer:\n• Juiste inspringing (gebruik spaties, geen tabs)\n• Overeenkomende aanhalingstekens en haakjes\n• Geldige YAML syntaxis",
+			"schemaValidationError": "Ongeldig aangepaste modi formaat in .zentaramodes:\n{{issues}}",
 			"invalidFormat": "Ongeldig aangepaste modi formaat. Zorg ervoor dat je instellingen het juiste YAML formaat volgen.",
 			"updateFailed": "Aangepaste modus bijwerken mislukt: {{error}}",
 			"deleteFailed": "Aangepaste modus verwijderen mislukt: {{error}}",
@@ -188,8 +188,8 @@
 	},
 	"mdm": {
 		"errors": {
-			"cloud_auth_required": "Je organisatie vereist Roo Code Cloud-authenticatie. Log in om door te gaan.",
-			"organization_mismatch": "Je moet geauthenticeerd zijn met het Roo Code Cloud-account van je organisatie.",
+			"cloud_auth_required": "Je organisatie vereist Zentara Code Cloud-authenticatie. Log in om door te gaan.",
+			"organization_mismatch": "Je moet geauthenticeerd zijn met het Zentara Code Cloud-account van je organisatie.",
 			"verification_failed": "Kan organisatie-authenticatie niet verifiëren."
 		},
 		"info": {

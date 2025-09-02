@@ -1,7 +1,7 @@
 import * as vscode from "vscode"
 import * as os from "os"
 
-import type { ModeConfig, PromptComponent, CustomModePrompts, TodoItem } from "@roo-code/types"
+import type { ModeConfig, PromptComponent, CustomModePrompts, TodoItem } from "@zentara-code/types"
 
 import type { SystemPromptSettings } from "./types"
 
@@ -16,7 +16,7 @@ import { CodeIndexManager } from "../../services/code-index/manager"
 import { PromptVariables, loadSystemPromptFile } from "./sections/custom-system-prompt"
 
 import { getToolDescriptionsForMode } from "./tools"
-import { getOptimizedToolDescriptionsForMode } from "../../roo_tool_prompt_management/tool-optimization-integration"
+import { getOptimizedToolDescriptionsForMode } from "../../zentara_tool_prompt_management/tool-optimization-integration"
 import {
 	getRulesSection,
 	getSystemInfoSection,
@@ -101,7 +101,7 @@ async function generatePrompt(
 	experiments?: Record<string, boolean>,
 	enableMcpServerCreation?: boolean,
 	language?: string,
-	rooIgnoreInstructions?: string,
+	zentaraIgnoreInstructions?: string,
 	partialReadsEnabled?: boolean,
 	settings?: SystemPromptSettings,
 	todoList?: TodoItem[],
@@ -176,7 +176,7 @@ ${getObjectiveSection(codeIndexManager, experiments)}
 
 ${await addCustomInstructions(baseInstructions, globalCustomInstructions || "", cwd, mode, {
 	language: language ?? formatLanguage(vscode.env.language),
-	rooIgnoreInstructions,
+	zentaraIgnoreInstructions,
 	settings,
 })}`
 
@@ -198,7 +198,7 @@ export const SYSTEM_PROMPT = async (
 	experiments?: Record<string, boolean>,
 	enableMcpServerCreation?: boolean,
 	language?: string,
-	rooIgnoreInstructions?: string,
+	zentaraIgnoreInstructions?: string,
 	partialReadsEnabled?: boolean,
 	settings?: SystemPromptSettings,
 	todoList?: TodoItem[],
@@ -242,7 +242,7 @@ export const SYSTEM_PROMPT = async (
 			mode,
 			{
 				language: language ?? formatLanguage(vscode.env.language),
-				rooIgnoreInstructions,
+				zentaraIgnoreInstructions,
 				settings,
 			},
 		)
@@ -273,7 +273,7 @@ ${customInstructions}`
 		experiments,
 		enableMcpServerCreation,
 		language,
-		rooIgnoreInstructions,
+		zentaraIgnoreInstructions,
 		partialReadsEnabled,
 		settings,
 		todoList,

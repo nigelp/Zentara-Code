@@ -59,8 +59,8 @@ describe("RequestyHandler", () => {
 			apiKey: mockOptions.requestyApiKey,
 			defaultHeaders: {
 				"HTTP-Referer": "https://zentar.ai",
-				"X-Title": "Roo Code",
-				"User-Agent": `RooCode/${Package.version}`,
+				"X-Title": "Zentara Code",
+				"User-Agent": `ZentaraCode/${Package.version}`,
 			},
 		})
 	})
@@ -73,9 +73,9 @@ describe("RequestyHandler", () => {
 			baseURL: "https://custom.requesty.ai/v1",
 			apiKey: mockOptions.requestyApiKey,
 			defaultHeaders: {
-				"HTTP-Referer": "https://github.com/RooVetGit/Roo-Cline",
-				"X-Title": "Roo Code",
-				"User-Agent": `RooCode/${Package.version}`,
+				"HTTP-Referer": "https://github.com/ZentaraVetGit/Zentara-Cline",
+				"X-Title": "Zentara Code",
+				"User-Agent": `ZentaraCode/${Package.version}`,
 			},
 		})
 	})

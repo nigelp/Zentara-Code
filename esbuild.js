@@ -162,7 +162,7 @@ const copyLocalesFiles = {
 
 // Function to copy debug helper files
 function copyDebugHelperFiles() {
-	const srcDir = path.join(__dirname, "src", "roo_debug", "src", "debug_helper")
+	const srcDir = path.join(__dirname, "src", "zentara_debug", "src", "debug_helper")
 	const destDirDist = path.join(__dirname, "dist", "debug_helper")
 	const destDirOut = path.join(__dirname, "out", "debug_helper")
 
@@ -215,7 +215,7 @@ function copyDebugHelperFiles() {
 function setupDebugHelperWatcher() {
 	if (!watch) return
 
-	const debugHelperDir = path.join(__dirname, "src", "roo_debug", "src", "debug_helper")
+	const debugHelperDir = path.join(__dirname, "src", "zentara_debug", "src", "debug_helper")
 
 	if (!fs.existsSync(debugHelperDir)) {
 		console.warn(`Cannot set up watcher: Source debug_helper directory does not exist: ${debugHelperDir}`)

@@ -10,8 +10,8 @@ import {
 	ProviderSettingsEntry,
 	DEFAULT_CONSECUTIVE_MISTAKE_LIMIT,
 	getModelId,
-} from "@roo-code/types"
-import { TelemetryService } from "@roo-code/telemetry"
+} from "@zentara-code/types"
+import { TelemetryService } from "@zentara-code/telemetry"
 
 import { Mode, modes } from "../../shared/modes"
 
@@ -40,7 +40,7 @@ export const providerProfilesSchema = z.object({
 export type ProviderProfiles = z.infer<typeof providerProfilesSchema>
 
 export class ProviderSettingsManager {
-	private static readonly SCOPE_PREFIX = "roo_cline_config_"
+	private static readonly SCOPE_PREFIX = "zentara_cline_config_"
 	private readonly defaultConfigId = this.generateId()
 
 	private readonly defaultModeApiConfigs: Record<string, string> = Object.fromEntries(

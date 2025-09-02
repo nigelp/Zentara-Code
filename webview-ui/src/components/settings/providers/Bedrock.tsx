@@ -7,7 +7,7 @@ import {
 	type ModelInfo,
 	BEDROCK_REGIONS,
 	BEDROCK_CLAUDE_SONNET_4_MODEL_ID,
-} from "@roo-code/types"
+} from "@zentara-code/types"
 
 import { useAppTranslation } from "@src/i18n/TranslationContext"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, StandardTooltip } from "@src/components/ui"

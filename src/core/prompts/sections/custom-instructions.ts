@@ -3,12 +3,12 @@ import path from "path"
 import * as os from "os"
 import { Dirent } from "fs"
 
-import { isLanguage } from "@roo-code/types"
+import { isLanguage } from "@zentara-code/types"
 
 import type { SystemPromptSettings } from "../types"
 
 import { LANGUAGES } from "../../../shared/language"
-import { getRooDirectoriesForCwd, getGlobalRooDirectory } from "../../../services/roo-config"
+import { getZentaraDirectoriesForCwd, getGlobalZentaraDirectory } from "../../../services/zentara-config"
 
 /**
  * Safely read a file and return its trimmed content
@@ -184,11 +184,11 @@ function formatDirectoryContent(dirPath: string, files: Array<{ filename: string
  */
 export async function loadRuleFiles(cwd: string): Promise<string> {
 	const rules: string[] = []
-	const rooDirectories = getRooDirectoriesForCwd(cwd)
+	const zentaraDirectories = getZentaraDirectoriesForCwd(cwd)
 
-	// Check for .roo/rules/ directories in order (global first, then project-local)
-	for (const rooDir of rooDirectories) {
-		const rulesDir = path.join(rooDir, "rules")
+	// Check for .zentara/rules/ directories in order (global first, then project-local)
+	for (const zentaraDir of zentaraDirectories) {
+		const rulesDir = path.join(zentaraDir, "rules")
 		if (await directoryExists(rulesDir)) {
 			const files = await readTextFilesFromDirectory(rulesDir)
 			if (files.length > 0) {
@@ -198,13 +198,13 @@ export async function loadRuleFiles(cwd: string): Promise<string> {
 		}
 	}
 
-	// If we found rules in .roo/rules/ directories, return them
+	// If we found rules in .zentara/rules/ directories, return them
 	if (rules.length > 0) {
 		return "\n" + rules.join("\n\n")
 	}
 
-	// Fall back to existing behavior for legacy .roorules/.clinerules files
-	const ruleFiles = [".roorules", ".clinerules"]
+	// Fall back to existing behavior for legacy .zentararules/.clinerules files
+	const ruleFiles = [".zentararules", ".clinerules"]
 
 	for (const file of ruleFiles) {
 		const content = await safeReadFile(path.join(cwd, file))
@@ -268,7 +268,7 @@ export async function addCustomInstructions(
 	mode: string,
 	options: {
 		language?: string
-		rooIgnoreInstructions?: string
+		zentaraIgnoreInstructions?: string
 		settings?: SystemPromptSettings
 	} = {},
 ): Promise<string> {
@@ -280,11 +280,11 @@ export async function addCustomInstructions(
 
 	if (mode) {
 		const modeRules: string[] = []
-		const rooDirectories = getRooDirectoriesForCwd(cwd)
+		const zentaraDirectories = getZentaraDirectoriesForCwd(cwd)
 
-		// Check for .roo/rules-${mode}/ directories in order (global first, then project-local)
-		for (const rooDir of rooDirectories) {
-			const modeRulesDir = path.join(rooDir, `rules-${mode}`)
+		// Check for .zentara/rules-${mode}/ directories in order (global first, then project-local)
+		for (const zentaraDir of zentaraDirectories) {
+			const modeRulesDir = path.join(zentaraDir, `rules-${mode}`)
 			if (await directoryExists(modeRulesDir)) {
 				const files = await readTextFilesFromDirectory(modeRulesDir)
 				if (files.length > 0) {
@@ -294,16 +294,16 @@ export async function addCustomInstructions(
 			}
 		}
 
-		// If we found mode-specific rules in .roo/rules-${mode}/ directories, use them
+		// If we found mode-specific rules in .zentara/rules-${mode}/ directories, use them
 		if (modeRules.length > 0) {
 			modeRuleContent = "\n" + modeRules.join("\n\n")
 			usedRuleFile = `rules-${mode} directories`
 		} else {
 			// Fall back to existing behavior for legacy files
-			const rooModeRuleFile = `.roorules-${mode}`
-			modeRuleContent = await safeReadFile(path.join(cwd, rooModeRuleFile))
+			const zentaraModeRuleFile = `.zentararules-${mode}`
+			modeRuleContent = await safeReadFile(path.join(cwd, zentaraModeRuleFile))
 			if (modeRuleContent) {
-				usedRuleFile = rooModeRuleFile
+				usedRuleFile = zentaraModeRuleFile
 			} else {
 				const clineModeRuleFile = `.clinerules-${mode}`
 				modeRuleContent = await safeReadFile(path.join(cwd, clineModeRuleFile))
@@ -337,15 +337,15 @@ export async function addCustomInstructions(
 
 	// Add mode-specific rules first if they exist
 	if (modeRuleContent && modeRuleContent.trim()) {
-		if (usedRuleFile.includes(path.join(".roo", `rules-${mode}`))) {
+		if (usedRuleFile.includes(path.join(".zentara", `rules-${mode}`))) {
 			rules.push(modeRuleContent.trim())
 		} else {
 			rules.push(`# Rules from ${usedRuleFile}:\n${modeRuleContent}`)
 		}
 	}
 
-	if (options.rooIgnoreInstructions) {
-		rules.push(options.rooIgnoreInstructions)
+	if (options.zentaraIgnoreInstructions) {
+		rules.push(options.zentaraIgnoreInstructions)
 	}
 
 	// Add AGENTS.md content if enabled (default: true)

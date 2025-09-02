@@ -1,10 +1,10 @@
 {
 	"input": {
-		"task_prompt": "Què vols que faci Roo?",
+		"task_prompt": "Què vols que faci Zentara?",
 		"task_placeholder": "Escriu la teva tasca aquí"
 	},
 	"extension": {
-		"name": "Roo Code",
+		"name": "Zentara Code",
 		"description": "Tot un equip de desenvolupadors d'IA al teu editor."
 	},
 	"number_format": {
@@ -88,7 +88,7 @@
 			"processExitedWithError": "El procés Claude Code ha sortit amb codi {{exitCode}}. Sortida d'error: {{output}}",
 			"stoppedWithReason": "Claude Code s'ha aturat per la raó: {{reason}}",
 			"apiKeyModelPlanMismatch": "Les claus API i els plans de subscripció permeten models diferents. Assegura't que el model seleccionat estigui inclòs al teu pla.",
-			"notFound": "No s'ha trobat l'executable Claude Code '{{claudePath}}'.\n\nInstal·la Claude Code CLI:\n1. Visita {{installationUrl}} per descarregar Claude Code\n2. Segueix les instruccions d'instal·lació per al teu sistema operatiu\n3. Assegura't que la comanda 'claude' estigui disponible al teu PATH\n4. Alternativament, configura una ruta personalitzada a la configuració de Roo sota 'Ruta de Claude Code'\n\nError original: {{originalError}}"
+			"notFound": "No s'ha trobat l'executable Claude Code '{{claudePath}}'.\n\nInstal·la Claude Code CLI:\n1. Visita {{installationUrl}} per descarregar Claude Code\n2. Segueix les instruccions d'instal·lació per al teu sistema operatiu\n3. Assegura't que la comanda 'claude' estigui disponible al teu PATH\n4. Alternativament, configura una ruta personalitzada a la configuració de Zentara sota 'Ruta de Claude Code'\n\nError original: {{originalError}}"
 		},
 		"gemini": {
 			"generate_stream": "Error del flux de context de generació de Gemini: {{error}}",
@@ -104,15 +104,15 @@
 			"noResponseBody": "Error de l'API de Cerebras: No hi ha cos de resposta",
 			"completionError": "Error de finalització de Cerebras: {{error}}"
 		},
-		"roo": {
-			"authenticationRequired": "El proveïdor Roo requereix autenticació al núvol. Si us plau, inicieu sessió a Roo Code Cloud."
+		"zentara": {
+			"authenticationRequired": "El proveïdor Zentara requereix autenticació al núvol. Si us plau, inicieu sessió a Zentara Code Cloud."
 		},
 		"mode_import_failed": "Ha fallat la importació del mode: {{error}}"
 	},
 	"warnings": {
 		"no_terminal_content": "No s'ha seleccionat contingut de terminal",
 		"missing_task_files": "Els fitxers d'aquesta tasca falten. Vols eliminar-la de la llista de tasques?",
-		"auto_import_failed": "Ha fallat la importació automàtica de la configuració de RooCode: {{error}}"
+		"auto_import_failed": "Ha fallat la importació automàtica de la configuració de ZentaraCode: {{error}}"
 	},
 	"info": {
 		"no_changes": "No s'han trobat canvis.",
@@ -121,7 +121,7 @@
 		"custom_storage_path_set": "Ruta d'emmagatzematge personalitzada establerta: {{path}}",
 		"default_storage_path": "S'ha reprès l'ús de la ruta d'emmagatzematge predeterminada",
 		"settings_imported": "Configuració importada correctament.",
-		"auto_import_success": "Configuració de RooCode importada automàticament des de {{filename}}",
+		"auto_import_success": "Configuració de ZentaraCode importada automàticament des de {{filename}}",
 		"share_link_copied": "Enllaç de compartició copiat al portapapers",
 		"image_copied_to_clipboard": "URI de dades de la imatge copiada al portapapers",
 		"image_saved": "Imatge desada a {{path}}",
@@ -149,8 +149,8 @@
 	},
 	"storage": {
 		"prompt_custom_path": "Introdueix una ruta d'emmagatzematge personalitzada per a l'historial de converses o deixa-ho buit per utilitzar la ubicació predeterminada",
-		"path_placeholder": "D:\\RooCodeStorage",
-		"enter_absolute_path": "Introdueix una ruta completa (p. ex. D:\\RooCodeStorage o /home/user/storage)",
+		"path_placeholder": "D:\\ZentaraCodeStorage",
+		"enter_absolute_path": "Introdueix una ruta completa (p. ex. D:\\ZentaraCodeStorage o /home/user/storage)",
 		"enter_valid_path": "Introdueix una ruta vàlida"
 	},
 	"settings": {
@@ -166,8 +166,8 @@
 	},
 	"customModes": {
 		"errors": {
-			"yamlParseError": "YAML no vàlid al fitxer .roomodes a la línia {{line}}. Comprova:\n• Indentació correcta (utilitza espais, no tabuladors)\n• Cometes i claudàtors coincidents\n• Sintaxi YAML vàlida",
-			"schemaValidationError": "Format de modes personalitzats no vàlid a .roomodes:\n{{issues}}",
+			"yamlParseError": "YAML no vàlid al fitxer .zentaramodes a la línia {{line}}. Comprova:\n• Indentació correcta (utilitza espais, no tabuladors)\n• Cometes i claudàtors coincidents\n• Sintaxi YAML vàlida",
+			"schemaValidationError": "Format de modes personalitzats no vàlid a .zentaramodes:\n{{issues}}",
 			"invalidFormat": "Format de modes personalitzats no vàlid. Assegura't que la teva configuració segueix el format YAML correcte.",
 			"updateFailed": "Error en actualitzar el mode personalitzat: {{error}}",
 			"deleteFailed": "Error en eliminar el mode personalitzat: {{error}}",
@@ -188,8 +188,8 @@
 	},
 	"mdm": {
 		"errors": {
-			"cloud_auth_required": "La teva organització requereix autenticació de Roo Code Cloud. Si us plau, inicia sessió per continuar.",
-			"organization_mismatch": "Has d'estar autenticat amb el compte de Roo Code Cloud de la teva organització.",
+			"cloud_auth_required": "La teva organització requereix autenticació de Zentara Code Cloud. Si us plau, inicia sessió per continuar.",
+			"organization_mismatch": "Has d'estar autenticat amb el compte de Zentara Code Cloud de la teva organització.",
 			"verification_failed": "No s'ha pogut verificar l'autenticació de l'organització."
 		},
 		"info": {

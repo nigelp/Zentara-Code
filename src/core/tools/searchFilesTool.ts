@@ -127,7 +127,7 @@ export async function searchFilesTool(
 
 		cline.consecutiveMistakeCount = 0
 
-		const results = await regexSearchFilesAdvanced(cline.cwd, resolvedOptions, cline.rooIgnoreController)
+		const results = await regexSearchFilesAdvanced(cline.cwd, resolvedOptions, cline.zentaraIgnoreController)
 
 		pushToolResult(results)
 	} catch (error) {

@@ -1,7 +1,7 @@
 jest.mock("vscode")
 import { debugTool } from "../debugTool"
-// We are NOT mocking '../../../roo_debug' to attempt to use the real controller
-import type { LaunchParams } from "../../../roo_debug" // Assuming LaunchParams is exported from roo_debug/index.ts
+// We are NOT mocking '../../../zentara_debug' to attempt to use the real controller
+import type { LaunchParams } from "../../../zentara_debug" // Assuming LaunchParams is exported from zentara_debug/index.ts
 import type { DebugToolUse, AskApproval, HandleError, PushToolResult } from "../../../shared/tools"
 import type { Task } from "../../../core/task/Task"
 
@@ -35,8 +35,8 @@ jest.mock(
 		workspace: {
 			getConfiguration: jest.fn(() => ({
 				get: jest.fn((key: string) => {
-					if (key === "rooDebug.pythonPath") return "python" // Provide a default python path
-					if (key === "rooDebug.logLevel") return "info" // Default log level
+					if (key === "zentaraDebug.pythonPath") return "python" // Provide a default python path
+					if (key === "zentaraDebug.logLevel") return "info" // Default log level
 					return undefined
 				}),
 			})),

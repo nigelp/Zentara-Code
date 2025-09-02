@@ -12,9 +12,9 @@ try {
 	console.warn("Failed to load environment variables:", e)
 }
 
-import type { CloudUserInfo } from "@roo-code/types"
-import { CloudService, BridgeOrchestrator } from "@roo-code/cloud"
-import { TelemetryService, PostHogTelemetryClient } from "@roo-code/telemetry"
+import type { CloudUserInfo } from "@zentara-code/types"
+import { CloudService, BridgeOrchestrator } from "@zentara-code/cloud"
+import { TelemetryService, PostHogTelemetryClient } from "@zentara-code/telemetry"
 
 import "./utils/path" // Necessary to have access to String.prototype.toPosix.
 import { createOutputChannelLogger, createDualLogger } from "./utils/outputChannelLogger"
@@ -32,7 +32,7 @@ import { migrateSettings } from "./utils/migrateSettings"
 import { autoImportSettings } from "./utils/autoImportSettings"
 import { API } from "./extension/api"
 
-import { DapStopTrackerFactory } from "./roo_debug/src/debug/DapStopTracker"
+import { DapStopTrackerFactory } from "./zentara_debug/src/debug/DapStopTracker"
 
 import {
 	handleUri,
@@ -131,10 +131,10 @@ export async function activate(context: vscode.ExtensionContext) {
 		}
 	}
 
-	// Initialize the provider *before* the Roo Code Cloud service.
+	// Initialize the provider *before* the Zentara Code Cloud service.
 	const provider = new ClineProvider(context, outputChannel, "sidebar", contextProxy, mdmService)
 
-	// Initialize Roo Code Cloud service.
+	// Initialize Zentara Code Cloud service.
 	const postStateListener = () => ClineProvider.getVisibleInstance()?.postStateToWebview()
 	authStateChangedHandler = postStateListener
 
@@ -294,10 +294,10 @@ export async function activate(context: vscode.ExtensionContext) {
 	context.subscriptions.push(vscode.debug.registerDebugAdapterTrackerFactory("*", new DapStopTrackerFactory()))
 	outputChannel.appendLine("Registered DAP message tracker")
 
-	// Allows other extensions to activate once Roo is ready.
+	// Allows other extensions to activate once Zentara is ready.
 	vscode.commands.executeCommand(`${Package.name}.activationCompleted`)
 
-	// Implements the `RooCodeAPI` interface.
+	// Implements the `ZentaraCodeAPI` interface.
 	const socketPath = process.env.ROO_CODE_IPC_SOCKET_PATH
 	const enableLogging = typeof socketPath === "string"
 
@@ -332,7 +332,7 @@ export async function activate(context: vscode.ExtensionContext) {
 			{ path: context.extensionPath, pattern: "**/*.ts" },
 			{ path: path.join(context.extensionPath, "../packages/types"), pattern: "**/*.ts" },
 			{ path: path.join(context.extensionPath, "../packages/telemetry"), pattern: "**/*.ts" },
-			{ path: path.join(context.extensionPath, "node_modules/@roo-code/cloud"), pattern: "**/*" },
+			{ path: path.join(context.extensionPath, "node_modules/@zentara-code/cloud"), pattern: "**/*" },
 		]
 
 		console.log(

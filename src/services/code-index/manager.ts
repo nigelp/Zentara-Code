@@ -9,13 +9,13 @@ import { CodeIndexServiceFactory } from "./service-factory"
 import { CodeIndexSearchService } from "./search-service"
 import { CodeIndexOrchestrator } from "./orchestrator"
 import { CacheManager } from "./cache-manager"
-import { RooIgnoreController } from "../../core/ignore/RooIgnoreController"
+import { ZentaraIgnoreController } from "../../core/ignore/ZentaraIgnoreController"
 import fs from "fs/promises"
 import ignore from "ignore"
 import path from "path"
 import { t } from "../../i18n"
-import { TelemetryService } from "@roo-code/telemetry"
-import { TelemetryEventName } from "@roo-code/types"
+import { TelemetryService } from "@zentara-code/telemetry"
+import { TelemetryEventName } from "@zentara-code/types"
 
 export class CodeIndexManager {
 	// --- Singleton Implementation ---
@@ -329,16 +329,16 @@ export class CodeIndexManager {
 			})
 		}
 
-		// Create RooIgnoreController instance
-		const rooIgnoreController = new RooIgnoreController(workspacePath)
-		await rooIgnoreController.initialize()
+		// Create ZentaraIgnoreController instance
+		const zentaraIgnoreController = new ZentaraIgnoreController(workspacePath)
+		await zentaraIgnoreController.initialize()
 
 		// (Re)Create shared service instances
 		const { embedder, vectorStore, scanner, fileWatcher } = this._serviceFactory.createServices(
 			this.context,
 			this._cacheManager!,
 			ignoreInstance,
-			rooIgnoreController,
+			zentaraIgnoreController,
 		)
 
 		// Validate embedder configuration before proceeding

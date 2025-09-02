@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from "vitest"
 import { Task } from "../Task"
-import type { ClineMessage } from "@roo-code/types"
+import type { ClineMessage } from "@zentara-code/types"
 
 // Mock VS Code APIs first
 vi.mock("vscode", () => ({
@@ -76,7 +76,7 @@ vi.mock("../../../api", () => ({
 	}),
 }))
 
-vi.mock("@roo-code/cloud", () => ({
+vi.mock("@zentara-code/cloud", () => ({
 	CloudService: {
 		isEnabled: vi.fn().mockReturnValue(false),
 		instance: {
@@ -85,7 +85,7 @@ vi.mock("@roo-code/cloud", () => ({
 	},
 }))
 
-vi.mock("@roo-code/telemetry", () => ({
+vi.mock("@zentara-code/telemetry", () => ({
 	TelemetryService: {
 		instance: {
 			logEvent: vi.fn(),

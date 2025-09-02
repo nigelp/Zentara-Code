@@ -1,12 +1,12 @@
 import axios from "axios"
 import { z } from "zod"
-import type { ModelInfo } from "@roo-code/types"
+import type { ModelInfo } from "@zentara-code/types"
 import {
 	HUGGINGFACE_API_URL,
 	HUGGINGFACE_CACHE_DURATION,
 	HUGGINGFACE_DEFAULT_MAX_TOKENS,
 	HUGGINGFACE_DEFAULT_CONTEXT_WINDOW,
-} from "@roo-code/types"
+} from "@zentara-code/types"
 import type { ModelRecord } from "../../../shared/api"
 
 /**

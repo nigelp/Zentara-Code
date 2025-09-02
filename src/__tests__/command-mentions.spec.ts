@@ -32,8 +32,8 @@ describe("Command Mentions", () => {
 			"/test/cwd", // cwd
 			mockUrlContentFetcher, // urlContentFetcher
 			undefined, // fileContextTracker
-			undefined, // rooIgnoreController
-			false, // showRooIgnoredFiles
+			undefined, // zentaraIgnoreController
+			false, // showZentaraIgnoredFiles
 			true, // includeDiagnosticMessages
 			50, // maxDiagnosticMessages
 			undefined, // maxReadFileLine
@@ -47,7 +47,7 @@ describe("Command Mentions", () => {
 				name: "setup",
 				content: commandContent,
 				source: "project",
-				filePath: "/project/.roo/commands/setup.md",
+				filePath: "/project/.zentara/commands/setup.md",
 			})
 
 			const input = "/setup Please help me set up the project"
@@ -69,25 +69,25 @@ describe("Command Mentions", () => {
 					name: "setup",
 					content: setupContent,
 					source: "project",
-					filePath: "/project/.roo/commands/setup.md",
+					filePath: "/project/.zentara/commands/setup.md",
 				})
 				.mockResolvedValueOnce({
 					name: "deploy",
 					content: deployContent,
 					source: "project",
-					filePath: "/project/.roo/commands/deploy.md",
+					filePath: "/project/.zentara/commands/deploy.md",
 				})
 				.mockResolvedValueOnce({
 					name: "setup",
 					content: setupContent,
 					source: "project",
-					filePath: "/project/.roo/commands/setup.md",
+					filePath: "/project/.zentara/commands/setup.md",
 				})
 				.mockResolvedValueOnce({
 					name: "deploy",
 					content: deployContent,
 					source: "project",
-					filePath: "/project/.roo/commands/deploy.md",
+					filePath: "/project/.zentara/commands/deploy.md",
 				})
 
 			// Both commands should be recognized
@@ -137,7 +137,7 @@ describe("Command Mentions", () => {
 				name: "error-command",
 				content: "# Error command",
 				source: "project",
-				filePath: "/project/.roo/commands/error-command.md",
+				filePath: "/project/.zentara/commands/error-command.md",
 			})
 
 			const input = "/error-command test"
@@ -153,7 +153,7 @@ describe("Command Mentions", () => {
 				name: "setup-dev",
 				content: "# Dev setup",
 				source: "project",
-				filePath: "/project/.roo/commands/setup-dev.md",
+				filePath: "/project/.zentara/commands/setup-dev.md",
 			})
 
 			const input = "/setup-dev for the project"
@@ -184,7 +184,7 @@ npm install
 				name: "complex",
 				content: commandContent,
 				source: "project",
-				filePath: "/project/.roo/commands/complex.md",
+				filePath: "/project/.zentara/commands/complex.md",
 			})
 
 			const input = "/complex command"
@@ -204,7 +204,7 @@ npm install
 				name: "empty",
 				content: "",
 				source: "project",
-				filePath: "/project/.roo/commands/empty.md",
+				filePath: "/project/.zentara/commands/empty.md",
 			})
 
 			const input = "/empty command"
@@ -287,7 +287,7 @@ npm install
 				name: "setup",
 				content: "# Setup instructions",
 				source: "project",
-				filePath: "/project/.roo/commands/setup.md",
+				filePath: "/project/.zentara/commands/setup.md",
 			})
 
 			const input = "/setup the project"
@@ -311,13 +311,13 @@ npm install
 					name: "setup",
 					content: "# Setup instructions",
 					source: "project",
-					filePath: "/project/.roo/commands/setup.md",
+					filePath: "/project/.zentara/commands/setup.md",
 				})
 				.mockResolvedValueOnce({
 					name: "deploy",
 					content: "# Deploy instructions",
 					source: "project",
-					filePath: "/project/.roo/commands/deploy.md",
+					filePath: "/project/.zentara/commands/deploy.md",
 				})
 
 			const input = "/setup the project\nThen /deploy later"
@@ -332,7 +332,7 @@ npm install
 				name: "build",
 				content: "# Build instructions",
 				source: "project",
-				filePath: "/project/.roo/commands/build.md",
+				filePath: "/project/.zentara/commands/build.md",
 			})
 
 			// At the beginning - should match

@@ -2,7 +2,7 @@ import { Anthropic } from "@anthropic-ai/sdk"
 
 import { GCliOAuthManagerV2 } from "./g-cli/oauth-manager-v2"
 import { GCliApiClient } from "./g-cli/api-client"
-import { type ModelInfo, type GCliModelId, gCliDefaultModelId, gCliModels } from "@roo-code/types"
+import { type ModelInfo, type GCliModelId, gCliDefaultModelId, gCliModels } from "@zentara-code/types"
 
 import { BaseProvider } from "./base-provider"
 import { ApiStream } from "../transform/stream"

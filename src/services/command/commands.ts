@@ -1,7 +1,7 @@
 import fs from "fs/promises"
 import * as path from "path"
 import matter from "gray-matter"
-import { getGlobalRooDirectory, getProjectRooDirectoryForCwd } from "../roo-config"
+import { getGlobalZentaraDirectory, getProjectZentaraDirectoryForCwd } from "../zentara-config"
 import { getBuiltInCommands, getBuiltInCommand } from "./built-in-commands"
 
 export interface Command {
@@ -27,11 +27,11 @@ export async function getCommands(cwd: string): Promise<Command[]> {
 	}
 
 	// Scan global commands (override built-in)
-	const globalDir = path.join(getGlobalRooDirectory(), "commands")
+	const globalDir = path.join(getGlobalZentaraDirectory(), "commands")
 	await scanCommandDirectory(globalDir, "global", commands)
 
 	// Scan project commands (highest priority - override both global and built-in)
-	const projectDir = path.join(getProjectRooDirectoryForCwd(cwd), "commands")
+	const projectDir = path.join(getProjectZentaraDirectoryForCwd(cwd), "commands")
 	await scanCommandDirectory(projectDir, "project", commands)
 
 	return Array.from(commands.values())
@@ -43,8 +43,8 @@ export async function getCommands(cwd: string): Promise<Command[]> {
  */
 export async function getCommand(cwd: string, name: string): Promise<Command | undefined> {
 	// Try to find the command directly without scanning all commands
-	const projectDir = path.join(getProjectRooDirectoryForCwd(cwd), "commands")
-	const globalDir = path.join(getGlobalRooDirectory(), "commands")
+	const projectDir = path.join(getProjectZentaraDirectoryForCwd(cwd), "commands")
+	const globalDir = path.join(getGlobalZentaraDirectory(), "commands")
 
 	// Check project directory first (highest priority)
 	const projectCommand = await tryLoadCommand(projectDir, name, "project")

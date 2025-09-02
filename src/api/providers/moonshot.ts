@@ -1,4 +1,4 @@
-import { moonshotModels, moonshotDefaultModelId } from "@roo-code/types"
+import { moonshotModels, moonshotDefaultModelId } from "@zentara-code/types"
 
 import type { ApiHandlerOptions } from "../../shared/api"
 

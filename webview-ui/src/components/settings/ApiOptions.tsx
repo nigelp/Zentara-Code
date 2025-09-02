@@ -35,9 +35,9 @@ import {
 	fireworksDefaultModelId,
 	featherlessDefaultModelId,
 	ioIntelligenceDefaultModelId,
-	rooDefaultModelId,
+	zentaraDefaultModelId,
 	vercelAiGatewayDefaultModelId,
-} from "@roo-code/types"
+} from "@zentara-code/types"
 
 import { vscode } from "@src/utils/vscode"
 import { validateApiConfigurationExcludingModelErrors, getModelValidationError } from "@src/utils/validate"
@@ -341,7 +341,7 @@ const ApiOptions = ({
 				fireworks: { field: "apiModelId", default: fireworksDefaultModelId },
 				featherless: { field: "apiModelId", default: featherlessDefaultModelId },
 				"io-intelligence": { field: "ioIntelligenceModelId", default: ioIntelligenceDefaultModelId },
-				roo: { field: "apiModelId", default: rooDefaultModelId },
+				zentara: { field: "apiModelId", default: zentaraDefaultModelId },
 				"vercel-ai-gateway": { field: "vercelAiGatewayModelId", default: vercelAiGatewayDefaultModelId },
 				openai: { field: "openAiModelId" },
 				ollama: { field: "ollamaModelId" },
@@ -648,19 +648,19 @@ const ApiOptions = ({
 				<Fireworks apiConfiguration={apiConfiguration} setApiConfigurationField={setApiConfigurationField} />
 			)}
 
-			{selectedProvider === "roo" && (
+			{selectedProvider === "zentara" && (
 				<div className="flex flex-col gap-3">
 					{cloudIsAuthenticated ? (
 						<div className="text-sm text-vscode-descriptionForeground">
-							{t("settings:providers.roo.authenticatedMessage")}
+							{t("settings:providers.zentara.authenticatedMessage")}
 						</div>
 					) : (
 						<div className="flex flex-col gap-2">
 							<VSCodeButton
 								appearance="primary"
-								onClick={() => vscode.postMessage({ type: "rooCloudSignIn" })}
+								onClick={() => vscode.postMessage({ type: "zentaraCloudSignIn" })}
 								className="w-fit">
-								{t("settings:providers.roo.connectButton")}
+								{t("settings:providers.zentara.connectButton")}
 							</VSCodeButton>
 						</div>
 					)}

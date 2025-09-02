@@ -1,6 +1,6 @@
 import nock from "nock"
 import { vi, beforeAll, afterAll, MockedFunction } from "vitest"
-import { TelemetryService } from "@roo-code/telemetry"
+import { TelemetryService } from "@zentara-code/telemetry"
 
 import "./utils/path" // Import to enable String.prototype.toPosix().
 

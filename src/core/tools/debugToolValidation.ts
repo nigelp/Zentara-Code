@@ -17,7 +17,7 @@ import {
 	// SetBreakpointConditionParams,
 	// These are the expected structures after XML parsing and assignment to operationArgs
 	// The XML tags should correspond to these property names.
-} from "../../roo_debug"
+} from "../../zentara_debug"
 
 export interface ValidationError {
 	isValid: false
@@ -525,7 +525,7 @@ export function validateOperationArgs(operation: string, args: any): ValidationR
 		}
 
 		case "get_args": {
-			// Note: roo_debug type is { frameId: number }
+			// Note: zentara_debug type is { frameId: number }
 			// <frameId>0</frameId>
 			const params: { frameId?: number } = args // Explicitly type for clarity, frameId is now optional
 			if (params.frameId !== undefined && !isNumber(params.frameId)) {

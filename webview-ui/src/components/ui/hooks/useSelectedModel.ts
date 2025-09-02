@@ -52,15 +52,15 @@ import {
 	featherlessDefaultModelId,
 	ioIntelligenceDefaultModelId,
 	ioIntelligenceModels,
-	rooDefaultModelId,
-	rooModels,
+	zentaraDefaultModelId,
+	zentaraModels,
 	qwenCodeDefaultModelId,
 	qwenCodeModels,
 	vercelAiGatewayDefaultModelId,
 	BEDROCK_CLAUDE_SONNET_4_MODEL_ID,
-} from "@roo-code/types"
+} from "@zentara-code/types"
 
-import type { ModelRecord, RouterModels } from "@roo/api"
+import type { ModelRecord, RouterModels } from "@zentara/api"
 
 import { useRouterModels } from "./useRouterModels"
 import { useOpenRouterModelProviders } from "./useOpenRouterModelProviders"
@@ -315,21 +315,21 @@ function getSelectedModel({
 				routerModels["io-intelligence"]?.[id] ?? ioIntelligenceModels[id as keyof typeof ioIntelligenceModels]
 			return { id, info }
 		}
-		case "roo": {
+		case "zentara": {
 			const requestedId = apiConfiguration.apiModelId
 
-			// Check if the requested model exists in rooModels
-			if (requestedId && rooModels[requestedId as keyof typeof rooModels]) {
+			// Check if the requested model exists in zentaraModels
+			if (requestedId && zentaraModels[requestedId as keyof typeof zentaraModels]) {
 				return {
 					id: requestedId,
-					info: rooModels[requestedId as keyof typeof rooModels],
+					info: zentaraModels[requestedId as keyof typeof zentaraModels],
 				}
 			}
 
 			// Fallback to default model if requested model doesn't exist or is not specified
 			return {
-				id: rooDefaultModelId,
-				info: rooModels[rooDefaultModelId as keyof typeof rooModels],
+				id: zentaraDefaultModelId,
+				info: zentaraModels[zentaraDefaultModelId as keyof typeof zentaraModels],
 			}
 		}
 		case "qwen-code": {

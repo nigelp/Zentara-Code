@@ -1,7 +1,7 @@
 import React from "react"
 import { useTranslation, Trans } from "react-i18next"
-import { ClineSayTool } from "@roo/ExtensionMessage"
-import { safeJsonParse } from "@roo/safeJsonParse"
+import { ClineSayTool } from "@zentara/ExtensionMessage"
+import { safeJsonParse } from "@zentara/safeJsonParse"
 
 interface ToolDisplayProps {
 	askType: string

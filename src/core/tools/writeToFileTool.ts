@@ -14,7 +14,7 @@ import { getReadablePath } from "../../utils/path"
 import { isPathOutsideWorkspace } from "../../utils/pathUtils"
 import { detectCodeOmission } from "../../integrations/editor/detect-omission"
 import { unescapeHtmlEntities } from "../../utils/text-normalization"
-import { DEFAULT_WRITE_DELAY_MS } from "@roo-code/types"
+import { DEFAULT_WRITE_DELAY_MS } from "@zentara-code/types"
 import { EXPERIMENT_IDS, experiments } from "../../shared/experiments"
 
 export async function writeToFileTool(
@@ -51,16 +51,16 @@ export async function writeToFileTool(
 		return
 	}
 
-	const accessAllowed = cline.rooIgnoreController?.validateAccess(relPath)
+	const accessAllowed = cline.zentaraIgnoreController?.validateAccess(relPath)
 
 	if (!accessAllowed) {
-		await cline.say("rooignore_error", relPath)
-		pushToolResult(formatResponse.toolError(formatResponse.rooIgnoreError(relPath)))
+		await cline.say("zentaraignore_error", relPath)
+		pushToolResult(formatResponse.toolError(formatResponse.zentaraIgnoreError(relPath)))
 		return
 	}
 
 	// Check if file is write-protected
-	const isWriteProtected = cline.rooProtectedController?.isWriteProtected(relPath) || false
+	const isWriteProtected = cline.zentaraProtectedController?.isWriteProtected(relPath) || false
 
 	// Check if file exists using cached map or fs.access
 	let fileExists: boolean
@@ -145,7 +145,7 @@ export async function writeToFileTool(
 				// Use more specific error message for line_count that provides guidance based on the situation
 				await cline.say(
 					"error",
-					`Roo tried to use write_to_file${
+					`Zentara tried to use write_to_file${
 						relPath ? ` for '${relPath.toPosix()}'` : ""
 					} but the required parameter 'line_count' was missing or truncated after ${actualLineCount} lines of content were written. Retrying...`,
 				)
@@ -296,7 +296,7 @@ export async function writeToFileTool(
 
 			// Track file edit operation
 			if (relPath) {
-				await cline.fileContextTracker.trackFileContext(relPath, "roo_edited" as RecordSource)
+				await cline.fileContextTracker.trackFileContext(relPath, "zentara_edited" as RecordSource)
 			}
 
 			cline.didEditFile = true // used to determine if we should wait for busy terminal to update before sending api request

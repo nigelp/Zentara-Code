@@ -1,14 +1,14 @@
-import { SECRET_STATE_KEYS, GLOBAL_SECRET_KEYS, ProviderSettings } from "@roo-code/types"
+import { SECRET_STATE_KEYS, GLOBAL_SECRET_KEYS, ProviderSettings } from "@zentara-code/types"
 
 export function checkExistKey(config: ProviderSettings | undefined) {
 	if (!config) {
 		return false
 	}
 
-	// Special case for human-relay, fake-ai, claude-code, qwen-code, and roo providers which don't need any configuration.
+	// Special case for human-relay, fake-ai, claude-code, qwen-code, and zentara providers which don't need any configuration.
 	if (
 		config.apiProvider &&
-		["human-relay", "fake-ai", "claude-code", "qwen-code", "roo"].includes(config.apiProvider)
+		["human-relay", "fake-ai", "claude-code", "qwen-code", "zentara"].includes(config.apiProvider)
 	) {
 		return true
 	}

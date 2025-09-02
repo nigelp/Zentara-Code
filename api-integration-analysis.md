@@ -2,7 +2,7 @@
 
 ## Executive Summary
 
-The Roo Code extension implements a sophisticated API integration layer that enables subagents to interact with 25+ external AI providers through a unified interface. This analysis examines the architecture, patterns, and mechanisms that facilitate these interactions.
+The Zentara Code extension implements a sophisticated API integration layer that enables subagents to interact with 25+ external AI providers through a unified interface. This analysis examines the architecture, patterns, and mechanisms that facilitate these interactions.
 
 ## Core Architecture
 
@@ -15,18 +15,18 @@ graph TD
     A[buildApiHandler] --> B{Provider Type}
     B -->|anthropic| C[AnthropicHandler]
     B -->|openai| D[OpenAiHandler]
-    B -->|roo| E[RooHandler]
+    B -->|zentara| E[ZentaraHandler]
     B -->|claude-max| F[ClaudeMaxHandler]
     B -->|25+ others| G[...]
     
     C --> H[External Anthropic API]
     D --> I[External OpenAI API]
-    E --> J[Roo Provider Service]
+    E --> J[Zentara Provider Service]
     F --> K[Claude Max Service]
 ```
 
 **Key Findings:**
-- **25+ Provider Support**: The factory supports anthropic, openai, claude-code, claude-max, glama, openrouter, bedrock, vertex, ollama, lmstudio, gemini, g-cli, deepseek, doubao, moonshot, vscode-lm, mistral, unbound, requesty, human-relay, fake-ai, xai, groq, huggingface, chutes, litellm, cerebras, sambanova, zai, fireworks, io-intelligence, roo, and featherless
+- **25+ Provider Support**: The factory supports anthropic, openai, claude-code, claude-max, glama, openrouter, bedrock, vertex, ollama, lmstudio, gemini, g-cli, deepseek, doubao, moonshot, vscode-lm, mistral, unbound, requesty, human-relay, fake-ai, xai, groq, huggingface, chutes, litellm, cerebras, sambanova, zai, fireworks, io-intelligence, zentara, and featherless
 - **Unified Interface**: All providers implement the same [`ApiHandler`](src/api/index.ts:60) interface
 - **Default Fallback**: Defaults to AnthropicHandler for undefined providers
 
@@ -157,7 +157,7 @@ Subagents inherit API configuration from their parent tasks:
 1. **Commercial Cloud Providers**: Anthropic, OpenAI, Google (Gemini), Mistral
 2. **API Aggregators**: OpenRouter, Hugging Face, LiteLLM
 3. **Local/Self-Hosted**: Ollama, LM Studio, VSCode LM
-4. **Specialized Services**: Roo (internal), Groq, Cerebras, Fireworks
+4. **Specialized Services**: Zentara (internal), Groq, Cerebras, Fireworks
 5. **Development/Testing**: Fake AI, Human Relay
 
 ### Provider Capabilities Matrix:
@@ -166,7 +166,7 @@ Subagents inherit API configuration from their parent tasks:
 |----------|-----------|-----------|--------------|----------------|
 | Anthropic | ✅ | ✅ | ✅ | ✅ |
 | OpenAI | ✅ | ✅ | ❌ | ❌ |
-| Roo | ✅ | ❌ | ❌ | ❌ |
+| Zentara | ✅ | ❌ | ❌ | ❌ |
 | OpenRouter | ✅ | ✅ | ❌ | ❌ |
 | Gemini | ✅ | ✅ | ❌ | ❌ |
 
@@ -191,4 +191,4 @@ Subagents inherit API configuration from their parent tasks:
 
 The API integration layer successfully abstracts the complexity of multiple AI providers behind a unified interface, enabling subagents to work seamlessly across different backends. The architecture is well-designed for extensibility, reliability, and performance, with clear patterns for adding new providers and capabilities.
 
-The system's strength lies in its provider abstraction, which allows subagents to focus on their core functionality rather than provider-specific integration details. This design enables the Roo Code extension to support a diverse ecosystem of AI providers while maintaining a consistent developer experience.
+The system's strength lies in its provider abstraction, which allows subagents to focus on their core functionality rather than provider-specific integration details. This design enables the Zentara Code extension to support a diverse ecosystem of AI providers while maintaining a consistent developer experience.

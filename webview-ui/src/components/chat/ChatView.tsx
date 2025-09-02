@@ -11,18 +11,18 @@ import { useTranslation } from "react-i18next"
 import { useDebounceEffect } from "@src/utils/useDebounceEffect"
 import { appendImages } from "@src/utils/imageUtils"
 
-import type { ClineAsk, ClineMessage } from "@roo-code/types"
+import type { ClineAsk, ClineMessage } from "@zentara-code/types"
 
-import { ClineSayBrowserAction, ClineSayTool, ExtensionMessage } from "@roo/ExtensionMessage"
-import { McpServer, McpTool } from "@roo/mcp"
-import { findLast } from "@roo/array"
-import { FollowUpData, SuggestionItem } from "@roo-code/types"
-import { combineApiRequests } from "@roo/combineApiRequests"
-import { combineCommandSequences } from "@roo/combineCommandSequences"
-import { getApiMetrics } from "@roo/getApiMetrics"
-import { AudioType } from "@roo/WebviewMessage"
-import { getAllModes } from "@roo/modes"
-import { ProfileValidator } from "@roo/ProfileValidator"
+import { ClineSayBrowserAction, ClineSayTool, ExtensionMessage } from "@zentara/ExtensionMessage"
+import { McpServer, McpTool } from "@zentara/mcp"
+import { findLast } from "@zentara/array"
+import { FollowUpData, SuggestionItem } from "@zentara-code/types"
+import { combineApiRequests } from "@zentara/combineApiRequests"
+import { combineCommandSequences } from "@zentara/combineCommandSequences"
+import { getApiMetrics } from "@zentara/getApiMetrics"
+import { AudioType } from "@zentara/WebviewMessage"
+import { getAllModes } from "@zentara/modes"
+import { ProfileValidator } from "@zentara/ProfileValidator"
 
 import { vscode } from "@src/utils/vscode"
 import {
@@ -34,9 +34,9 @@ import {
 import { useAppTranslation } from "@src/i18n/TranslationContext"
 import { useExtensionState } from "@src/context/ExtensionStateContext"
 import { useSelectedModel } from "@src/components/ui/hooks/useSelectedModel"
-import RooHero from "@src/components/welcome/RooHero"
-import RooTips from "@src/components/welcome/RooTips"
-import RooCloudCTA from "@src/components/welcome/RooCloudCTA"
+import ZentaraHero from "@src/components/welcome/ZentaraHero"
+import ZentaraTips from "@src/components/welcome/ZentaraTips"
+import ZentaraCloudCTA from "@src/components/welcome/ZentaraCloudCTA"
 import { StandardTooltip } from "@src/components/ui"
 import { useAutoApprovalState } from "@src/hooks/useAutoApprovalState"
 import { useAutoApprovalToggles } from "@src/hooks/useAutoApprovalToggles"
@@ -56,8 +56,8 @@ import ProfileViolationWarning from "./ProfileViolationWarning"
 import { CheckpointWarning } from "./CheckpointWarning"
 import { SubagentStack } from "./SubagentStack"
 import QueuedMessages from "./QueuedMessages"
-import { getLatestTodo } from "@roo/todo"
-import { QueuedMessage } from "@roo-code/types"
+import { getLatestTodo } from "@zentara/todo"
+import { QueuedMessage } from "@zentara-code/types"
 
 export interface ChatViewProps {
 	isHidden: boolean
@@ -2174,11 +2174,11 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 							className="absolute top-2 right-3 z-10"
 						/>
 
-						<RooHero />
+						<ZentaraHero />
 						{telemetrySetting === "unset" && <TelemetryBanner />}
 
 						<div className="mb-2.5">
-							{cloudIsAuthenticated || taskHistory.length < 4 ? <RooTips /> : <RooCloudCTA />}
+							{cloudIsAuthenticated || taskHistory.length < 4 ? <ZentaraTips /> : <ZentaraCloudCTA />}
 						</div>
 						{/* Show the task history preview if expanded and tasks exist */}
 						{taskHistory.length > 0 && isExpanded && <HistoryPreview />}
@@ -2386,7 +2386,7 @@ const ChatViewComponent: React.ForwardRefRenderFunction<ChatViewRef, ChatViewPro
 				</div>
 			)}
 
-			<div id="roo-portal" />
+			<div id="zentara-portal" />
 		</div>
 	)
 }

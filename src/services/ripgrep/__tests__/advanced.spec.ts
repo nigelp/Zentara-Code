@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest"
 import * as vscode from "vscode"
 import { regexSearchFilesAdvanced, getBinPath, SearchOptions } from "../index"
-import { RooIgnoreController } from "../../../core/ignore/RooIgnoreController"
+import { ZentaraIgnoreController } from "../../../core/ignore/ZentaraIgnoreController"
 
 // Mock vscode module
 vi.mock("vscode", () => ({
@@ -523,7 +523,7 @@ describe("regexSearchFilesAdvanced", () => {
 		})
 	})
 
-	describe("RooIgnoreController integration", () => {
+	describe("ZentaraIgnoreController integration", () => {
 		it("should apply ignore filtering", async () => {
 			const mockJsonOutput = [
 				JSON.stringify({

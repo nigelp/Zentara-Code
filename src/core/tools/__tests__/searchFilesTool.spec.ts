@@ -35,7 +35,7 @@ describe("searchFilesTool", () => {
 			recordToolError: vi.fn(),
 			sayAndCreateMissingParamError: vi.fn().mockResolvedValue("Missing parameter error"),
 			ask: vi.fn(),
-			rooIgnoreController: undefined,
+			zentaraIgnoreController: undefined,
 		}
 
 		// Setup function mocks
@@ -817,10 +817,10 @@ describe("searchFilesTool", () => {
 		})
 	})
 
-	describe("RooIgnoreController integration", () => {
-		it("should pass RooIgnoreController to search function", async () => {
+	describe("ZentaraIgnoreController integration", () => {
+		it("should pass ZentaraIgnoreController to search function", async () => {
 			const mockIgnoreController = { validateAccess: vi.fn() }
-			mockTask.rooIgnoreController = mockIgnoreController as any
+			mockTask.zentaraIgnoreController = mockIgnoreController as any
 
 			const block: ToolUse = {
 				type: "tool_use",

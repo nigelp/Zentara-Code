@@ -1,7 +1,7 @@
-import { type ToolName, toolNames } from "@roo-code/types"
+import { type ToolName, toolNames } from "@zentara-code/types"
 
 import { TextContent, ToolUse, ToolParamName, toolParamNames } from "../../shared/tools"
-import { outputChannel } from "../../roo_debug/src/vscodeUtils"
+import { outputChannel } from "../../zentara_debug/src/vscodeUtils"
 
 export type AssistantMessageContent = TextContent | ToolUse
 

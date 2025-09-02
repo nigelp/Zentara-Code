@@ -1,6 +1,6 @@
 {
 	"extension": {
-		"name": "Roo Code",
+		"name": "Zentara Code",
 		"description": "A whole dev team of AI agents in your editor."
 	},
 	"number_format": {
@@ -85,7 +85,7 @@
 			"processExitedWithError": "Claude Code process exited with code {{exitCode}}. Error output: {{output}}",
 			"stoppedWithReason": "Claude Code stopped with reason: {{reason}}",
 			"apiKeyModelPlanMismatch": "API keys and subscription plans allow different models. Make sure the selected model is included in your plan.",
-			"notFound": "Claude Code executable '{{claudePath}}' not found.\n\nPlease install Claude Code CLI:\n1. Visit {{installationUrl}} to download Claude Code\n2. Follow the installation instructions for your operating system\n3. Ensure the 'claude' command is available in your PATH\n4. Alternatively, configure a custom path in Roo settings under 'Claude Code Path'\n\nOriginal error: {{originalError}}"
+			"notFound": "Claude Code executable '{{claudePath}}' not found.\n\nPlease install Claude Code CLI:\n1. Visit {{installationUrl}} to download Claude Code\n2. Follow the installation instructions for your operating system\n3. Ensure the 'claude' command is available in your PATH\n4. Alternatively, configure a custom path in Zentara settings under 'Claude Code Path'\n\nOriginal error: {{originalError}}"
 		},
 		"gemini": {
 			"generate_stream": "Gemini generate context stream error: {{error}}",
@@ -101,14 +101,14 @@
 			"noResponseBody": "Cerebras API Error: No response body",
 			"completionError": "Cerebras completion error: {{error}}"
 		},
-		"roo": {
-			"authenticationRequired": "Roo provider requires cloud authentication. Please sign in to Roo Code Cloud."
+		"zentara": {
+			"authenticationRequired": "Zentara provider requires cloud authentication. Please sign in to Zentara Code Cloud."
 		}
 	},
 	"warnings": {
 		"no_terminal_content": "No terminal content selected",
 		"missing_task_files": "This task's files are missing. Would you like to remove it from the task list?",
-		"auto_import_failed": "Failed to auto-import RooCode settings: {{error}}"
+		"auto_import_failed": "Failed to auto-import ZentaraCode settings: {{error}}"
 	},
 	"info": {
 		"no_changes": "No changes found.",
@@ -117,7 +117,7 @@
 		"custom_storage_path_set": "Custom storage path set: {{path}}",
 		"default_storage_path": "Reverted to using default storage path",
 		"settings_imported": "Settings imported successfully.",
-		"auto_import_success": "RooCode settings automatically imported from {{filename}}",
+		"auto_import_success": "ZentaraCode settings automatically imported from {{filename}}",
 		"share_link_copied": "Share link copied to clipboard",
 		"organization_share_link_copied": "Organization share link copied to clipboard!",
 		"public_share_link_copied": "Public share link copied to clipboard!",
@@ -145,18 +145,18 @@
 	},
 	"storage": {
 		"prompt_custom_path": "Enter custom conversation history storage path, leave empty to use default location",
-		"path_placeholder": "D:\\RooCodeStorage",
-		"enter_absolute_path": "Please enter an absolute path (e.g. D:\\RooCodeStorage or /home/user/storage)",
+		"path_placeholder": "D:\\ZentaraCodeStorage",
+		"enter_absolute_path": "Please enter an absolute path (e.g. D:\\ZentaraCodeStorage or /home/user/storage)",
 		"enter_valid_path": "Please enter a valid path"
 	},
 	"input": {
-		"task_prompt": "What should Roo do?",
+		"task_prompt": "What should Zentara do?",
 		"task_placeholder": "Type your task here"
 	},
 	"customModes": {
 		"errors": {
-			"yamlParseError": "Invalid YAML in .roomodes file at line {{line}}. Please check for:\n• Proper indentation (use spaces, not tabs)\n• Matching quotes and brackets\n• Valid YAML syntax",
-			"schemaValidationError": "Invalid custom modes format in .roomodes:\n{{issues}}",
+			"yamlParseError": "Invalid YAML in .zentaramodes file at line {{line}}. Please check for:\n• Proper indentation (use spaces, not tabs)\n• Matching quotes and brackets\n• Valid YAML syntax",
+			"schemaValidationError": "Invalid custom modes format in .zentaramodes:\n{{issues}}",
 			"invalidFormat": "Invalid custom modes format. Please ensure your settings follow the correct YAML format.",
 			"updateFailed": "Failed to update custom mode: {{error}}",
 			"deleteFailed": "Failed to delete custom mode: {{error}}",
@@ -177,8 +177,8 @@
 	},
 	"mdm": {
 		"errors": {
-			"cloud_auth_required": "Your organization requires Roo Code Cloud authentication. Please sign in to continue.",
-			"organization_mismatch": "You must be authenticated with your organization's Roo Code Cloud account.",
+			"cloud_auth_required": "Your organization requires Zentara Code Cloud authentication. Please sign in to continue.",
+			"organization_mismatch": "You must be authenticated with your organization's Zentara Code Cloud account.",
 			"verification_failed": "Unable to verify organization authentication."
 		},
 		"info": {

@@ -10,14 +10,14 @@ import {
 import { formatResponse } from "../prompts/responses" // For consistent error/result formatting
 import { ClineSayTool } from "../../shared/ExtensionMessage" // For type checking with satisfies
 
-import { outputChannel } from "../../roo_debug/src/vscodeUtils"
+import { outputChannel } from "../../zentara_debug/src/vscodeUtils"
 import {
 	vsCodeDebugController,
 	IDebugController,
 	ToggleBreakpointParams, // Used in createOperationMap
 	// Types are now primarily used in debugToolValidation.ts
-} from "../../roo_debug" // Import from the new index file
-import { getLastSessionDapOutput, getLastSessionRawTerminalOutput } from "../../roo_debug/src/controller/session" // Added for IV.C
+} from "../../zentara_debug" // Import from the new index file
+import { getLastSessionDapOutput, getLastSessionRawTerminalOutput } from "../../zentara_debug/src/controller/session" // Added for IV.C
 import { XMLParser } from "fast-xml-parser" // Added for XML parsing
 import { validateOperationArgs } from "./debugToolValidation"
 import { formatStackFrameVariablesAsTable, type DebugStackFrameVariablesResult } from "./helpers/debugTableFormatter"

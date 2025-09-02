@@ -26,7 +26,7 @@ vi.mock("../../../utils/fs", () => ({
 vi.mock("../../prompts/responses", () => ({
 	formatResponse: {
 		toolError: vi.fn((msg) => `Error: ${msg}`),
-		rooIgnoreError: vi.fn((path) => `Access denied: ${path}`),
+		zentaraIgnoreError: vi.fn((path) => `Access denied: ${path}`),
 		createPrettyPatch: vi.fn((_path, original, updated) => `Diff: ${original} -> ${updated}`),
 	},
 }))
@@ -35,8 +35,8 @@ vi.mock("../../../utils/path", () => ({
 	getReadablePath: vi.fn().mockReturnValue("test/path.txt"),
 }))
 
-vi.mock("../../ignore/RooIgnoreController", () => ({
-	RooIgnoreController: class {
+vi.mock("../../ignore/ZentaraIgnoreController", () => ({
+	ZentaraIgnoreController: class {
 		initialize() {
 			return Promise.resolve()
 		}
@@ -79,7 +79,7 @@ describe("insertContentTool", () => {
 					}),
 				}),
 			},
-			rooIgnoreController: {
+			zentaraIgnoreController: {
 				validateAccess: vi.fn().mockReturnValue(true),
 			},
 			diffViewProvider: {
@@ -139,7 +139,7 @@ describe("insertContentTool", () => {
 
 		mockedFileExistsAtPath.mockResolvedValue(fileExists)
 		mockedFsReadFile.mockResolvedValue(fileContent)
-		mockCline.rooIgnoreController.validateAccess.mockReturnValue(accessAllowed)
+		mockCline.zentaraIgnoreController.validateAccess.mockReturnValue(accessAllowed)
 		mockCline.ask.mockResolvedValue({ response: options.askApprovalResponse ?? "yesButtonClicked" })
 
 		const toolUse: ToolUse = {

@@ -1,4 +1,4 @@
-import type { HistoryItem } from "@roo-code/types"
+import type { HistoryItem } from "@zentara-code/types"
 
 import { render, screen, fireEvent } from "@/utils/test-utils"
 import { vscode } from "@/utils/vscode"
@@ -40,10 +40,10 @@ vi.mock("react-i18next", () => ({
 				"chat:task.sharePublicly": "Share Publicly",
 				"chat:task.sharePubliclyDescription": "Anyone with the link can access",
 				"chat:task.connectToCloud": "Connect to Cloud",
-				"chat:task.connectToCloudDescription": "Sign in to Roo Code Cloud to share tasks",
+				"chat:task.connectToCloudDescription": "Sign in to Zentara Code Cloud to share tasks",
 				"chat:task.sharingDisabledByOrganization": "Sharing disabled by organization",
-				"cloud:cloudBenefitsTitle": "Connect to Roo Code Cloud",
-				"cloud:cloudBenefitsSubtitle": "Sign in to Roo Code Cloud to share tasks",
+				"cloud:cloudBenefitsTitle": "Connect to Zentara Code Cloud",
+				"cloud:cloudBenefitsSubtitle": "Sign in to Zentara Code Cloud to share tasks",
 				"cloud:cloudBenefitHistory": "Access your task history from anywhere",
 				"cloud:cloudBenefitSharing": "Share tasks with your team",
 				"cloud:cloudBenefitMetrics": "Track usage and costs",
@@ -196,8 +196,8 @@ describe("TaskActions", () => {
 			const shareButton = screen.getByTestId("share-button")
 			fireEvent.click(shareButton)
 
-			expect(screen.getByText("Connect to Roo Code Cloud")).toBeInTheDocument()
-			expect(screen.getByText("Sign in to Roo Code Cloud to share tasks")).toBeInTheDocument()
+			expect(screen.getByText("Connect to Zentara Code Cloud")).toBeInTheDocument()
+			expect(screen.getByText("Sign in to Zentara Code Cloud to share tasks")).toBeInTheDocument()
 			expect(screen.getByText("Connect")).toBeInTheDocument()
 		})
 
@@ -212,7 +212,7 @@ describe("TaskActions", () => {
 			expect(screen.queryByText("Share Publicly")).not.toBeInTheDocument()
 		})
 
-		it("sends rooCloudSignIn message when connect to cloud is selected", () => {
+		it("sends zentaraCloudSignIn message when connect to cloud is selected", () => {
 			render(<TaskActions item={mockItem} buttonsDisabled={false} />)
 
 			// Find share button by its test ID and click it
@@ -223,7 +223,7 @@ describe("TaskActions", () => {
 			fireEvent.click(connectOption)
 
 			expect(mockPostMessage).toHaveBeenCalledWith({
-				type: "rooCloudSignIn",
+				type: "zentaraCloudSignIn",
 			})
 		})
 	})
@@ -293,9 +293,9 @@ describe("TaskActions", () => {
 			const connectButton = screen.getByText("Connect")
 			fireEvent.click(connectButton)
 
-			// Verify rooCloudSignIn message was sent
+			// Verify zentaraCloudSignIn message was sent
 			expect(mockPostMessage).toHaveBeenCalledWith({
-				type: "rooCloudSignIn",
+				type: "zentaraCloudSignIn",
 			})
 
 			// Simulate user becoming authenticated after clicking connect from share button

@@ -2,10 +2,10 @@ import { describe, it, expect, vi, beforeEach } from "vitest"
 import { fetchToolDescriptionTool } from "../fetchToolDescriptionTool"
 import { ToolUse } from "../../../shared/tools"
 import { formatResponse } from "../../prompts/responses"
-import * as fetchModule from "../../../roo_tool_prompt_management/fetch-tool-description"
+import * as fetchModule from "../../../zentara_tool_prompt_management/fetch-tool-description"
 
 // Mock the fetch-tool-description module
-vi.mock("../../../roo_tool_prompt_management/fetch-tool-description", () => ({
+vi.mock("../../../zentara_tool_prompt_management/fetch-tool-description", () => ({
 	fetch_tool_description: vi.fn(),
 	toolExists: vi.fn(),
 	getAvailableToolNames: vi.fn(),

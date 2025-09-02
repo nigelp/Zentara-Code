@@ -5,7 +5,7 @@ import "../../../utils/path" // Enable String.prototype.toPosix()
 
 import { generateSystemPrompt } from "../generateSystemPrompt"
 import { ClineProvider } from "../ClineProvider"
-import { clearAllCaches } from "../../../roo_tool_prompt_management/tool-optimization-integration"
+import { clearAllCaches } from "../../../zentara_tool_prompt_management/tool-optimization-integration"
 
 // Mock vscode
 vi.mock("vscode", () => ({
@@ -92,7 +92,7 @@ const createMockProvider = (): ClineProvider => {
 			getCustomModes: vi.fn().mockResolvedValue([]),
 		},
 		getCurrentCline: vi.fn().mockReturnValue({
-			rooIgnoreController: {
+			zentaraIgnoreController: {
 				getInstructions: vi.fn().mockReturnValue(""),
 			},
 		}),

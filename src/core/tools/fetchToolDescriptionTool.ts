@@ -5,7 +5,7 @@ import {
 	fetch_tool_description,
 	toolExists,
 	getAvailableToolNames,
-} from "../../roo_tool_prompt_management/fetch-tool-description"
+} from "../../zentara_tool_prompt_management/fetch-tool-description"
 
 /**
  * Implements the fetch_tool_description tool for retrieving full tool descriptions on demand.

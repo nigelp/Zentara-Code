@@ -9,17 +9,17 @@ vi.mock("@src/i18n/TranslationContext", () => ({
 			const translations: Record<string, string> = {
 				"cloud:title": "Cloud",
 				"settings:common.done": "Done",
-				"cloud:signIn": "Connect to Roo Code Cloud",
-				"cloud:cloudBenefitsTitle": "Connect to Roo Code Cloud",
+				"cloud:signIn": "Connect to Zentara Code Cloud",
+				"cloud:cloudBenefitsTitle": "Connect to Zentara Code Cloud",
 				"cloud:cloudBenefitSharing": "Share tasks with others",
 				"cloud:cloudBenefitHistory": "Access your task history",
 				"cloud:cloudBenefitMetrics": "Get a holistic view of your token consumption",
 				"cloud:logOut": "Log out",
 				"cloud:connect": "Connect Now",
-				"cloud:visitCloudWebsite": "Visit Roo Code Cloud",
-				"cloud:remoteControl": "Roomote Control",
+				"cloud:visitCloudWebsite": "Visit Zentara Code Cloud",
+				"cloud:remoteControl": "Zentaramote Control",
 				"cloud:remoteControlDescription":
-					"Enable following and interacting with tasks in this workspace with Roo Code Cloud",
+					"Enable following and interacting with tasks in this workspace with Zentara Code Cloud",
 				"cloud:profilePicture": "Profile picture",
 			}
 			return translations[key] || key
@@ -61,13 +61,13 @@ describe("CloudView", () => {
 			<CloudView
 				userInfo={null}
 				isAuthenticated={false}
-				cloudApiUrl="https://app.roocode.com"
+				cloudApiUrl="https://app.zentaracode.com"
 				onDone={() => {}}
 			/>,
 		)
 
 		// Check that the benefits section is displayed
-		expect(screen.getByRole("heading", { name: "Connect to Roo Code Cloud" })).toBeInTheDocument()
+		expect(screen.getByRole("heading", { name: "Connect to Zentara Code Cloud" })).toBeInTheDocument()
 		expect(screen.getByText("Share tasks with others")).toBeInTheDocument()
 		expect(screen.getByText("Access your task history")).toBeInTheDocument()
 		expect(screen.getByText("Get a holistic view of your token consumption")).toBeInTheDocument()
@@ -86,14 +86,14 @@ describe("CloudView", () => {
 			<CloudView
 				userInfo={mockUserInfo}
 				isAuthenticated={true}
-				cloudApiUrl="https://app.roocode.com"
+				cloudApiUrl="https://app.zentaracode.com"
 				onDone={() => {}}
 			/>,
 		)
 
 		// Check that the benefits section is NOT displayed
 		expect(
-			screen.queryByText("Follow and control tasks from anywhere with Roomote Control"),
+			screen.queryByText("Follow and control tasks from anywhere with Zentaramote Control"),
 		).not.toBeInTheDocument()
 		expect(screen.queryByText("Share tasks with others")).not.toBeInTheDocument()
 		expect(screen.queryByText("Access your task history")).not.toBeInTheDocument()
@@ -115,16 +115,16 @@ describe("CloudView", () => {
 			<CloudView
 				userInfo={mockUserInfo}
 				isAuthenticated={true}
-				cloudApiUrl="https://app.roocode.com"
+				cloudApiUrl="https://app.zentaracode.com"
 				onDone={() => {}}
 			/>,
 		)
 
 		// Check that the remote control toggle is displayed
 		expect(screen.getByTestId("remote-control-toggle")).toBeInTheDocument()
-		expect(screen.getByText("Roomote Control")).toBeInTheDocument()
+		expect(screen.getByText("Zentaramote Control")).toBeInTheDocument()
 		expect(
-			screen.getByText("Enable following and interacting with tasks in this workspace with Roo Code Cloud"),
+			screen.getByText("Enable following and interacting with tasks in this workspace with Zentara Code Cloud"),
 		).toBeInTheDocument()
 	})
 
@@ -139,13 +139,13 @@ describe("CloudView", () => {
 			<CloudView
 				userInfo={mockUserInfo}
 				isAuthenticated={true}
-				cloudApiUrl="https://app.roocode.com"
+				cloudApiUrl="https://app.zentaracode.com"
 				onDone={() => {}}
 			/>,
 		)
 
 		// Check that the remote control toggle is NOT displayed
 		expect(screen.queryByTestId("remote-control-toggle")).not.toBeInTheDocument()
-		expect(screen.queryByText("Roomote Control")).not.toBeInTheDocument()
+		expect(screen.queryByText("Zentaramote Control")).not.toBeInTheDocument()
 	})
 })

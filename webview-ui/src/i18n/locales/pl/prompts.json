@@ -8,8 +8,8 @@
 		"noMatchFound": "Nie znaleziono trybów",
 		"editModesConfig": "Edytuj konfigurację trybów",
 		"editGlobalModes": "Edytuj tryby globalne",
-		"editProjectModes": "Edytuj tryby projektu (.roomodes)",
-		"createModeHelpText": "Tryby to wyspecjalizowane persony, które dostosowują zachowanie Roo. <0>Dowiedz się o używaniu trybów</0> lub <1>dostosowywaniu trybów.</1>",
+		"editProjectModes": "Edytuj tryby projektu (.zentaramodes)",
+		"createModeHelpText": "Tryby to wyspecjalizowane persony, które dostosowują zachowanie Zentara. <0>Dowiedz się o używaniu trybów</0> lub <1>dostosowywaniu trybów.</1>",
 		"selectMode": "Szukaj trybów"
 	},
 	"apiConfiguration": {
@@ -34,7 +34,7 @@
 	"roleDefinition": {
 		"title": "Definicja roli",
 		"resetToDefault": "Przywróć domyślne",
-		"description": "Zdefiniuj wiedzę specjalistyczną i osobowość Roo dla tego trybu. Ten opis kształtuje, jak Roo prezentuje się i podchodzi do zadań."
+		"description": "Zdefiniuj wiedzę specjalistyczną i osobowość Zentara dla tego trybu. Ten opis kształtuje, jak Zentara prezentuje się i podchodzi do zadań."
 	},
 	"description": {
 		"title": "Krótki opis (dla ludzi)",
@@ -50,7 +50,7 @@
 		"title": "Niestandardowe instrukcje dla trybu (opcjonalne)",
 		"resetToDefault": "Przywróć domyślne",
 		"description": "Dodaj wytyczne dotyczące zachowania specyficzne dla trybu {{modeName}}.",
-		"loadFromFile": "Niestandardowe instrukcje specyficzne dla trybu {{mode}} można również załadować z folderu <span>.roo/rules-{{slug}}/</span> w twoim obszarze roboczym lub z globalnego <0>.roo/rules-{{slug}}/</0> (.roorules-{{slug}} i .clinerules-{{slug}} są przestarzałe i wkrótce przestaną działać)."
+		"loadFromFile": "Niestandardowe instrukcje specyficzne dla trybu {{mode}} można również załadować z folderu <span>.zentara/rules-{{slug}}/</span> w twoim obszarze roboczym lub z globalnego <0>.zentara/rules-{{slug}}/</0> (.zentararules-{{slug}} i .clinerules-{{slug}} są przestarzałe i wkrótce przestaną działać)."
 	},
 	"exportMode": {
 		"title": "Eksportuj tryb",
@@ -68,7 +68,7 @@
 		},
 		"project": {
 			"label": "Poziom projektu",
-			"description": "Dostępne tylko w tym obszarze roboczym. Jeśli wyeksportowany tryb zawierał pliki reguł, zostaną one odtworzone w folderze .roo/rules-{slug}/."
+			"description": "Dostępne tylko w tym obszarze roboczym. Jeśli wyeksportowany tryb zawierał pliki reguł, zostaną one odtworzone w folderze .zentara/rules-{slug}/."
 		}
 	},
 	"advanced": {
@@ -77,7 +77,7 @@
 	"globalCustomInstructions": {
 		"title": "Niestandardowe instrukcje dla wszystkich trybów",
 		"description": "Te instrukcje dotyczą wszystkich trybów. Zapewniają podstawowy zestaw zachowań, które mogą być rozszerzone przez instrukcje specyficzne dla trybów poniżej. <0>Dowiedz się więcej</0>",
-		"loadFromFile": "Instrukcje można również załadować z folderu <span>.roo/rules/</span> w twoim obszarze roboczym lub z globalnego <0>.roo/rules/</0> (.roorules i .clinerules są przestarzałe i wkrótce przestaną działać)."
+		"loadFromFile": "Instrukcje można również załadować z folderu <span>.zentara/rules/</span> w twoim obszarze roboczym lub z globalnego <0>.zentara/rules/</0> (.zentararules i .clinerules są przestarzałe i wkrótce przestaną działać)."
 	},
 	"systemPrompt": {
 		"preview": "Podgląd podpowiedzi systemowej",
@@ -106,7 +106,7 @@
 		"types": {
 			"ENHANCE": {
 				"label": "Ulepsz podpowiedź",
-				"description": "Użyj ulepszenia podpowiedzi, aby uzyskać dostosowane sugestie lub ulepszenia dla swoich danych wejściowych. Zapewnia to, że Roo rozumie Twoje intencje i dostarcza najlepsze możliwe odpowiedzi. Dostępne za pośrednictwem ikony ✨ w czacie."
+				"description": "Użyj ulepszenia podpowiedzi, aby uzyskać dostosowane sugestie lub ulepszenia dla swoich danych wejściowych. Zapewnia to, że Zentara rozumie Twoje intencje i dostarcza najlepsze możliwe odpowiedzi. Dostępne za pośrednictwem ikony ✨ w czacie."
 			},
 			"CONDENSE": {
 				"label": "Kondensacja kontekstu",
@@ -148,7 +148,7 @@
 	},
 	"advancedSystemPrompt": {
 		"title": "Zaawansowane: Zastąp podpowiedź systemową",
-		"description": "<2>⚠️ Ostrzeżenie:</2> Ta zaawansowana funkcja omija zabezpieczenia. <1>PRZECZYTAJ TO PRZED UŻYCIEM!</1>Zastąp domyślną podpowiedź systemową, tworząc plik w <span>.roo/system-prompt-{{slug}}</span>."
+		"description": "<2>⚠️ Ostrzeżenie:</2> Ta zaawansowana funkcja omija zabezpieczenia. <1>PRZECZYTAJ TO PRZED UŻYCIEM!</1>Zastąp domyślną podpowiedź systemową, tworząc plik w <span>.zentara/system-prompt-{{slug}}</span>."
 	},
 	"createModeDialog": {
 		"title": "Utwórz nowy tryb",
@@ -169,13 +169,13 @@
 				"description": "Dostępny we wszystkich obszarach roboczych"
 			},
 			"project": {
-				"label": "Specyficzny dla projektu (.roomodes)",
+				"label": "Specyficzny dla projektu (.zentaramodes)",
 				"description": "Dostępny tylko w tym obszarze roboczym, ma pierwszeństwo przed globalnym"
 			}
 		},
 		"roleDefinition": {
 			"label": "Definicja roli",
-			"description": "Zdefiniuj wiedzę specjalistyczną i osobowość Roo dla tego trybu."
+			"description": "Zdefiniuj wiedzę specjalistyczną i osobowość Zentara dla tego trybu."
 		},
 		"whenToUse": {
 			"label": "Kiedy używać (opcjonalne)",

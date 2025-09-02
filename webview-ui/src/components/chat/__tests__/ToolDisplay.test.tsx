@@ -12,7 +12,7 @@ vi.mock("react-i18next", () => ({
 }))
 
 // Mock safeJsonParse
-vi.mock("@roo/safeJsonParse", () => ({
+vi.mock("@zentara/safeJsonParse", () => ({
 	safeJsonParse: vi.fn((text: string) => {
 		try {
 			return JSON.parse(text)

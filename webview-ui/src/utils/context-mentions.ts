@@ -1,9 +1,9 @@
 import { Fzf } from "fzf"
 
-import type { ModeConfig } from "@roo-code/types"
-import type { Command } from "@roo/ExtensionMessage"
+import type { ModeConfig } from "@zentara-code/types"
+import type { Command } from "@zentara/ExtensionMessage"
 
-import { mentionRegex } from "@roo/context-mentions"
+import { mentionRegex } from "@zentara/context-mentions"
 
 import { escapeSpaces } from "./path-mentions"
 

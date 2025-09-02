@@ -1,8 +1,8 @@
-# Roo Code — AI Coding Assistant for VS Code
+# Zentara Code — AI Coding Assistant for VS Code
 
-Roo Code turns chat instructions into precise, auditable changes in your codebase. It is optimized for speed, safety, and correctness through parallel execution, LSP semantics, and integrated runtime debugging.
+Zentara Code turns chat instructions into precise, auditable changes in your codebase. It is optimized for speed, safety, and correctness through parallel execution, LSP semantics, and integrated runtime debugging.
 
-## What Makes Roo Different
+## What Makes Zentara Different
 
 - Parallel subagents: Independent workers run simultaneously with strict scope separation, opt‑in write permissions, and per‑agent timeouts for high throughput without conflicts.
 - Integrated LSP tools: Operations use the Language Server Protocol for file structure, semantic references, call hierarchy, safe renames, workspace‑wide symbol discovery, and targeted snippets.
@@ -10,20 +10,20 @@ Roo Code turns chat instructions into precise, auditable changes in your codebas
 
 ## Installation
 
-- VS Code Marketplace: Search for Roo Code in the Extensions view.
+- VS Code Marketplace: Search for Zentara Code in the Extensions view.
 - VSIX: Use “Install from VSIX...” from the Extensions view overflow menu.
 
 ## Quick Start
 
-1. Install Roo Code and open a folder in VS Code.
-2. Open the Command Palette and run “Roo: Open Chat”.
+1. Install Zentara Code and open a folder in VS Code.
+2. Open the Command Palette and run “Zentara: Open Chat”.
 3. Describe your goal (e.g., “Add pagination to the API”).
 4. Review the proposed plan and approve steps.
 5. Inspect diffs, iterate, and—when needed—use the debug controls to validate at runtime.
 
 ## Workflow Model
 
-- Plan: Roo decomposes your request into small, independent steps and proposes safe execution order.
+- Plan: Zentara decomposes your request into small, independent steps and proposes safe execution order.
 - Approvals: Potentially impactful actions (file writes, network, long operations) require explicit approval.
 - Execute: Steps are distributed to parallel subagents when independent to reduce wall‑clock time.
 - Analyze: Code understanding is LSP‑first (document symbols → usages → call hierarchy → targeted snippets).
@@ -72,7 +72,7 @@ Roo Code turns chat instructions into precise, auditable changes in your codebas
 
 ## Runtime Debugging (Validation)
 
-- Control: Launch sessions, continue, step, and stop from within Roo tasks.
+- Control: Launch sessions, continue, step, and stop from within Zentara tasks.
 - Breakpoints: Add, remove, enable/disable, conditional, and temporary breakpoints.
 - Inspection: View stack traces, active frame variables, arguments, and source context.
 - Evaluation: Evaluate expressions and run statements in the current context where supported.
@@ -88,7 +88,7 @@ Roo Code turns chat instructions into precise, auditable changes in your codebas
 
 ## Commands
 
-- Use the Command Palette and type “Roo” to discover all commands:
+- Use the Command Palette and type “Zentara” to discover all commands:
   - Open Chat
   - Start New Task
   - Show Plan / Approve Step
@@ -97,7 +97,7 @@ Roo Code turns chat instructions into precise, auditable changes in your codebas
 
 ## Settings
 
-- Approvals Mode: When and how Roo asks for permission to perform actions.
+- Approvals Mode: When and how Zentara asks for permission to perform actions.
 - Filesystem Access: Configure allowed write paths and sandboxing.
 - Network Access: Restrict or allow outbound connections as needed.
 - Model/Provider: Choose the backing model where applicable.
@@ -107,9 +107,9 @@ Roo Code turns chat instructions into precise, auditable changes in your codebas
 ## Troubleshooting
 
 - No actions occur
-  - Ensure a folder is open; check the Roo panel for pending approvals.
+  - Ensure a folder is open; check the Zentara panel for pending approvals.
 - Slow or timeouts
-  - Reduce task scope or allow Roo to shard work into smaller subtasks.
+  - Reduce task scope or allow Zentara to shard work into smaller subtasks.
   - Verify network conditions if using remote models.
 - Permission denied
   - Adjust approvals and write paths; confirm sandbox settings.
@@ -127,10 +127,10 @@ Roo Code turns chat instructions into precise, auditable changes in your codebas
 - Be goal‑oriented: describe the outcome, constraints, and acceptance criteria.
 - Provide guardrails: performance budgets, API boundaries, style preferences.
 - Embrace iteration: accept partial progress and refine.
-- Let Roo plan: approve or edit its proposed steps rather than dictating line‑level changes.
+- Let Zentara plan: approve or edit its proposed steps rather than dictating line‑level changes.
 
 ## Support
 
-- Open the Roo panel to review actionable notices or errors.
+- Open the Zentara panel to review actionable notices or errors.
 - Use the Output and Problems panels for diagnostics.
 - If issues persist, reinstall the extension or try a minimal reproduction in a fresh workspace.

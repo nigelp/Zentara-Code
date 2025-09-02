@@ -6,7 +6,7 @@ import { fileURLToPath } from "url"
 import process from "node:process"
 import * as console from "node:console"
 
-import { copyPaths, copyWasms, copyLocales, setupLocaleWatcher } from "@roo-code/build"
+import { copyPaths, copyWasms, copyLocales, setupLocaleWatcher } from "@zentara-code/build"
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -55,7 +55,7 @@ async function main() {
 							["../LICENSE", "LICENSE"],
 							["../.env", ".env", { optional: true }],
 							["node_modules/vscode-material-icons/generated", "assets/vscode-material-icons"],
-							["roo_debug/src/debug_helper", "dist/debug_helper"],
+							["zentara_debug/src/debug_helper", "dist/debug_helper"],
 							["../webview-ui/audio", "webview-ui/audio"],
 						],
 						srcDir,

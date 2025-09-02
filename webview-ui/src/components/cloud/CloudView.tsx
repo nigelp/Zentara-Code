@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react"
 import { VSCodeButton } from "@vscode/webview-ui-toolkit/react"
 
-import { type CloudUserInfo, TelemetryEventName } from "@roo-code/types"
+import { type CloudUserInfo, TelemetryEventName } from "@zentara-code/types"
 
 import { useAppTranslation } from "@src/i18n/TranslationContext"
 import { useExtensionState } from "@src/context/ExtensionStateContext"
@@ -23,7 +23,7 @@ export const CloudView = ({ userInfo, isAuthenticated, cloudApiUrl, onDone }: Cl
 	const { remoteControlEnabled, setRemoteControlEnabled } = useExtensionState()
 	const wasAuthenticatedRef = useRef(false)
 
-	const rooLogoUri = (window as any).IMAGES_BASE_URI + "/roo-logo.svg"
+	const zentaraLogoUri = (window as any).IMAGES_BASE_URI + "/zentara-logo.svg"
 
 	// Track authentication state changes to detect successful logout
 	useEffect(() => {
@@ -42,21 +42,21 @@ export const CloudView = ({ userInfo, isAuthenticated, cloudApiUrl, onDone }: Cl
 		// Send telemetry for cloud connect action
 		// NOTE: Using ACCOUNT_* telemetry events for backward compatibility with analytics
 		telemetryClient.capture(TelemetryEventName.ACCOUNT_CONNECT_CLICKED)
-		vscode.postMessage({ type: "rooCloudSignIn" })
+		vscode.postMessage({ type: "zentaraCloudSignIn" })
 	}
 
 	const handleLogoutClick = () => {
 		// Send telemetry for cloud logout action
 		// NOTE: Using ACCOUNT_* telemetry events for backward compatibility with analytics
 		telemetryClient.capture(TelemetryEventName.ACCOUNT_LOGOUT_CLICKED)
-		vscode.postMessage({ type: "rooCloudSignOut" })
+		vscode.postMessage({ type: "zentaraCloudSignOut" })
 	}
 
 	const handleVisitCloudWebsite = () => {
 		// Send telemetry for cloud website visit
 		// NOTE: Using ACCOUNT_* telemetry events for backward compatibility with analytics
 		telemetryClient.capture(TelemetryEventName.ACCOUNT_CONNECT_CLICKED)
-		const cloudUrl = cloudApiUrl || "https://app.roocode.com"
+		const cloudUrl = cloudApiUrl || "https://app.zentaracode.com"
 		vscode.postMessage({ type: "openExternal", url: cloudUrl })
 	}
 
@@ -147,14 +147,14 @@ export const CloudView = ({ userInfo, isAuthenticated, cloudApiUrl, onDone }: Cl
 							<div
 								className="w-12 h-12 bg-vscode-foreground"
 								style={{
-									WebkitMaskImage: `url('${rooLogoUri}')`,
+									WebkitMaskImage: `url('${zentaraLogoUri}')`,
 									WebkitMaskRepeat: "no-repeat",
 									WebkitMaskSize: "contain",
-									maskImage: `url('${rooLogoUri}')`,
+									maskImage: `url('${zentaraLogoUri}')`,
 									maskRepeat: "no-repeat",
 									maskSize: "contain",
 								}}>
-								<img src={rooLogoUri} alt="Roo logo" className="w-12 h-12 opacity-0" />
+								<img src={zentaraLogoUri} alt="Zentara logo" className="w-12 h-12 opacity-0" />
 							</div>
 						</div>
 					</div>

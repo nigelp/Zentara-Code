@@ -15,7 +15,7 @@ import {
 	type GlobalState,
 	type ProviderName,
 	type ProviderSettings,
-	type RooCodeSettings,
+	type ZentaraCodeSettings,
 	type ProviderSettingsEntry,
 	type StaticAppProperties,
 	type DynamicAppProperties,
@@ -32,7 +32,7 @@ import {
 	type CloudUserInfo,
 	type CreateTaskOptions,
 	type ClineMessage,
-	RooCodeEventName,
+	ZentaraCodeEventName,
 	requestyDefaultModelId,
 	openRouterDefaultModelId,
 	glamaDefaultModelId,
@@ -40,9 +40,9 @@ import {
 	DEFAULT_WRITE_DELAY_MS,
 	ORGANIZATION_ALLOW_ALL,
 	DEFAULT_MODES,
-} from "@roo-code/types"
-import { TelemetryService } from "@roo-code/telemetry"
-import { CloudService, BridgeOrchestrator, getRooCodeApiUrl } from "@roo-code/cloud"
+} from "@zentara-code/types"
+import { TelemetryService } from "@zentara-code/telemetry"
+import { CloudService, BridgeOrchestrator, getZentaraCodeApiUrl } from "@zentara-code/cloud"
 
 import { safeWriteJson } from "../../utils/safeWriteJson"
 import { Package } from "../../shared/package"
@@ -212,46 +212,46 @@ export class ClineProvider
 		// Forward <most> task events to the provider.
 		// We do something fairly similar for the IPC-based API.
 		this.taskCreationCallback = (instance: Task) => {
-			this.emit(RooCodeEventName.TaskCreated, instance)
+			this.emit(ZentaraCodeEventName.TaskCreated, instance)
 
 			// Create named listener functions so we can remove them later.
-			const onTaskStarted = () => this.emit(RooCodeEventName.TaskStarted, instance.taskId)
+			const onTaskStarted = () => this.emit(ZentaraCodeEventName.TaskStarted, instance.taskId)
 			const onTaskCompleted = (taskId: string, tokenUsage: any, toolUsage: any) =>
-				this.emit(RooCodeEventName.TaskCompleted, taskId, tokenUsage, toolUsage)
-			const onTaskAborted = () => this.emit(RooCodeEventName.TaskAborted, instance.taskId)
-			const onTaskFocused = () => this.emit(RooCodeEventName.TaskFocused, instance.taskId)
-			const onTaskUnfocused = () => this.emit(RooCodeEventName.TaskUnfocused, instance.taskId)
-			const onTaskActive = (taskId: string) => this.emit(RooCodeEventName.TaskActive, taskId)
-			const onTaskInteractive = (taskId: string) => this.emit(RooCodeEventName.TaskInteractive, taskId)
-			const onTaskResumable = (taskId: string) => this.emit(RooCodeEventName.TaskResumable, taskId)
-			const onTaskIdle = (taskId: string) => this.emit(RooCodeEventName.TaskIdle, taskId)
+				this.emit(ZentaraCodeEventName.TaskCompleted, taskId, tokenUsage, toolUsage)
+			const onTaskAborted = () => this.emit(ZentaraCodeEventName.TaskAborted, instance.taskId)
+			const onTaskFocused = () => this.emit(ZentaraCodeEventName.TaskFocused, instance.taskId)
+			const onTaskUnfocused = () => this.emit(ZentaraCodeEventName.TaskUnfocused, instance.taskId)
+			const onTaskActive = (taskId: string) => this.emit(ZentaraCodeEventName.TaskActive, taskId)
+			const onTaskInteractive = (taskId: string) => this.emit(ZentaraCodeEventName.TaskInteractive, taskId)
+			const onTaskResumable = (taskId: string) => this.emit(ZentaraCodeEventName.TaskResumable, taskId)
+			const onTaskIdle = (taskId: string) => this.emit(ZentaraCodeEventName.TaskIdle, taskId)
 
 			// Attach the listeners.
-			instance.on(RooCodeEventName.TaskStarted, onTaskStarted)
-			instance.on(RooCodeEventName.TaskCompleted, onTaskCompleted)
-			instance.on(RooCodeEventName.TaskAborted, onTaskAborted)
-			instance.on(RooCodeEventName.TaskFocused, onTaskFocused)
-			instance.on(RooCodeEventName.TaskUnfocused, onTaskUnfocused)
-			instance.on(RooCodeEventName.TaskActive, onTaskActive)
-			instance.on(RooCodeEventName.TaskInteractive, onTaskInteractive)
-			instance.on(RooCodeEventName.TaskResumable, onTaskResumable)
-			instance.on(RooCodeEventName.TaskIdle, onTaskIdle)
+			instance.on(ZentaraCodeEventName.TaskStarted, onTaskStarted)
+			instance.on(ZentaraCodeEventName.TaskCompleted, onTaskCompleted)
+			instance.on(ZentaraCodeEventName.TaskAborted, onTaskAborted)
+			instance.on(ZentaraCodeEventName.TaskFocused, onTaskFocused)
+			instance.on(ZentaraCodeEventName.TaskUnfocused, onTaskUnfocused)
+			instance.on(ZentaraCodeEventName.TaskActive, onTaskActive)
+			instance.on(ZentaraCodeEventName.TaskInteractive, onTaskInteractive)
+			instance.on(ZentaraCodeEventName.TaskResumable, onTaskResumable)
+			instance.on(ZentaraCodeEventName.TaskIdle, onTaskIdle)
 
 			// Store the cleanup functions for later removal.
 			this.taskEventListeners.set(instance, [
-				() => instance.off(RooCodeEventName.TaskStarted, onTaskStarted),
-				() => instance.off(RooCodeEventName.TaskCompleted, onTaskCompleted),
-				() => instance.off(RooCodeEventName.TaskAborted, onTaskAborted),
-				() => instance.off(RooCodeEventName.TaskFocused, onTaskFocused),
-				() => instance.off(RooCodeEventName.TaskUnfocused, onTaskUnfocused),
-				() => instance.off(RooCodeEventName.TaskActive, onTaskActive),
-				() => instance.off(RooCodeEventName.TaskInteractive, onTaskInteractive),
-				() => instance.off(RooCodeEventName.TaskResumable, onTaskResumable),
-				() => instance.off(RooCodeEventName.TaskIdle, onTaskIdle),
+				() => instance.off(ZentaraCodeEventName.TaskStarted, onTaskStarted),
+				() => instance.off(ZentaraCodeEventName.TaskCompleted, onTaskCompleted),
+				() => instance.off(ZentaraCodeEventName.TaskAborted, onTaskAborted),
+				() => instance.off(ZentaraCodeEventName.TaskFocused, onTaskFocused),
+				() => instance.off(ZentaraCodeEventName.TaskUnfocused, onTaskUnfocused),
+				() => instance.off(ZentaraCodeEventName.TaskActive, onTaskActive),
+				() => instance.off(ZentaraCodeEventName.TaskInteractive, onTaskInteractive),
+				() => instance.off(ZentaraCodeEventName.TaskResumable, onTaskResumable),
+				() => instance.off(ZentaraCodeEventName.TaskIdle, onTaskIdle),
 			])
 		}
 
-		// Initialize Roo Code Cloud profile sync.
+		// Initialize Zentara Code Cloud profile sync.
 		this.initializeCloudProfileSync().catch((error) => {
 			this.log(`Failed to initialize cloud profile sync: ${error}`)
 		})
@@ -365,7 +365,7 @@ export class ClineProvider
 		// all the called tasks.
 		this.clineStack.push(task)
 		this.registerTask(task) // Register in dictionary
-		task.emit(RooCodeEventName.TaskFocused)
+		task.emit(ZentaraCodeEventName.TaskFocused)
 
 		// Perform special setup provider specific tasks.
 		await this.performPreparationTasks(task)
@@ -425,7 +425,7 @@ export class ClineProvider
 		let task = this.clineStack.pop()
 
 		if (task) {
-			task.emit(RooCodeEventName.TaskUnfocused)
+			task.emit(ZentaraCodeEventName.TaskUnfocused)
 
 			this.unregisterTask(task.taskId) // Unregister from dictionary
 
@@ -1756,7 +1756,7 @@ export class ClineProvider
 						window.AUDIO_BASE_URI = "${audioUri}"
 						window.MATERIAL_ICONS_BASE_URI = "${materialIconsUri}"
 					</script>
-					<title>Roo Code</title>
+					<title>Zentara Code</title>
 				</head>
 				<body>
 					<div id="root"></div>
@@ -1829,7 +1829,7 @@ export class ClineProvider
 				window.AUDIO_BASE_URI = "${audioUri}"
 				window.MATERIAL_ICONS_BASE_URI = "${materialIconsUri}"
 			</script>
-            <title>Roo Code</title>
+            <title>Zentara Code</title>
           </head>
           <body>
             <noscript>You need to enable JavaScript to run this app.</noscript>
@@ -1863,7 +1863,7 @@ export class ClineProvider
 
 		if (cline) {
 			TelemetryService.instance.captureModeSwitch(cline.taskId, newMode)
-			cline.emit(RooCodeEventName.TaskModeSwitched, cline.taskId, newMode)
+			cline.emit(ZentaraCodeEventName.TaskModeSwitched, cline.taskId, newMode)
 
 			try {
 				// Update the task history with the new mode first.
@@ -1891,7 +1891,7 @@ export class ClineProvider
 
 		await this.updateGlobalState("mode", newMode)
 
-		this.emit(RooCodeEventName.ModeChanged, newMode)
+		this.emit(ZentaraCodeEventName.ModeChanged, newMode)
 
 		// Load the saved API config for the new mode if it exists.
 		const savedConfigId = await this.providerSettingsManager.getModeConfigId(newMode)
@@ -2275,21 +2275,21 @@ export class ClineProvider
 		// Get platform-specific application data directory
 		let mcpServersDir: string
 		if (process.platform === "win32") {
-			// Windows: %APPDATA%\roo-code\MCP
-			mcpServersDir = path.join(os.homedir(), "AppData", "Roaming", "roo-code", "MCP")
+			// Windows: %APPDATA%\zentara-code\MCP
+			mcpServersDir = path.join(os.homedir(), "AppData", "Roaming", "zentara-code", "MCP")
 		} else if (process.platform === "darwin") {
 			// macOS: ~/Documents/Cline/MCP
 			mcpServersDir = path.join(os.homedir(), "Documents", "Cline", "MCP")
 		} else {
 			// Linux: ~/.local/share/Cline/MCP
-			mcpServersDir = path.join(os.homedir(), ".local", "share", "roo-code", "MCP")
+			mcpServersDir = path.join(os.homedir(), ".local", "share", "zentara-code", "MCP")
 		}
 
 		try {
 			await fs.mkdir(mcpServersDir, { recursive: true })
 		} catch (error) {
 			// Fallback to a relative path if directory creation fails
-			return path.join(os.homedir(), ".roo-code", "mcp")
+			return path.join(os.homedir(), ".zentara-code", "mcp")
 		}
 		return mcpServersDir
 	}
@@ -2809,7 +2809,7 @@ export class ClineProvider
 			maxWorkspaceFiles,
 			browserToolEnabled,
 			telemetrySetting,
-			showRooIgnoredFiles,
+			showZentaraIgnoredFiles,
 			language,
 			maxReadFileLine,
 			maxImageFileSize,
@@ -2928,7 +2928,7 @@ export class ClineProvider
 			telemetrySetting,
 			telemetryKey,
 			machineId,
-			showRooIgnoredFiles: showRooIgnoredFiles ?? false,
+			showZentaraIgnoredFiles: showZentaraIgnoredFiles ?? false,
 			language: language ?? formatLanguage(vscode.env.language),
 			renderContext: this.renderContext,
 			maxReadFileLine: maxReadFileLine ?? -1,
@@ -2962,7 +2962,7 @@ export class ClineProvider
 			// undefined means no MDM policy, true means compliant, false means non-compliant
 			mdmCompliant: this.mdmService?.requiresCloudAuth() ? this.checkMdmCompliance() : undefined,
 			profileThresholds: profileThresholds ?? {},
-			cloudApiUrl: getRooCodeApiUrl(),
+			cloudApiUrl: getZentaraCodeApiUrl(),
 			hasOpenedModeSelector: this.getGlobalState("hasOpenedModeSelector") ?? false,
 			alwaysAllowFollowupQuestions: alwaysAllowFollowupQuestions ?? false,
 			followupAutoApproveTimeoutMs: followupAutoApproveTimeoutMs ?? 60000,
@@ -3124,7 +3124,7 @@ export class ClineProvider
 			openRouterUseMiddleOutTransform: stateValues.openRouterUseMiddleOutTransform ?? true,
 			browserToolEnabled: stateValues.browserToolEnabled ?? true,
 			telemetrySetting: stateValues.telemetrySetting || "unset",
-			showRooIgnoredFiles: stateValues.showRooIgnoredFiles ?? false,
+			showZentaraIgnoredFiles: stateValues.showZentaraIgnoredFiles ?? false,
 			maxReadFileLine: stateValues.maxReadFileLine ?? -1,
 			maxImageFileSize: stateValues.maxImageFileSize ?? 5,
 			maxTotalImageSize: stateValues.maxTotalImageSize ?? 20,
@@ -3206,11 +3206,11 @@ export class ClineProvider
 		return this.contextProxy.getValue(key)
 	}
 
-	public async setValue<K extends keyof RooCodeSettings>(key: K, value: RooCodeSettings[K]) {
+	public async setValue<K extends keyof ZentaraCodeSettings>(key: K, value: ZentaraCodeSettings[K]) {
 		await this.contextProxy.setValue(key, value)
 	}
 
-	public getValue<K extends keyof RooCodeSettings>(key: K) {
+	public getValue<K extends keyof ZentaraCodeSettings>(key: K) {
 		return this.contextProxy.getValue(key)
 	}
 
@@ -3218,7 +3218,7 @@ export class ClineProvider
 		return this.contextProxy.getValues()
 	}
 
-	public async setValues(values: RooCodeSettings) {
+	public async setValues(values: ZentaraCodeSettings) {
 		await this.contextProxy.setValues(values)
 	}
 
@@ -3411,7 +3411,7 @@ export class ClineProvider
 		parentTask?: Task,
 		options: CreateTaskOptions = {},
 		is_parallel: boolean = false, // New parameter to indicate parallel execution
-		configuration: RooCodeSettings = {},
+		configuration: ZentaraCodeSettings = {},
 	): Promise<Task> {
 		if (configuration) {
 			await this.setValues(configuration)

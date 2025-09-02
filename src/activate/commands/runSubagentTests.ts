@@ -18,7 +18,7 @@ export async function runSubagentTestsCommand(): Promise<void> {
 			request: "launch",
 			name: "Debug Subagent Tests",
 			runtimeExecutable: "tsx",
-			program: path.join(workspaceFolder.uri.fsPath, "src/roo_subagent/__tests__/runTests.ts"),
+			program: path.join(workspaceFolder.uri.fsPath, "src/zentara_subagent/__tests__/runTests.ts"),
 			cwd: path.join(workspaceFolder.uri.fsPath, "src"),
 			sourceMaps: true,
 			env: {
@@ -38,7 +38,7 @@ export async function runSubagentTestsCommand(): Promise<void> {
 		outputChannel.show()
 
 		// Import dynamically to avoid loading when debugging
-		const { runAllTests } = await import("../../roo_subagent/__tests__/subagentTool.test")
+		const { runAllTests } = await import("../../zentara_subagent/__tests__/subagentTool.test")
 
 		// Redirect console.log to output channel
 		const originalLog = console.log

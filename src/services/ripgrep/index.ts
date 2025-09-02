@@ -4,7 +4,7 @@ import * as readline from "readline"
 
 import * as vscode from "vscode"
 
-import { RooIgnoreController } from "../../core/ignore/RooIgnoreController"
+import { ZentaraIgnoreController } from "../../core/ignore/ZentaraIgnoreController"
 import { fileExistsAtPath } from "../../utils/fs"
 import "../../utils/path" // Import for toPosix extension
 /*
@@ -150,7 +150,7 @@ export async function regexSearchFiles(
 	directoryPath: string,
 	regex: string,
 	filePattern?: string,
-	rooIgnoreController?: RooIgnoreController,
+	zentaraIgnoreController?: ZentaraIgnoreController,
 ): Promise<string> {
 	// Legacy function - convert to new format
 	const options: SearchOptions = {
@@ -159,13 +159,13 @@ export async function regexSearchFiles(
 		glob: filePattern,
 		output_mode: "content",
 	}
-	return regexSearchFilesAdvanced(cwd, options, rooIgnoreController)
+	return regexSearchFilesAdvanced(cwd, options, zentaraIgnoreController)
 }
 
 export async function regexSearchFilesAdvanced(
 	cwd: string,
 	options: SearchOptions,
-	rooIgnoreController?: RooIgnoreController,
+	zentaraIgnoreController?: ZentaraIgnoreController,
 ): Promise<string> {
 	const vscodeAppRoot = vscode.env.appRoot
 	const rgPath = await getBinPath(vscodeAppRoot)
@@ -239,7 +239,7 @@ export async function regexSearchFilesAdvanced(
 		return formatFileListResults(output, cwd, options)
 	} else {
 		// content mode - parse JSON output
-		return parseAndFormatContentResults(output, cwd, options, rooIgnoreController)
+		return parseAndFormatContentResults(output, cwd, options, zentaraIgnoreController)
 	}
 }
 
@@ -328,7 +328,7 @@ function parseAndFormatContentResults(
 	output: string,
 	cwd: string,
 	options: SearchOptions,
-	rooIgnoreController?: RooIgnoreController,
+	zentaraIgnoreController?: ZentaraIgnoreController,
 ): string {
 	const results: SearchFileResult[] = []
 	let currentFile: SearchFileResult | null = null
@@ -382,9 +382,9 @@ function parseAndFormatContentResults(
 		}
 	})
 
-	// Filter results using RooIgnoreController if provided
-	const filteredResults = rooIgnoreController
-		? results.filter((result) => rooIgnoreController.validateAccess(result.file))
+	// Filter results using ZentaraIgnoreController if provided
+	const filteredResults = zentaraIgnoreController
+		? results.filter((result) => zentaraIgnoreController.validateAccess(result.file))
 		: results
 
 	return formatResults(filteredResults, cwd, options)

@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react"
 import { useTranslation } from "react-i18next"
 import { SquareArrowOutUpRightIcon } from "lucide-react"
 
-import { type HistoryItem, type ShareVisibility, TelemetryEventName } from "@roo-code/types"
+import { type HistoryItem, type ShareVisibility, TelemetryEventName } from "@zentara-code/types"
 
 import { vscode } from "@/utils/vscode"
 import { telemetryClient } from "@/utils/TelemetryClient"
@@ -100,7 +100,7 @@ export const ShareButton = ({ item, disabled = false, showLabel = false }: Share
 
 		// Mark that authentication was initiated from this button
 		initiatedAuthFromThisButtonRef.current = true
-		vscode.postMessage({ type: "rooCloudSignIn" })
+		vscode.postMessage({ type: "zentaraCloudSignIn" })
 		setShareDropdownOpen(false)
 		setConnectModalOpen(false)
 	}

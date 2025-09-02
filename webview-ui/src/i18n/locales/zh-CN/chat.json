@@ -1,5 +1,5 @@
 {
-	"greeting": "欢迎使用 Roo Code",
+	"greeting": "欢迎使用 Zentara Code",
 	"task": {
 		"title": "任务",
 		"expand": "展开任务",
@@ -21,7 +21,7 @@
 		"sharePublicly": "公开分享",
 		"sharePubliclyDescription": "任何拥有链接的人都可访问",
 		"connectToCloud": "连接到云端",
-		"connectToCloudDescription": "登录 Roo Code Cloud 以分享任务",
+		"connectToCloudDescription": "登录 Zentara Code Cloud 以分享任务",
 		"sharingDisabledByOrganization": "组织已禁用分享功能",
 		"shareSuccessOrganization": "组织链接已复制到剪贴板",
 		"shareSuccessPublic": "公开链接已复制到剪贴板"
@@ -84,8 +84,8 @@
 	},
 	"scrollToBottom": "滚动到聊天底部",
 	"about": "通过 AI 辅助生成、重构和调试代码。查看我们的 <DocsLink>文档</DocsLink> 了解更多信息。",
-	"onboarding": "<strong>此工作区中的任务列表为空。</strong> 请在下方输入任务开始。 不确定如何开始？ 在 <DocsLink>文档</DocsLink> 中阅读更多关于 Roo 可以为您做什么的信息。",
-	"rooTips": {
+	"onboarding": "<strong>此工作区中的任务列表为空。</strong> 请在下方输入任务开始。 不确定如何开始？ 在 <DocsLink>文档</DocsLink> 中阅读更多关于 Zentara 可以为您做什么的信息。",
+	"zentaraTips": {
 		"boomerangTasks": {
 			"title": "任务编排",
 			"description": "将任务拆分为更小、更易于管理的部分。"
@@ -119,7 +119,7 @@
 		"title": "模式",
 		"marketplace": "模式市场",
 		"settings": "模式设置",
-		"description": "专门定制Roo行为的角色。",
+		"description": "专门定制Zentara行为的角色。",
 		"searchPlaceholder": "搜索模式...",
 		"noResults": "未找到结果"
 	},
@@ -133,7 +133,7 @@
 	"diffError": {
 		"title": "编辑失败"
 	},
-	"troubleMessage": "Roo遇到问题...",
+	"troubleMessage": "Zentara遇到问题...",
 	"apiRequest": {
 		"title": "API请求",
 		"failed": "API请求失败",
@@ -158,7 +158,7 @@
 		"current": "当前"
 	},
 	"instructions": {
-		"wantsToFetch": "Roo 想要获取详细指示以协助当前任务"
+		"wantsToFetch": "Zentara 想要获取详细指示以协助当前任务"
 	},
 	"fileOperations": {
 		"wantsToRead": "需要读取文件:",
@@ -173,9 +173,9 @@
 		"wantsToInsert": "需要在此文件中插入内容:",
 		"wantsToInsertWithLineNumber": "需要在第 {{lineNumber}} 行插入内容:",
 		"wantsToInsertAtEnd": "需要在文件末尾添加内容:",
-		"wantsToReadAndXMore": "Roo 想读取此文件以及另外 {{count}} 个文件：",
-		"wantsToReadMultiple": "Roo 想要读取多个文件：",
-		"wantsToApplyBatchChanges": "Roo 想要对多个文件应用更改：",
+		"wantsToReadAndXMore": "Zentara 想读取此文件以及另外 {{count}} 个文件：",
+		"wantsToReadMultiple": "Zentara 想要读取多个文件：",
+		"wantsToApplyBatchChanges": "Zentara 想要对多个文件应用更改：",
 		"wantsToGenerateImage": "需要生成图片:",
 		"wantsToGenerateImageOutsideWorkspace": "需要在工作区外生成图片:",
 		"wantsToGenerateImageProtected": "需要在受保护位置生成图片:",
@@ -186,8 +186,8 @@
 		"didViewTopLevel": "已查看目录文件列表:",
 		"wantsToViewRecursive": "需要查看目录所有文件:",
 		"didViewRecursive": "已查看目录所有文件:",
-		"wantsToViewDefinitions": "Roo想查看此目录中使用的源代码定义名称:",
-		"didViewDefinitions": "Roo已查看此目录中使用的源代码定义名称:",
+		"wantsToViewDefinitions": "Zentara想查看此目录中使用的源代码定义名称:",
+		"didViewDefinitions": "Zentara已查看此目录中使用的源代码定义名称:",
 		"wantsToSearch": "需要搜索内容: {{regex}}",
 		"didSearch": "已完成内容搜索: {{regex}}",
 		"wantsToSearchOutsideWorkspace": "需要搜索内容（工作区外）: {{regex}}",
@@ -196,8 +196,8 @@
 		"didViewTopLevelOutsideWorkspace": "已查看目录文件列表（工作区外）:",
 		"wantsToViewRecursiveOutsideWorkspace": "需要查看目录所有文件（工作区外）:",
 		"didViewRecursiveOutsideWorkspace": "已查看目录所有文件（工作区外）:",
-		"wantsToViewDefinitionsOutsideWorkspace": "Roo想查看此目录中使用的源代码定义名称（工作区外）:",
-		"didViewDefinitionsOutsideWorkspace": "Roo已查看此目录中使用的源代码定义名称（工作区外）:"
+		"wantsToViewDefinitionsOutsideWorkspace": "Zentara想查看此目录中使用的源代码定义名称（工作区外）:",
+		"didViewDefinitionsOutsideWorkspace": "Zentara已查看此目录中使用的源代码定义名称（工作区外）:"
 	},
 	"commandOutput": "命令输出",
 	"commandExecution": {
@@ -219,8 +219,8 @@
 	"response": "响应",
 	"arguments": "参数",
 	"mcp": {
-		"wantsToUseTool": "Roo想在{{serverName}} MCP上使用工具:",
-		"wantsToAccessResource": "Roo想访问{{serverName}} MCP服务上的资源:"
+		"wantsToUseTool": "Zentara想在{{serverName}} MCP上使用工具:",
+		"wantsToAccessResource": "Zentara想访问{{serverName}} MCP服务上的资源:"
 	},
 	"modes": {
 		"wantsToSwitch": "即将切换至{{mode}}模式",
@@ -229,8 +229,8 @@
 		"didSwitchWithReason": "已切换至{{mode}}模式（原因：{{reason}}）"
 	},
 	"subtasks": {
-		"wantsToCreate": "Roo想在<code>{{mode}}</code>模式下创建新子任务:",
-		"wantsToFinish": "Roo想完成此子任务",
+		"wantsToCreate": "Zentara想在<code>{{mode}}</code>模式下创建新子任务:",
+		"wantsToFinish": "Zentara想完成此子任务",
 		"newTaskContent": "子任务说明",
 		"completionContent": "子任务已完成",
 		"resultContent": "子任务结果",
@@ -238,7 +238,7 @@
 		"completionInstructions": "子任务已完成！您可以查看结果并提出修改或下一步建议。如果一切正常，请确认以将结果返回给主任务。"
 	},
 	"questions": {
-		"hasQuestion": "Roo有一个问题:"
+		"hasQuestion": "Zentara有一个问题:"
 	},
 	"taskCompleted": "任务完成",
 	"powershell": {
@@ -268,23 +268,23 @@
 		"countdownDisplay": "{{count}}秒"
 	},
 	"announcement": {
-		"title": "🎉 Roo Code {{version}} 已发布",
+		"title": "🎉 Zentara Code {{version}} 已发布",
 		"stealthModel": {
 			"feature": "Sonic 隐形模型现在是 <bold>Grok Code Fast</bold>！这个高性能推理模型可在 <bold>xAI (Grok)</bold> 提供商下作为 <code>grok-code-fast-1</code> 使用。",
-			"note": "作为对所有关于 Sonic 有用反馈的感谢，xAI 将通过 <bold>Roo Code Cloud</bold> 提供商延长对 <code>grok-code-fast-1</code> 的免费访问权限再一周。",
-			"connectButton": "连接到 Roo Code Cloud",
+			"note": "作为对所有关于 Sonic 有用反馈的感谢，xAI 将通过 <bold>Zentara Code Cloud</bold> 提供商延长对 <code>grok-code-fast-1</code> 的免费访问权限再一周。",
+			"connectButton": "连接到 Zentara Code Cloud",
 			"selectModel": "访问<settingsLink>设置</settingsLink>更新你的提供商配置。"
 		},
-		"description": "Roo Code {{version}} 带来强大的新功能和重大改进，提升您的开发工作流程。",
+		"description": "Zentara Code {{version}} 带来强大的新功能和重大改进，提升您的开发工作流程。",
 		"whatsNew": "新特性",
-		"feature1": "<bold>消息队列</bold>: 在 Roo 工作时将多个消息排队，让你可以不间断地继续规划工作流程。",
+		"feature1": "<bold>消息队列</bold>: 在 Zentara 工作时将多个消息排队，让你可以不间断地继续规划工作流程。",
 		"feature2": "<bold>自定义斜杠命令</bold>: 创建个性化斜杠命令，快速访问常用提示词和工作流程，具备完整的 UI 管理功能。",
 		"feature3": "<bold>增强的 Gemini 工具</bold>: 新的 URL 上下文和 Google 搜索基础功能为 Gemini 模型提供实时网络信息和增强的研究能力。",
 		"hideButton": "隐藏公告",
 		"detailsDiscussLinks": "在 <discordLink>Discord</discordLink> 和 <redditLink>Reddit</redditLink> 获取更多详情并参与讨论 🚀"
 	},
 	"browser": {
-		"rooWantsToUse": "Roo想使用浏览器:",
+		"zentaraWantsToUse": "Zentara想使用浏览器:",
 		"consoleLogs": "控制台日志",
 		"noNewLogs": "(没有新日志)",
 		"screenshot": "浏览器截图",
@@ -318,24 +318,24 @@
 	"profileViolationWarning": "当前配置文件与您的组织设置不兼容",
 	"shellIntegration": {
 		"title": "命令执行警告",
-		"description": "您的命令正在没有 VSCode 终端 shell 集成的情况下执行。要隐藏此警告，您可以在 <settingsLink>Roo Code 设置</settingsLink>的 <strong>Terminal</strong> 部分禁用 shell 集成，或使用下方链接排查 VSCode 终端集成问题。",
+		"description": "您的命令正在没有 VSCode 终端 shell 集成的情况下执行。要隐藏此警告，您可以在 <settingsLink>Zentara Code 设置</settingsLink>的 <strong>Terminal</strong> 部分禁用 shell 集成，或使用下方链接排查 VSCode 终端集成问题。",
 		"troubleshooting": "点击此处查看 shell 集成文档。"
 	},
 	"ask": {
 		"autoApprovedRequestLimitReached": {
 			"title": "已达自动批准请求限制",
-			"description": "Roo 已达到 {{count}} 次 API 请求的自动批准限制。您想重置计数并继续任务吗？",
+			"description": "Zentara 已达到 {{count}} 次 API 请求的自动批准限制。您想重置计数并继续任务吗？",
 			"button": "重置并继续"
 		},
 		"autoApprovedCostLimitReached": {
 			"title": "已达到自动批准的费用限额",
-			"description": "Roo已经达到了${{count}}的自动批准成本限制。您想重置成本并继续任务吗？",
+			"description": "Zentara已经达到了${{count}}的自动批准成本限制。您想重置成本并继续任务吗？",
 			"button": "重置并继续"
 		}
 	},
 	"codebaseSearch": {
-		"wantsToSearch": "Roo 需要搜索代码库: <code>{{query}}</code>",
-		"wantsToSearchWithPath": "Roo 需要在 <code>{{path}}</code> 中搜索: <code>{{query}}</code>",
+		"wantsToSearch": "Zentara 需要搜索代码库: <code>{{query}}</code>",
+		"wantsToSearchWithPath": "Zentara 需要在 <code>{{path}}</code> 中搜索: <code>{{query}}</code>",
 		"didSearch_one": "找到 1 个结果",
 		"didSearch_other": "找到 {{count}} 个结果",
 		"resultTooltip": "相似度评分: {{score}} (点击打开文件)"
@@ -358,8 +358,8 @@
 	"versionIndicator": {
 		"ariaLabel": "版本 {{version}} - 点击查看发布说明"
 	},
-	"rooCloudCTA": {
-		"title": "Roo Code Cloud 正在进化！",
+	"zentaraCloudCTA": {
+		"title": "Zentara Code Cloud 正在进化！",
 		"description": "在云端运行远程代理，随时随地访问任务，与他人协作等更多功能。",
 		"joinWaitlist": "注册获取最新更新。"
 	},

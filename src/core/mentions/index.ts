@@ -17,7 +17,7 @@ import { UrlContentFetcher } from "../../services/browser/UrlContentFetcher"
 
 import { FileContextTracker } from "../context-tracking/FileContextTracker"
 
-import { RooIgnoreController } from "../ignore/RooIgnoreController"
+import { ZentaraIgnoreController } from "../ignore/ZentaraIgnoreController"
 import { getCommand, type Command } from "../../services/command/commands"
 
 import { t } from "../../i18n"
@@ -82,8 +82,8 @@ export async function parseMentions(
 	cwd: string,
 	urlContentFetcher: UrlContentFetcher,
 	fileContextTracker?: FileContextTracker,
-	rooIgnoreController?: RooIgnoreController,
-	showRooIgnoredFiles: boolean = false,
+	zentaraIgnoreController?: ZentaraIgnoreController,
+	showZentaraIgnoredFiles: boolean = false,
 	includeDiagnosticMessages: boolean = true,
 	maxDiagnosticMessages: number = 50,
 	maxReadFileLine?: number,
@@ -191,8 +191,8 @@ export async function parseMentions(
 				const content = await getFileOrFolderContent(
 					mentionPath,
 					cwd,
-					rooIgnoreController,
-					showRooIgnoredFiles,
+					zentaraIgnoreController,
+					showZentaraIgnoredFiles,
 					maxReadFileLine,
 				)
 				if (mention.endsWith("/")) {
@@ -269,8 +269,8 @@ export async function parseMentions(
 async function getFileOrFolderContent(
 	mentionPath: string,
 	cwd: string,
-	rooIgnoreController?: any,
-	showRooIgnoredFiles: boolean = false,
+	zentaraIgnoreController?: any,
+	showZentaraIgnoredFiles: boolean = false,
 	maxReadFileLine?: number,
 ): Promise<string> {
 	const unescapedPath = unescapeSpaces(mentionPath)
@@ -280,8 +280,8 @@ async function getFileOrFolderContent(
 		const stats = await fs.stat(absPath)
 
 		if (stats.isFile()) {
-			if (rooIgnoreController && !rooIgnoreController.validateAccess(absPath)) {
-				return `(File ${mentionPath} is ignored by .rooignore)`
+			if (zentaraIgnoreController && !zentaraIgnoreController.validateAccess(absPath)) {
+				return `(File ${mentionPath} is ignored by .zentaraignore)`
 			}
 			try {
 				const content = await extractTextFromFile(absPath, maxReadFileLine)
@@ -302,11 +302,11 @@ async function getFileOrFolderContent(
 				const entryPath = path.join(absPath, entry.name)
 
 				let isIgnored = false
-				if (rooIgnoreController) {
-					isIgnored = !rooIgnoreController.validateAccess(entryPath)
+				if (zentaraIgnoreController) {
+					isIgnored = !zentaraIgnoreController.validateAccess(entryPath)
 				}
 
-				if (isIgnored && !showRooIgnoredFiles) {
+				if (isIgnored && !showZentaraIgnoredFiles) {
 					continue
 				}
 

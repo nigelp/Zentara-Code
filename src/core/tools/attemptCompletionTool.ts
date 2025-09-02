@@ -1,8 +1,8 @@
 import Anthropic from "@anthropic-ai/sdk"
 import * as vscode from "vscode"
 
-import { RooCodeEventName } from "@roo-code/types"
-import { TelemetryService } from "@roo-code/telemetry"
+import { ZentaraCodeEventName } from "@zentara-code/types"
+import { TelemetryService } from "@zentara-code/telemetry"
 
 import { Task } from "../task/Task"
 import {
@@ -70,7 +70,7 @@ export async function attemptCompletionTool(
 					await cline.say("completion_result", removeClosingTag("result", result), undefined, false)
 
 					TelemetryService.instance.captureTaskCompleted(cline.taskId)
-					cline.emit(RooCodeEventName.TaskCompleted, cline.taskId, cline.getTokenUsage(), cline.toolUsage)
+					cline.emit(ZentaraCodeEventName.TaskCompleted, cline.taskId, cline.getTokenUsage(), cline.toolUsage)
 
 					await cline.ask("command", removeClosingTag("command", command), block.partial).catch(() => {})
 				}
@@ -93,7 +93,7 @@ export async function attemptCompletionTool(
 			// Users must use execute_command tool separately before attempt_completion
 			await cline.say("completion_result", result, undefined, false)
 			TelemetryService.instance.captureTaskCompleted(cline.taskId)
-			cline.emit(RooCodeEventName.TaskCompleted, cline.taskId, cline.getTokenUsage(), cline.toolUsage)
+			cline.emit(ZentaraCodeEventName.TaskCompleted, cline.taskId, cline.getTokenUsage(), cline.toolUsage)
 
 			if (cline.parentTask) {
 				// For parallel tasks (like subagents), skip approval and directly finish

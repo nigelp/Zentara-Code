@@ -1,7 +1,7 @@
 import { useCallback } from "react"
 import { VSCodeTextField } from "@vscode/webview-ui-toolkit/react"
 
-import type { ProviderSettings } from "@roo-code/types"
+import type { ProviderSettings } from "@zentara-code/types"
 
 import { useAppTranslation } from "@src/i18n/TranslationContext"
 import { VSCodeButtonLink } from "@src/components/common/VSCodeButtonLink"
@@ -41,7 +41,7 @@ export const Cerebras = ({ apiConfiguration, setApiConfigurationField }: Cerebra
 				{t("settings:providers.apiKeyStorageNotice")}
 			</div>
 			{!apiConfiguration?.cerebrasApiKey && (
-				<VSCodeButtonLink href="https://cloud.cerebras.ai?utm_source=roocode" appearance="secondary">
+				<VSCodeButtonLink href="https://cloud.cerebras.ai?utm_source=zentaracode" appearance="secondary">
 					{t("settings:providers.getCerebrasApiKey")}
 				</VSCodeButtonLink>
 			)}

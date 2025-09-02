@@ -1,7 +1,7 @@
 import axios from "axios"
 import { z } from "zod"
-import type { ModelInfo } from "@roo-code/types"
-import { IO_INTELLIGENCE_CACHE_DURATION } from "@roo-code/types"
+import type { ModelInfo } from "@zentara-code/types"
+import { IO_INTELLIGENCE_CACHE_DURATION } from "@zentara-code/types"
 import type { ModelRecord } from "../../../shared/api"
 
 /**

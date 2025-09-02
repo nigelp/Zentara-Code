@@ -82,14 +82,14 @@ vi.mock("../Announcement", () => ({
 	},
 }))
 
-// Mock RooCloudCTA component
-vi.mock("@src/components/welcome/RooCloudCTA", () => ({
-	default: function MockRooCloudCTA() {
+// Mock ZentaraCloudCTA component
+vi.mock("@src/components/welcome/ZentaraCloudCTA", () => ({
+	default: function MockZentaraCloudCTA() {
 		return (
-			<div data-testid="roo-cloud-cta">
-				<div>rooCloudCTA.title</div>
-				<div>rooCloudCTA.description</div>
-				<div>rooCloudCTA.joinWaitlist</div>
+			<div data-testid="zentara-cloud-cta">
+				<div>zentaraCloudCTA.title</div>
+				<div>zentaraCloudCTA.description</div>
+				<div>zentaraCloudCTA.joinWaitlist</div>
 			</div>
 		)
 	},
@@ -122,17 +122,17 @@ vi.mock("../QueuedMessages", () => ({
 	},
 }))
 
-// Mock RooTips component
-vi.mock("@src/components/welcome/RooTips", () => ({
-	default: function MockRooTips() {
-		return <div data-testid="roo-tips">Tips content</div>
+// Mock ZentaraTips component
+vi.mock("@src/components/welcome/ZentaraTips", () => ({
+	default: function MockZentaraTips() {
+		return <div data-testid="zentara-tips">Tips content</div>
 	},
 }))
 
-// Mock RooHero component
-vi.mock("@src/components/welcome/RooHero", () => ({
-	default: function MockRooHero() {
-		return <div data-testid="roo-hero">Hero content</div>
+// Mock ZentaraHero component
+vi.mock("@src/components/welcome/ZentaraHero", () => ({
+	default: function MockZentaraHero() {
+		return <div data-testid="zentara-hero">Hero content</div>
 	},
 }))
 
@@ -1273,10 +1273,10 @@ describe("ChatView - Version Indicator Tests", () => {
 	})
 })
 
-describe("ChatView - RooCloudCTA Display Tests", () => {
+describe("ChatView - ZentaraCloudCTA Display Tests", () => {
 	beforeEach(() => vi.clearAllMocks())
 
-	it("does not show RooCloudCTA when user is authenticated to Cloud", () => {
+	it("does not show ZentaraCloudCTA when user is authenticated to Cloud", () => {
 		const { queryByTestId } = renderChatView()
 
 		// Hydrate state with user authenticated to cloud
@@ -1291,11 +1291,11 @@ describe("ChatView - RooCloudCTA Display Tests", () => {
 			clineMessages: [], // No active task
 		})
 
-		// Should not show RooCloudCTA when authenticated
-		expect(queryByTestId("roo-cloud-cta")).not.toBeInTheDocument()
+		// Should not show ZentaraCloudCTA when authenticated
+		expect(queryByTestId("zentara-cloud-cta")).not.toBeInTheDocument()
 	})
 
-	it("does not show RooCloudCTA when user has only run 3 tasks in their history", () => {
+	it("does not show ZentaraCloudCTA when user has only run 3 tasks in their history", () => {
 		const { queryByTestId } = renderChatView()
 
 		// Hydrate state with user not authenticated but only 3 tasks
@@ -1309,11 +1309,11 @@ describe("ChatView - RooCloudCTA Display Tests", () => {
 			clineMessages: [], // No active task
 		})
 
-		// Should not show RooCloudCTA with less than 4 tasks
-		expect(queryByTestId("roo-cloud-cta")).not.toBeInTheDocument()
+		// Should not show ZentaraCloudCTA with less than 4 tasks
+		expect(queryByTestId("zentara-cloud-cta")).not.toBeInTheDocument()
 	})
 
-	it("shows RooCloudCTA when user is not authenticated and has run 4 or more tasks", async () => {
+	it("shows ZentaraCloudCTA when user is not authenticated and has run 4 or more tasks", async () => {
 		const { getByTestId } = renderChatView()
 
 		// Hydrate state with user not authenticated and 4 tasks
@@ -1328,13 +1328,13 @@ describe("ChatView - RooCloudCTA Display Tests", () => {
 			clineMessages: [], // No active task
 		})
 
-		// Wait for component to render and show RooCloudCTA
+		// Wait for component to render and show ZentaraCloudCTA
 		await waitFor(() => {
-			expect(getByTestId("roo-cloud-cta")).toBeInTheDocument()
+			expect(getByTestId("zentara-cloud-cta")).toBeInTheDocument()
 		})
 	})
 
-	it("shows RooCloudCTA when user is not authenticated and has run 5 tasks", async () => {
+	it("shows ZentaraCloudCTA when user is not authenticated and has run 5 tasks", async () => {
 		const { getByTestId } = renderChatView()
 
 		// Hydrate state with user not authenticated and 5 tasks
@@ -1350,13 +1350,13 @@ describe("ChatView - RooCloudCTA Display Tests", () => {
 			clineMessages: [], // No active task
 		})
 
-		// Wait for component to render and show RooCloudCTA
+		// Wait for component to render and show ZentaraCloudCTA
 		await waitFor(() => {
-			expect(getByTestId("roo-cloud-cta")).toBeInTheDocument()
+			expect(getByTestId("zentara-cloud-cta")).toBeInTheDocument()
 		})
 	})
 
-	it("does not show RooCloudCTA when there is an active task (regardless of auth status)", async () => {
+	it("does not show ZentaraCloudCTA when there is an active task (regardless of auth status)", async () => {
 		const { queryByTestId } = renderChatView()
 
 		// Hydrate state with active task
@@ -1380,16 +1380,16 @@ describe("ChatView - RooCloudCTA Display Tests", () => {
 
 		// Wait for component to render with active task
 		await waitFor(() => {
-			// Should not show RooCloudCTA during active task
-			expect(queryByTestId("roo-cloud-cta")).not.toBeInTheDocument()
-			// Should not show RooTips either since the entire welcome screen is hidden during active tasks
-			expect(queryByTestId("roo-tips")).not.toBeInTheDocument()
-			// Should not show RooHero either since the entire welcome screen is hidden during active tasks
-			expect(queryByTestId("roo-hero")).not.toBeInTheDocument()
+			// Should not show ZentaraCloudCTA during active task
+			expect(queryByTestId("zentara-cloud-cta")).not.toBeInTheDocument()
+			// Should not show ZentaraTips either since the entire welcome screen is hidden during active tasks
+			expect(queryByTestId("zentara-tips")).not.toBeInTheDocument()
+			// Should not show ZentaraHero either since the entire welcome screen is hidden during active tasks
+			expect(queryByTestId("zentara-hero")).not.toBeInTheDocument()
 		})
 	})
 
-	it("shows RooTips when user is authenticated (instead of RooCloudCTA)", () => {
+	it("shows ZentaraTips when user is authenticated (instead of ZentaraCloudCTA)", () => {
 		const { queryByTestId, getByTestId } = renderChatView()
 
 		// Hydrate state with user authenticated to cloud
@@ -1404,12 +1404,12 @@ describe("ChatView - RooCloudCTA Display Tests", () => {
 			clineMessages: [], // No active task
 		})
 
-		// Should not show RooCloudCTA but should show RooTips
-		expect(queryByTestId("roo-cloud-cta")).not.toBeInTheDocument()
-		expect(getByTestId("roo-tips")).toBeInTheDocument()
+		// Should not show ZentaraCloudCTA but should show ZentaraTips
+		expect(queryByTestId("zentara-cloud-cta")).not.toBeInTheDocument()
+		expect(getByTestId("zentara-tips")).toBeInTheDocument()
 	})
 
-	it("shows RooTips when user has fewer than 4 tasks (instead of RooCloudCTA)", () => {
+	it("shows ZentaraTips when user has fewer than 4 tasks (instead of ZentaraCloudCTA)", () => {
 		const { queryByTestId, getByTestId } = renderChatView()
 
 		// Hydrate state with user not authenticated but fewer than 4 tasks
@@ -1423,9 +1423,9 @@ describe("ChatView - RooCloudCTA Display Tests", () => {
 			clineMessages: [], // No active task
 		})
 
-		// Should not show RooCloudCTA but should show RooTips
-		expect(queryByTestId("roo-cloud-cta")).not.toBeInTheDocument()
-		expect(getByTestId("roo-tips")).toBeInTheDocument()
+		// Should not show ZentaraCloudCTA but should show ZentaraTips
+		expect(queryByTestId("zentara-cloud-cta")).not.toBeInTheDocument()
+		expect(getByTestId("zentara-tips")).toBeInTheDocument()
 	})
 })
 

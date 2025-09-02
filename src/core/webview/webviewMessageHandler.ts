@@ -11,9 +11,9 @@ import {
 	type ClineMessage,
 	type TelemetrySetting,
 	TelemetryEventName,
-} from "@roo-code/types"
-import { CloudService } from "@roo-code/cloud"
-import { TelemetryService } from "@roo-code/telemetry"
+} from "@zentara-code/types"
+import { CloudService } from "@zentara-code/cloud"
+import { TelemetryService } from "@zentara-code/telemetry"
 
 import { type ApiMessage } from "../task-persistence/apiMessages"
 
@@ -944,11 +944,11 @@ export const webviewMessageHandler = async (
 			}
 
 			const workspaceFolder = vscode.workspace.workspaceFolders[0]
-			const rooDir = path.join(workspaceFolder.uri.fsPath, ".roo")
-			const mcpPath = path.join(rooDir, "mcp.json")
+			const zentaraDir = path.join(workspaceFolder.uri.fsPath, ".zentara")
+			const mcpPath = path.join(zentaraDir, "mcp.json")
 
 			try {
-				await fs.mkdir(rooDir, { recursive: true })
+				await fs.mkdir(zentaraDir, { recursive: true })
 				const exists = await fileExistsAtPath(mcpPath)
 
 				if (!exists) {
@@ -1429,8 +1429,8 @@ export const webviewMessageHandler = async (
 			await provider.contextProxy.setValue("openRouterImageGenerationSelectedModel", message.text)
 			await provider.postStateToWebview()
 			break
-		case "showRooIgnoredFiles":
-			await updateGlobalState("showRooIgnoredFiles", message.bool ?? false)
+		case "showZentaraIgnoredFiles":
+			await updateGlobalState("showZentaraIgnoredFiles", message.bool ?? false)
 			await provider.postStateToWebview()
 			break
 		case "hasOpenedModeSelector":
@@ -1870,14 +1870,14 @@ export const webviewMessageHandler = async (
 				if (scope === "project") {
 					const workspacePath = getWorkspacePath()
 					if (workspacePath) {
-						rulesFolderPath = path.join(workspacePath, ".roo", `rules-${message.slug}`)
+						rulesFolderPath = path.join(workspacePath, ".zentara", `rules-${message.slug}`)
 					} else {
-						rulesFolderPath = path.join(".roo", `rules-${message.slug}`)
+						rulesFolderPath = path.join(".zentara", `rules-${message.slug}`)
 					}
 				} else {
 					// Global scope - use OS home directory
 					const homeDir = os.homedir()
-					rulesFolderPath = path.join(homeDir, ".roo", `rules-${message.slug}`)
+					rulesFolderPath = path.join(homeDir, ".zentara", `rules-${message.slug}`)
 				}
 
 				// Check if the rules folder exists
@@ -2141,7 +2141,7 @@ export const webviewMessageHandler = async (
 			provider.postMessageToWebview({ type: "action", action: "cloudButtonClicked" })
 			break
 		}
-		case "rooCloudSignIn": {
+		case "zentaraCloudSignIn": {
 			try {
 				TelemetryService.instance.captureEvent(TelemetryEventName.AUTHENTICATION_INITIATED)
 				if (CloudService.instance) {
@@ -2155,7 +2155,7 @@ export const webviewMessageHandler = async (
 
 			break
 		}
-		case "rooCloudSignOut": {
+		case "zentaraCloudSignOut": {
 			try {
 				if (CloudService.instance) {
 					await CloudService.instance.dispose()
@@ -2665,7 +2665,7 @@ export const webviewMessageHandler = async (
 				// Determine the commands directory based on source
 				let commandsDir: string
 				if (source === "global") {
-					const globalConfigDir = path.join(os.homedir(), ".roo")
+					const globalConfigDir = path.join(os.homedir(), ".zentara")
 					commandsDir = path.join(globalConfigDir, "commands")
 				} else {
 					// Project commands
@@ -2674,7 +2674,7 @@ export const webviewMessageHandler = async (
 						vscode.window.showErrorMessage(t("common:errors.no_workspace_for_project_command"))
 						break
 					}
-					commandsDir = path.join(workspaceRoot, ".roo", "commands")
+					commandsDir = path.join(workspaceRoot, ".zentara", "commands")
 				}
 
 				// Ensure the commands directory exists

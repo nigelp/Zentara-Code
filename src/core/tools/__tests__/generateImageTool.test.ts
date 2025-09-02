@@ -34,10 +34,10 @@ describe("generateImageTool", () => {
 			recordToolUsage: vi.fn(),
 			sayAndCreateMissingParamError: vi.fn().mockResolvedValue("Missing parameter error"),
 			say: vi.fn(),
-			rooIgnoreController: {
+			zentaraIgnoreController: {
 				validateAccess: vi.fn().mockReturnValue(true),
 			},
-			rooProtectedController: {
+			zentaraProtectedController: {
 				isWriteProtected: vi.fn().mockReturnValue(false),
 			},
 			providerRef: {

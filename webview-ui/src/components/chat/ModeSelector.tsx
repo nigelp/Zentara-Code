@@ -2,16 +2,16 @@ import React from "react"
 import { Fzf } from "fzf"
 import { ChevronUp, Check, X } from "lucide-react"
 
-import { type ModeConfig, type CustomModePrompts, TelemetryEventName } from "@roo-code/types"
+import { type ModeConfig, type CustomModePrompts, TelemetryEventName } from "@zentara-code/types"
 
-import { type Mode, getAllModes } from "@roo/modes"
+import { type Mode, getAllModes } from "@zentara/modes"
 
 import { vscode } from "@/utils/vscode"
 import { telemetryClient } from "@/utils/TelemetryClient"
 import { cn } from "@/lib/utils"
 import { useExtensionState } from "@/context/ExtensionStateContext"
 import { useAppTranslation } from "@/i18n/TranslationContext"
-import { useRooPortal } from "@/components/ui/hooks/useRooPortal"
+import { useZentaraPortal } from "@/components/ui/hooks/useZentaraPortal"
 import { Popover, PopoverContent, PopoverTrigger, StandardTooltip } from "@/components/ui"
 
 import { IconButton } from "./IconButton"
@@ -44,7 +44,7 @@ export const ModeSelector = ({
 	const [open, setOpen] = React.useState(false)
 	const [searchValue, setSearchValue] = React.useState("")
 	const searchInputRef = React.useRef<HTMLInputElement>(null)
-	const portalContainer = useRooPortal("roo-portal")
+	const portalContainer = useZentaraPortal("zentara-portal")
 	const { hasOpenedModeSelector, setHasOpenedModeSelector } = useExtensionState()
 	const { t } = useAppTranslation()
 

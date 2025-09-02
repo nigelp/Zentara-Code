@@ -74,11 +74,11 @@ export async function simpleReadFileTool(
 	const fullPath = path.resolve(cline.cwd, relPath)
 
 	try {
-		// Check RooIgnore validation
-		const accessAllowed = cline.rooIgnoreController?.validateAccess(relPath)
+		// Check ZentaraIgnore validation
+		const accessAllowed = cline.zentaraIgnoreController?.validateAccess(relPath)
 		if (!accessAllowed) {
-			await cline.say("rooignore_error", relPath)
-			const errorMsg = formatResponse.rooIgnoreError(relPath)
+			await cline.say("zentaraignore_error", relPath)
+			const errorMsg = formatResponse.zentaraIgnoreError(relPath)
 			pushToolResult(`<file><path>${relPath}</path><error>${errorMsg}</error></file>`)
 			return
 		}
@@ -202,7 +202,7 @@ export async function simpleReadFileTool(
 		// Handle definitions-only mode
 		if (maxReadFileLine === 0) {
 			try {
-				const defResult = await parseSourceCodeDefinitionsForFile(fullPath, cline.rooIgnoreController)
+				const defResult = await parseSourceCodeDefinitionsForFile(fullPath, cline.zentaraIgnoreController)
 				if (defResult) {
 					let xmlInfo = `<notice>Showing only definitions. Use standard read_file if you need to read actual content</notice>\n`
 					pushToolResult(
@@ -228,7 +228,7 @@ export async function simpleReadFileTool(
 			let xmlInfo = `<content${lineRangeAttr}>\n${content}</content>\n`
 
 			try {
-				const defResult = await parseSourceCodeDefinitionsForFile(fullPath, cline.rooIgnoreController)
+				const defResult = await parseSourceCodeDefinitionsForFile(fullPath, cline.zentaraIgnoreController)
 				if (defResult) {
 					xmlInfo += `<list_code_definition_names>${defResult}</list_code_definition_names>\n`
 				}

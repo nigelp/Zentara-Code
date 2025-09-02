@@ -6,13 +6,13 @@ import {
 	type ExtensionInstance,
 	type ExtensionBridgeCommand,
 	type ExtensionBridgeEvent,
-	RooCodeEventName,
+	ZentaraCodeEventName,
 	TaskStatus,
 	ExtensionBridgeCommandName,
 	ExtensionBridgeEventName,
 	ExtensionSocketEvents,
 	HEARTBEAT_INTERVAL_MS,
-} from "@roo-code/types"
+} from "@zentara-code/types"
 
 import { BaseChannel } from "./BaseChannel.js"
 
@@ -29,7 +29,7 @@ export class ExtensionChannel extends BaseChannel<
 	private provider: TaskProviderLike
 	private extensionInstance: ExtensionInstance
 	private heartbeatInterval: NodeJS.Timeout | null = null
-	private eventListeners: Map<RooCodeEventName, (...args: unknown[]) => void> = new Map()
+	private eventListeners: Map<ZentaraCodeEventName, (...args: unknown[]) => void> = new Map()
 
 	constructor(instanceId: string, userId: string, provider: TaskProviderLike) {
 		super(instanceId)
@@ -165,16 +165,16 @@ export class ExtensionChannel extends BaseChannel<
 
 	private setupListeners(): void {
 		const eventMapping = [
-			{ from: RooCodeEventName.TaskCreated, to: ExtensionBridgeEventName.TaskCreated },
-			{ from: RooCodeEventName.TaskStarted, to: ExtensionBridgeEventName.TaskStarted },
-			{ from: RooCodeEventName.TaskCompleted, to: ExtensionBridgeEventName.TaskCompleted },
-			{ from: RooCodeEventName.TaskAborted, to: ExtensionBridgeEventName.TaskAborted },
-			{ from: RooCodeEventName.TaskFocused, to: ExtensionBridgeEventName.TaskFocused },
-			{ from: RooCodeEventName.TaskUnfocused, to: ExtensionBridgeEventName.TaskUnfocused },
-			{ from: RooCodeEventName.TaskActive, to: ExtensionBridgeEventName.TaskActive },
-			{ from: RooCodeEventName.TaskInteractive, to: ExtensionBridgeEventName.TaskInteractive },
-			{ from: RooCodeEventName.TaskResumable, to: ExtensionBridgeEventName.TaskResumable },
-			{ from: RooCodeEventName.TaskIdle, to: ExtensionBridgeEventName.TaskIdle },
+			{ from: ZentaraCodeEventName.TaskCreated, to: ExtensionBridgeEventName.TaskCreated },
+			{ from: ZentaraCodeEventName.TaskStarted, to: ExtensionBridgeEventName.TaskStarted },
+			{ from: ZentaraCodeEventName.TaskCompleted, to: ExtensionBridgeEventName.TaskCompleted },
+			{ from: ZentaraCodeEventName.TaskAborted, to: ExtensionBridgeEventName.TaskAborted },
+			{ from: ZentaraCodeEventName.TaskFocused, to: ExtensionBridgeEventName.TaskFocused },
+			{ from: ZentaraCodeEventName.TaskUnfocused, to: ExtensionBridgeEventName.TaskUnfocused },
+			{ from: ZentaraCodeEventName.TaskActive, to: ExtensionBridgeEventName.TaskActive },
+			{ from: ZentaraCodeEventName.TaskInteractive, to: ExtensionBridgeEventName.TaskInteractive },
+			{ from: ZentaraCodeEventName.TaskResumable, to: ExtensionBridgeEventName.TaskResumable },
+			{ from: ZentaraCodeEventName.TaskIdle, to: ExtensionBridgeEventName.TaskIdle },
 		] as const
 
 		eventMapping.forEach(({ from, to }) => {

@@ -52,8 +52,8 @@ export const mockExtensionContext: ExtensionContext = {
 	extension: {
 		packageJSON: {
 			version: "1.0.0",
-			publisher: "RooVeterinaryInc",
-			name: "roo-cline",
+			publisher: "ZentaraVeterinaryInc",
+			name: "zentara-cline",
 		},
 	},
 }

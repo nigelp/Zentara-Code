@@ -1,7 +1,7 @@
 import { z } from "zod"
 
-import { RooCodeEventName } from "./events.js"
-import type { RooCodeSettings } from "./global-settings.js"
+import { ZentaraCodeEventName } from "./events.js"
+import type { ZentaraCodeSettings } from "./global-settings.js"
 import type { ClineMessage, TokenUsage } from "./message.js"
 import type { ToolUsage, ToolName } from "./tool.js"
 import type { StaticAppProperties, GitProperties, TelemetryProperties } from "./telemetry.js"
@@ -20,7 +20,7 @@ export interface TaskProviderLike {
 		parentTask?: TaskLike,
 		options?: CreateTaskOptions,
 		is_parallel?: boolean,
-		configuration?: RooCodeSettings,
+		configuration?: ZentaraCodeSettings,
 	): Promise<TaskLike>
 	cancelTask(): Promise<void>
 
@@ -56,21 +56,21 @@ export interface TaskProviderLike {
 }
 
 export type TaskProviderEvents = {
-	[RooCodeEventName.TaskCreated]: [task: TaskLike]
+	[ZentaraCodeEventName.TaskCreated]: [task: TaskLike]
 
 	// Proxied from the Task EventEmitter.
-	[RooCodeEventName.TaskStarted]: [taskId: string]
-	[RooCodeEventName.TaskCompleted]: [taskId: string, tokenUsage: TokenUsage, toolUsage: ToolUsage]
-	[RooCodeEventName.TaskAborted]: [taskId: string]
-	[RooCodeEventName.TaskFocused]: [taskId: string]
-	[RooCodeEventName.TaskUnfocused]: [taskId: string]
-	[RooCodeEventName.TaskActive]: [taskId: string]
-	[RooCodeEventName.TaskInteractive]: [taskId: string]
-	[RooCodeEventName.TaskResumable]: [taskId: string]
-	[RooCodeEventName.TaskIdle]: [taskId: string]
-	[RooCodeEventName.TaskSpawned]: [taskId: string]
-	[RooCodeEventName.ModeChanged]: [mode: string]
-	[RooCodeEventName.ProviderProfileChanged]: [config: { name: string; provider?: string }]
+	[ZentaraCodeEventName.TaskStarted]: [taskId: string]
+	[ZentaraCodeEventName.TaskCompleted]: [taskId: string, tokenUsage: TokenUsage, toolUsage: ToolUsage]
+	[ZentaraCodeEventName.TaskAborted]: [taskId: string]
+	[ZentaraCodeEventName.TaskFocused]: [taskId: string]
+	[ZentaraCodeEventName.TaskUnfocused]: [taskId: string]
+	[ZentaraCodeEventName.TaskActive]: [taskId: string]
+	[ZentaraCodeEventName.TaskInteractive]: [taskId: string]
+	[ZentaraCodeEventName.TaskResumable]: [taskId: string]
+	[ZentaraCodeEventName.TaskIdle]: [taskId: string]
+	[ZentaraCodeEventName.TaskSpawned]: [taskId: string]
+	[ZentaraCodeEventName.ModeChanged]: [mode: string]
+	[ZentaraCodeEventName.ProviderProfileChanged]: [config: { name: string; provider?: string }]
 }
 
 /**
@@ -120,29 +120,29 @@ export interface TaskLike {
 
 export type TaskEvents = {
 	// Task Lifecycle
-	[RooCodeEventName.TaskStarted]: []
-	[RooCodeEventName.TaskCompleted]: [taskId: string, tokenUsage: TokenUsage, toolUsage: ToolUsage]
-	[RooCodeEventName.TaskAborted]: []
-	[RooCodeEventName.TaskFocused]: []
-	[RooCodeEventName.TaskUnfocused]: []
-	[RooCodeEventName.TaskActive]: [taskId: string]
-	[RooCodeEventName.TaskInteractive]: [taskId: string]
-	[RooCodeEventName.TaskResumable]: [taskId: string]
-	[RooCodeEventName.TaskIdle]: [taskId: string]
+	[ZentaraCodeEventName.TaskStarted]: []
+	[ZentaraCodeEventName.TaskCompleted]: [taskId: string, tokenUsage: TokenUsage, toolUsage: ToolUsage]
+	[ZentaraCodeEventName.TaskAborted]: []
+	[ZentaraCodeEventName.TaskFocused]: []
+	[ZentaraCodeEventName.TaskUnfocused]: []
+	[ZentaraCodeEventName.TaskActive]: [taskId: string]
+	[ZentaraCodeEventName.TaskInteractive]: [taskId: string]
+	[ZentaraCodeEventName.TaskResumable]: [taskId: string]
+	[ZentaraCodeEventName.TaskIdle]: [taskId: string]
 
 	// Subtask Lifecycle
-	[RooCodeEventName.TaskPaused]: []
-	[RooCodeEventName.TaskUnpaused]: []
-	[RooCodeEventName.TaskSpawned]: [taskId: string]
+	[ZentaraCodeEventName.TaskPaused]: []
+	[ZentaraCodeEventName.TaskUnpaused]: []
+	[ZentaraCodeEventName.TaskSpawned]: [taskId: string]
 
 	// Task Execution
-	[RooCodeEventName.Message]: [{ action: "created" | "updated"; message: ClineMessage }]
-	[RooCodeEventName.TaskModeSwitched]: [taskId: string, mode: string]
-	[RooCodeEventName.TaskAskResponded]: []
+	[ZentaraCodeEventName.Message]: [{ action: "created" | "updated"; message: ClineMessage }]
+	[ZentaraCodeEventName.TaskModeSwitched]: [taskId: string, mode: string]
+	[ZentaraCodeEventName.TaskAskResponded]: []
 
 	// Task Analytics
-	[RooCodeEventName.TaskToolFailed]: [taskId: string, tool: ToolName, error: string]
-	[RooCodeEventName.TaskTokenUsageUpdated]: [taskId: string, tokenUsage: TokenUsage]
+	[ZentaraCodeEventName.TaskToolFailed]: [taskId: string, tool: ToolName, error: string]
+	[ZentaraCodeEventName.TaskTokenUsageUpdated]: [taskId: string, tokenUsage: TokenUsage]
 	
 	// Task Disposal (special case - uses string literal)
 	disposed: []

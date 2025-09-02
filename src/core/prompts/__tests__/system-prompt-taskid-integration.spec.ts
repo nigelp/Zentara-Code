@@ -9,7 +9,7 @@ import {
 	getOptimizedToolDescriptionsForMode,
 	trackToolUsage,
 	clearAllCaches,
-} from "../../../roo_tool_prompt_management/tool-optimization-integration"
+} from "../../../zentara_tool_prompt_management/tool-optimization-integration"
 
 // Mock vscode and other dependencies
 vi.mock("os", () => ({
@@ -112,7 +112,7 @@ describe("System Prompt Task ID Integration", () => {
 			{}, // experiments
 			true, // enableMcpServerCreation
 			undefined, // language
-			undefined, // rooIgnoreInstructions
+			undefined, // zentaraIgnoreInstructions
 			false, // partialReadsEnabled
 			defaultSettings, // settings
 			false, // subagent
@@ -140,7 +140,7 @@ describe("System Prompt Task ID Integration", () => {
 			{}, // experiments
 			true, // enableMcpServerCreation
 			undefined, // language
-			undefined, // rooIgnoreInstructions
+			undefined, // zentaraIgnoreInstructions
 			false, // partialReadsEnabled
 			defaultSettings, // settings
 			false, // subagent

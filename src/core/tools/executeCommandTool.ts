@@ -4,15 +4,15 @@ import * as vscode from "vscode"
 
 import delay from "delay"
 
-import { CommandExecutionStatus, DEFAULT_TERMINAL_OUTPUT_CHARACTER_LIMIT } from "@roo-code/types"
-import { TelemetryService } from "@roo-code/telemetry"
+import { CommandExecutionStatus, DEFAULT_TERMINAL_OUTPUT_CHARACTER_LIMIT } from "@zentara-code/types"
+import { TelemetryService } from "@zentara-code/telemetry"
 
 import { Task } from "../task/Task"
 
 import { ToolUse, AskApproval, HandleError, PushToolResult, RemoveClosingTag, ToolResponse } from "../../shared/tools"
 import { formatResponse } from "../prompts/responses"
 import { unescapeHtmlEntities } from "../../utils/text-normalization"
-import { ExitCodeDetails, RooTerminalCallbacks, RooTerminalProcess } from "../../integrations/terminal/types"
+import { ExitCodeDetails, ZentaraTerminalCallbacks, ZentaraTerminalProcess } from "../../integrations/terminal/types"
 import { TerminalRegistry } from "../../integrations/terminal/TerminalRegistry"
 import { Terminal } from "../../integrations/terminal/Terminal"
 import { Package } from "../../shared/package"
@@ -43,11 +43,11 @@ export async function executeCommandTool(
 				return
 			}
 
-			const ignoredFileAttemptedToAccess = task.rooIgnoreController?.validateCommand(command)
+			const ignoredFileAttemptedToAccess = task.zentaraIgnoreController?.validateCommand(command)
 
 			if (ignoredFileAttemptedToAccess) {
-				await task.say("rooignore_error", ignoredFileAttemptedToAccess)
-				pushToolResult(formatResponse.toolError(formatResponse.rooIgnoreError(ignoredFileAttemptedToAccess)))
+				await task.say("zentaraignore_error", ignoredFileAttemptedToAccess)
+				pushToolResult(formatResponse.toolError(formatResponse.zentaraIgnoreError(ignoredFileAttemptedToAccess)))
 				return
 			}
 
@@ -184,8 +184,8 @@ export async function executeCommand(
 	const provider = await task.providerRef.deref()
 
 	let accumulatedOutput = ""
-	const callbacks: RooTerminalCallbacks = {
-		onLine: async (lines: string, process: RooTerminalProcess) => {
+	const callbacks: ZentaraTerminalCallbacks = {
+		onLine: async (lines: string, process: ZentaraTerminalProcess) => {
 			accumulatedOutput += lines
 			const compressedOutput = Terminal.compressTerminalOutput(
 				accumulatedOutput,

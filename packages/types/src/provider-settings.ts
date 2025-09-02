@@ -19,7 +19,7 @@ import {
 	moonshotModels,
 	openAiNativeModels,
 	qwenCodeModels,
-	rooModels,
+	zentaraModels,
 	sambaNovaModels,
 	vertexModels,
 	vscodeLlmModels,
@@ -67,7 +67,7 @@ export const providerNames = [
 	"fireworks",
 	"featherless",
 	"io-intelligence",
-	"roo",
+	"zentara",
 	"vercel-ai-gateway",
 ] as const
 
@@ -335,7 +335,7 @@ const qwenCodeSchema = apiModelIdProviderModelSchema.extend({
 	qwenCodeOauthPath: z.string().optional(),
 })
 
-const rooSchema = apiModelIdProviderModelSchema.extend({
+const zentaraSchema = apiModelIdProviderModelSchema.extend({
 	// No additional fields needed - uses cloud authentication
 })
 
@@ -384,7 +384,7 @@ export const providerSettingsSchemaDiscriminated = z.discriminatedUnion("apiProv
 	featherlessSchema.merge(z.object({ apiProvider: z.literal("featherless") })),
 	ioIntelligenceSchema.merge(z.object({ apiProvider: z.literal("io-intelligence") })),
 	qwenCodeSchema.merge(z.object({ apiProvider: z.literal("qwen-code") })),
-	rooSchema.merge(z.object({ apiProvider: z.literal("roo") })),
+	zentaraSchema.merge(z.object({ apiProvider: z.literal("zentara") })),
 	vercelAiGatewaySchema.merge(z.object({ apiProvider: z.literal("vercel-ai-gateway") })),
 	defaultSchema,
 ])
@@ -426,7 +426,7 @@ export const providerSettingsSchema = z.object({
 	...featherlessSchema.shape,
 	...ioIntelligenceSchema.shape,
 	...qwenCodeSchema.shape,
-	...rooSchema.shape,
+	...zentaraSchema.shape,
 	...vercelAiGatewaySchema.shape,
 	...codebaseIndexProviderSchema.shape,
 })
@@ -555,7 +555,7 @@ export const MODELS_BY_PROVIDER: Record<
 		models: Object.keys(openAiNativeModels),
 	},
 	"qwen-code": { id: "qwen-code", label: "Qwen Code", models: Object.keys(qwenCodeModels) },
-	roo: { id: "roo", label: "Roo", models: Object.keys(rooModels) },
+	zentara: { id: "zentara", label: "Zentara", models: Object.keys(zentaraModels) },
 	sambanova: {
 		id: "sambanova",
 		label: "SambaNova",

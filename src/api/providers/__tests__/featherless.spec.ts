@@ -8,7 +8,7 @@ import {
 	featherlessDefaultModelId,
 	featherlessModels,
 	DEEP_SEEK_DEFAULT_TEMPERATURE,
-} from "@roo-code/types"
+} from "@zentara-code/types"
 
 import { FeatherlessHandler } from "../featherless"
 

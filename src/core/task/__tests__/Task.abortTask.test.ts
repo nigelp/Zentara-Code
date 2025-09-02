@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest"
 import { EventEmitter } from "events"
 import { Task } from "../Task"
-import { RooCodeEventName } from "@roo-code/types"
+import { ZentaraCodeEventName } from "@zentara-code/types"
 
 // Mock VS Code API
 vi.mock("vscode", () => ({
@@ -181,7 +181,7 @@ describe("Task - abortTask improvements", () => {
 
 			await task.abortTask()
 
-			expect(emitSpy).toHaveBeenCalledWith(RooCodeEventName.TaskAborted)
+			expect(emitSpy).toHaveBeenCalledWith(ZentaraCodeEventName.TaskAborted)
 		})
 
 		it("should handle event emission errors gracefully", async () => {

@@ -1,7 +1,7 @@
 import React, { useState } from "react"
 import { Plus, Globe, Folder, Settings } from "lucide-react"
 
-import type { Command } from "@roo/ExtensionMessage"
+import type { Command } from "@zentara/ExtensionMessage"
 
 import { useAppTranslation } from "@/i18n/TranslationContext"
 import { useExtensionState } from "@/context/ExtensionStateContext"

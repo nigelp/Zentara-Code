@@ -1,5 +1,5 @@
-import { discoverAgents, createAgentLoadingContext } from '../../../roo_subagent/src/agentDiscovery'
-import type { AgentDiscoveryResult } from '@roo-code/types'
+import { discoverAgents, createAgentLoadingContext } from '../../../zentara_subagent/src/agentDiscovery'
+import type { AgentDiscoveryResult } from '@zentara-code/types'
 
 /**
  * Formats the list of available predefined agents from discovered agents data.

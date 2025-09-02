@@ -3,33 +3,33 @@ import * as path from "path"
 describe("custom-instructions path detection", () => {
 	it("should use exact path comparison instead of string includes", () => {
 		// Test the logic that our fix implements
-		const fakeHomeDir = "/Users/john.roo.smith"
-		const globalRooDir = path.join(fakeHomeDir, ".roo") // "/Users/john.roo.smith/.roo"
-		const projectRooDir = "/projects/my-project/.roo"
+		const fakeHomeDir = "/Users/john.zentara.smith"
+		const globalZentaraDir = path.join(fakeHomeDir, ".zentara") // "/Users/john.zentara.smith/.zentara"
+		const projectZentaraDir = "/projects/my-project/.zentara"
 
 		// Old implementation (fragile):
-		// const isGlobal = rooDir.includes(path.join(os.homedir(), ".roo"))
-		// This could fail if the home directory path contains ".roo" elsewhere
+		// const isGlobal = zentaraDir.includes(path.join(os.homedir(), ".zentara"))
+		// This could fail if the home directory path contains ".zentara" elsewhere
 
 		// New implementation (robust):
-		// const isGlobal = path.resolve(rooDir) === path.resolve(getGlobalRooDirectory())
+		// const isGlobal = path.resolve(zentaraDir) === path.resolve(getGlobalZentaraDirectory())
 
 		// Test the new logic
-		const isGlobalForGlobalDir = path.resolve(globalRooDir) === path.resolve(globalRooDir)
-		const isGlobalForProjectDir = path.resolve(projectRooDir) === path.resolve(globalRooDir)
+		const isGlobalForGlobalDir = path.resolve(globalZentaraDir) === path.resolve(globalZentaraDir)
+		const isGlobalForProjectDir = path.resolve(projectZentaraDir) === path.resolve(globalZentaraDir)
 
 		expect(isGlobalForGlobalDir).toBe(true)
 		expect(isGlobalForProjectDir).toBe(false)
 
 		// Verify that the old implementation would have been problematic
-		// if the home directory contained ".roo" in the path
-		const oldLogicGlobal = globalRooDir.includes(path.join(fakeHomeDir, ".roo"))
-		const oldLogicProject = projectRooDir.includes(path.join(fakeHomeDir, ".roo"))
+		// if the home directory contained ".zentara" in the path
+		const oldLogicGlobal = globalZentaraDir.includes(path.join(fakeHomeDir, ".zentara"))
+		const oldLogicProject = projectZentaraDir.includes(path.join(fakeHomeDir, ".zentara"))
 
 		expect(oldLogicGlobal).toBe(true) // This works
 		expect(oldLogicProject).toBe(false) // This also works, but is fragile
 
-		// The issue was that if the home directory path itself contained ".roo",
+		// The issue was that if the home directory path itself contained ".zentara",
 		// the includes() check could produce false positives in edge cases
 	})
 
@@ -37,18 +37,18 @@ describe("custom-instructions path detection", () => {
 		// Test various edge cases that exact path comparison handles better
 		const testCases = [
 			{
-				global: "/Users/test/.roo",
-				project: "/Users/test/project/.roo",
+				global: "/Users/test/.zentara",
+				project: "/Users/test/project/.zentara",
 				expected: { global: true, project: false },
 			},
 			{
-				global: "/home/user/.roo",
-				project: "/home/user/.roo", // Same directory
+				global: "/home/user/.zentara",
+				project: "/home/user/.zentara", // Same directory
 				expected: { global: true, project: true },
 			},
 			{
-				global: "/Users/john.roo.smith/.roo",
-				project: "/projects/app/.roo",
+				global: "/Users/john.zentara.smith/.zentara",
+				project: "/projects/app/.zentara",
 				expected: { global: true, project: false },
 			},
 		]

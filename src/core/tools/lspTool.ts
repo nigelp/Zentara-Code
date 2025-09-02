@@ -4,7 +4,7 @@ import { formatResponse } from "../prompts/responses"
 import { ClineSayTool } from "../../shared/ExtensionMessage"
 import { lspController } from "../../zentara_lsp"
 import { validateLspOperationArgs } from "./lspToolValidation"
-import { outputChannel } from "../../roo_debug/src/vscodeUtils"
+import { outputChannel } from "../../zentara_debug/src/vscodeUtils"
 import {
 	waitForLanguageServer,
 	waitForWorkspaceLanguageServers,
@@ -263,7 +263,7 @@ export async function lspTool(
 								const relPath = path.relative(cline.cwd, uri.fsPath)
 								
 								// Track file edit operation
-								await cline.fileContextTracker.trackFileContext(relPath, "roo_edited" as RecordSource)
+								await cline.fileContextTracker.trackFileContext(relPath, "zentara_edited" as RecordSource)
 								cline.didEditFile = true
 								
 								// Get diagnostics before the modification (for comparison)
