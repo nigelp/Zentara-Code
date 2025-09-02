@@ -13,6 +13,38 @@ import * as vscode from "vscode"
 import { RecordSource } from "../context-tracking/FileContextTrackerTypes"
 import * as path from "path"
 
+// Default timeout for LSP operations (30 seconds)
+const DEFAULT_LSP_TIMEOUT = 30000
+
+/**
+ * Creates a timeout wrapper for LSP operations
+ * @param operation The LSP operation to execute
+ * @param timeoutMs Timeout in milliseconds (default: 30 seconds)
+ * @param operationName Name of the operation for error messages
+ * @returns Promise that resolves with the operation result or rejects with timeout
+ */
+function withTimeout<T>(
+	operation: Promise<T>,
+	timeoutMs: number = DEFAULT_LSP_TIMEOUT,
+	operationName: string
+): Promise<T> {
+	return new Promise((resolve, reject) => {
+		const timeoutId = setTimeout(() => {
+			reject(new Error(`LSP operation '${operationName}' timeout after ${timeoutMs / 1000}s, please try non-LSP tool to achieve the same goal`))
+		}, timeoutMs)
+
+		operation
+			.then((result) => {
+				clearTimeout(timeoutId)
+				resolve(result)
+			})
+			.catch((error) => {
+				clearTimeout(timeoutId)
+				reject(error)
+			})
+	})
+}
+
 // Type for the operation map values
 type LspOperationFn = (args?: any) => Promise<any>
 
@@ -216,12 +248,17 @@ export async function lspTool(
 
 				let rawResult: any = null
 				try {
-					rawResult = await targetMethod(transformedArgs)
+					// Wrap the LSP operation with timeout
+					rawResult = await withTimeout(
+						targetMethod(transformedArgs),
+						DEFAULT_LSP_TIMEOUT,
+						lsp_operation
+					)
 				} catch (error) {
 					outputChannel.appendLine(`[LSP Tool] Error executing operation '${lsp_operation}': ${error}`)
 					pushToolResult(
 						formatResponse.toolError(
-							`LSP operation '${lsp_operation}' failed. Details: ${JSON.stringify(error, null, 2)}`,
+							`LSP operation '${lsp_operation}' failed. Details: ${(error as Error).message}`,
 						),
 					)
 					return
