@@ -364,8 +364,8 @@
 		"ariaLabel": "Version {{version}} - Click to view release notes"
 	},
 	"zentaraCloudCTA": {
-		"title": "Zentara Code Cloud is evolving!",
-		"description": "Run Zentaramote agents in the cloud, access your tasks from anywhere, collaborate with others, and more.",
+		"title": "Zentara Code  is evolving!",
+		"description": "Run Zentara Code agents in parallel, using predefined workflow",
 		"joinWaitlist": "Sign up to get the latest updates."
 	},
 	"command": {

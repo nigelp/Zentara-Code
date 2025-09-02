@@ -1,6 +1,6 @@
 {
 	"greeting": "Welcome to Zentara Code!",
-	"introduction": "With a range of built-in and extensible Modes, Zentara Code lets you plan, architect, code, debug and boost your productivity like never before.",
+	"introduction": "Zentara Code lets you code, launch parallel agents, leverage LSP tools like professional developers, and perform AI runtime debugging including setting breakpoints, inspecting stack traces, and examining runtime variables.",
 	"notice": "To get started, this extension needs an API provider.",
 	"start": "Let's go!",
 	"routers": {
