@@ -278,10 +278,10 @@
 	},
 	"announcement": {
 		"title": "🎉 Zentara Code {{version}} Released",
-		"description": "Zentara Code {{version}} , the first comprehensive open-source runtime debugging AI coder, is now available! This release introduces several powerful features to enhance your coding experience.",
+		"description": "Zentara Code {{version}} delivers three breakthrough capabilities: <bold>Parallel subagents</bold> for high-throughput task execution with strict scope separation, <bold>LSP tools</bold> for semantic code intelligence and workspace-wide symbol discovery, and <bold>Runtime debugging</bold> with integrated session management and state inspection.",
 		"stealthModel": {
-			"feature": "The Sonic stealth model is now <bold>Grok Code Fast</bold>! This high-performance reasoning model is available as <code>grok-code-fast-1</code> under the <bold>xAI (Grok)</bold> provider.",
-			"note": "As a thank you for all the helpful feedback on Sonic, xAI is extending free access to <code>grok-code-fast-1</code> for another week through the <bold>Zentara Code Cloud</bold> provider.",
+			"feature": "Experience unprecedented coding efficiency with independent workers running simultaneously, 25+ LSP operations for precise code understanding, and complete debug session control from within your tasks.",
+			"note": "These features work together to provide speed, safety, and correctness through parallel execution, semantic analysis, and integrated validation.",
 			"connectButton": "Connect to Zentara Code Cloud",
 			"selectModel": "Visit <settingsLink>Settings</settingsLink> to update your provider configuration."
 		}
