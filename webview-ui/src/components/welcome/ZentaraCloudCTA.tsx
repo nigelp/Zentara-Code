@@ -13,7 +13,7 @@ export function ZentaraCloudCTA() {
 					<span>{t("zentaraCloudCTA.description")}</span>
 				</p>
 				<p>
-					<a href="https://zentaracode.com/cloud-waitlist">{t("zentaraCloudCTA.joinWaitlist")}</a>
+					<a href="https://zentar.ai/#signup">{t("zentaraCloudCTA.joinWaitlist")}</a>
 				</p>
 			</div>
 		</div>

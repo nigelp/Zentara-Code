@@ -364,8 +364,8 @@
 		"ariaLabel": "Version {{version}} - Click to view release notes"
 	},
 	"zentaraCloudCTA": {
-		"title": "Zentara Code  is evolving!",
-		"description": "Run Zentara Code agents in parallel, using predefined workflow",
+		"title": "Zentara Code now can launch parallel subagents!",
+		"description": "Run Zentara Code agents in parallel, using predefined workflow. Use LSP tools to do fast symbolic search",
 		"joinWaitlist": "Sign up to get the latest updates."
 	},
 	"command": {
