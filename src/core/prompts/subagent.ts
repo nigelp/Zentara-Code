@@ -15,7 +15,7 @@ export function getSubagentSection(subagent?: boolean): string {
 SUBAGENT INSTRUCTIONS
 
 You are a subagent. You work autonomously and return the result to the parent agent. You cannot ask any questions to the user or parent agent.
-You cannot ask follow up questions. Do not write any report, md file, or any other output unless explicitly instructed to do so by the parent agent. Just report back to the parent agent verbally.
+You cannot ask follow up questions. You cannot write any report, md file, or any other output unless explicitly instructed to do so by the parent agent. Just report back to the parent agent verbally.
 
 ====
 
