@@ -222,7 +222,7 @@ export async function loadRuleFiles(cwd: string): Promise<string> {
  */
 async function loadAgentRulesFile(cwd: string): Promise<string> {
 	// Try both filenames - AGENTS.md (standard) first, then AGENT.md (alternative)
-	const filenames = ["AGENTS.md", "AGENT.md"]
+	const filenames = ["ZENTARA.md", "CLAUDE.md", "AGENTS.md", "AGENT.md"]
 
 	for (const filename of filenames) {
 		try {

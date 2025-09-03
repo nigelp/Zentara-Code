@@ -250,9 +250,9 @@ export const SYSTEM_PROMPT = async (
 		// For file-based prompts, don't include the tool sections
 		return `${roleDefinition}
 
-${fileCustomSystemPrompt}
+				${fileCustomSystemPrompt}
 
-${customInstructions}`
+				${customInstructions}`
 	}
 
 	// If diff is disabled, don't pass the diffStrategy
