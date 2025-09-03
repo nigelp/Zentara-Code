@@ -101,7 +101,7 @@ All parameters are provided as key-value pairs within a single JSON object, whic
 -   "include_kinds" (array of numbers, optional): List of LSP symbol kind integers to include. Common values: [5] for Class, [12] for Function, [6] for Method, [13] for Variable. Only symbols of these kinds will be returned.
 -   "exclude_kinds" (array of numbers, optional): List of LSP symbol kind integers to exclude. Useful for filtering out unwanted symbol types from broad searches.
 -   "substring_matching" (boolean, optional): If true, use substring matching for the last segment of 'name_path'. "get" would match "getUserById", "getConfig", etc. Default is false (exact matching).
--   "max_answer_chars" (number, optional): Maximum characters for the JSON result. Use to limit response size when dealing with large symbol sets. Default is unlimited.
+-   "max_answer_chars" (number, optional): Maximum characters for the JSON result. Use to limit response size when dealing with large symbol sets. Default is 10000. If results exceed this limit, they will be truncated with a message indicating how to adjust the output length.
 -   "case_sensitive" (boolean, optional): If false, then all symbols are matched regardless by case. Default: false.
 
 ### Symbol Kind Reference:

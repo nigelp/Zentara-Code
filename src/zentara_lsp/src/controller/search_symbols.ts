@@ -88,7 +88,7 @@ export async function getSymbols(params: GetSymbolsParams): Promise<{ success: f
 		include_kinds = undefined,
 		exclude_kinds = undefined,
 		substring_matching = false, 
-		max_answer_chars = undefined,
+		max_answer_chars = 10000, // Default to 10000 characters
 		case_sensitive = false 
 	} = params
 
@@ -231,13 +231,19 @@ export async function getSymbols(params: GetSymbolsParams): Promise<{ success: f
 	console.log(`[get_symbols] Filtered symbols:`, filteredSymbols.map(s => ({ name: s.name, kind: s.kind, name_path: s.name_path })))
 	
 	// Format as table
-	const tableResult = formatSymbolsAsTable(filteredSymbols)
+	let tableResult = formatSymbolsAsTable(filteredSymbols)
 	console.log(`[get_symbols] Table result length: ${tableResult.length}`)
 	console.log(`[get_symbols] Table result preview:`, tableResult.substring(0, 200))
 	
-	// Check max_answer_chars limit
+	// Check max_answer_chars limit and truncate if necessary
 	if (max_answer_chars && tableResult.length > max_answer_chars) {
-		return { success: false, error: `Result too large (${tableResult.length} chars > ${max_answer_chars} limit)` }
+		const originalLength = tableResult.length
+		// Truncate the result to fit within the limit
+		tableResult = tableResult.substring(0, max_answer_chars)
+		// Add truncation message
+		const truncationMsg = `\n--truncated-- ${max_answer_chars} out of ${originalLength} characters, use max_answer_chars to adjust the output length`
+		tableResult += truncationMsg
+		console.log(`[get_symbols] Result truncated from ${originalLength} to ${max_answer_chars} chars`)
 	}
 
 	return { success: true, symbols: tableResult }
