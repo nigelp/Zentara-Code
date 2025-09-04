@@ -12,6 +12,7 @@ import {
 import * as vscode from "vscode"
 import { RecordSource } from "../context-tracking/FileContextTrackerTypes"
 import * as path from "path"
+import { checkMainAgentSearchRestriction } from "./helpers/searchToolRestrictions"
 
 // Default timeout for LSP operations (30 seconds)
 const DEFAULT_LSP_TIMEOUT = 30000
@@ -110,6 +111,13 @@ export async function lspTool(
 			cline.recordToolError(block.name as any)
 			pushToolResult(await cline.sayAndCreateMissingParamError(block.name as any, "lsp_operation"))
 			return
+		}
+
+		// Check if main agent is trying to use search_symbols
+		if (lsp_operation === "search_symbols") {
+			if (checkMainAgentSearchRestriction(cline, "search_symbols", pushToolResult)) {
+				return
+			}
 		}
 
 		// Determine content for approval prompt

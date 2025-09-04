@@ -4,6 +4,8 @@ export function getSearchFilesDescription(args: ToolArgs): string {
 	return `## search_files
 Description: Request to perform a regex search across files in a specified directory, providing context-rich results. This tool searches for patterns or specific content across multiple files, displaying each match with encapsulating context.
 
+**⚠️ IMPORTANT RESTRICTION: This tool can ONLY be used by subagents. Main agents are prohibited from using this tool directly. If you are a main agent, you MUST use the subagent tool to delegate search operations to subagents instead.**
+
 ────────────────────────  QUICK-START  ────────────────────────
 ✅ **Usage**
 1️⃣ Use the <search_files> tag.

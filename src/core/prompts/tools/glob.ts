@@ -4,6 +4,8 @@ export function getGlobDescription(args: ToolArgs): string {
 	return `## glob
 Description: Fast file pattern matching tool that finds files by their names/paths without reading their contents. This tool uses glob patterns to efficiently discover files matching specific criteria. Returns matching file paths sorted by modification time (newest first). Use this tool when you need to find files by patterns rather than searching their contents.
 
+**⚠️ IMPORTANT RESTRICTION: This tool can ONLY be used by subagents. Main agents are prohibited from using this tool directly. If you are a main agent, you MUST use the subagent tool to delegate search operations to subagents instead.**
+
 Key benefits:
 - Optimized for filename and path pattern matching
 - Returns files sorted by modification time (newest first)

@@ -6,6 +6,7 @@ import { ClineSayTool } from "../../shared/ExtensionMessage"
 import { getReadablePath } from "../../utils/path"
 import { isPathOutsideWorkspace } from "../../utils/pathUtils"
 import { regexSearchFilesAdvanced, SearchOptions } from "../../services/ripgrep"
+import { checkMainAgentSearchRestriction } from "./helpers/searchToolRestrictions"
 
 export async function searchFilesTool(
 	cline: Task,
@@ -15,6 +16,11 @@ export async function searchFilesTool(
 	pushToolResult: PushToolResult,
 	removeClosingTag: RemoveClosingTag,
 ) {
+	// Check if main agent is trying to use search tool
+	if (checkMainAgentSearchRestriction(cline, "search_files", pushToolResult)) {
+		return
+	}
+
 	// Extract parameters from block
 	const _text: string | undefined = block.params._text
 

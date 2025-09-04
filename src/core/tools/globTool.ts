@@ -8,6 +8,7 @@ import { formatResponse } from "../prompts/responses"
 import { getReadablePath } from "../../utils/path"
 import { isPathOutsideWorkspace } from "../../utils/pathUtils"
 import { ToolUse, AskApproval, HandleError, PushToolResult, RemoveClosingTag } from "../../shared/tools"
+import { checkMainAgentSearchRestriction } from "./helpers/searchToolRestrictions"
 
 /**
  * Implements the glob tool for pattern-based file discovery.
@@ -32,6 +33,11 @@ export async function globTool(
 	pushToolResult: PushToolResult,
 	removeClosingTag: RemoveClosingTag,
 ) {
+	// Check if main agent is trying to use search tool
+	if (checkMainAgentSearchRestriction(cline, "glob", pushToolResult)) {
+		return
+	}
+
 	const pattern: string | undefined = block.params.pattern
 	const relDirPath: string | undefined = block.params.path
 	const head_limit: number | undefined = block.params.head_limit !== undefined ? parseInt(block.params.head_limit, 10) : undefined
