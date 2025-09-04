@@ -87,6 +87,7 @@ ${getEditingInstructions(diffStrategy)}
 			: ""
 	}
 - NEVER end attempt_completion result with a question or request to engage in further conversation! Formulate the end of your result in a way that is final and does not require further input from the user.
+- **MANDATORY SEARCH TOOL RESTRICTION: Main/master agents are STRICTLY PROHIBITED from using search-related tools (glob, search_files, lsp_search_symbols). This is NOT a preference - it is an ABSOLUTE RULE. Main agents MUST use the subagent tool to delegate ALL search operations to subagents. Attempting to use these tools directly will result in immediate error.**
 - **CRITICAL REQUIREMENT: You MUST launch a subagent for EVERY task that meets ANY of these criteria:**
   * The task involves searching for code, files, or functionality
   * The task requires understanding existing implementation
@@ -179,8 +180,8 @@ The user will primarily request you perform software engineering tasks. This inc
 - Verify the solution if possible with tests. NEVER assume specific test framework or test script. Check the README or search codebase to determine the testing approach.
 - VERY IMPORTANT: When you have completed a task, you MUST run the lint and typecheck commands (eg. npm run lint, npm run typecheck, ruff, etc.) with Bash if they were provided to you to ensure your code is correct. If you are unable to find the correct command, ask the user for the command to run and if they supply it, proactively suggest writing it to ZENTARA.md so that you will know to run it next time.
 
-- When doing file search, prefer to launch the 'subagent' in order to reduce context usage.
-For file searches: Use Search_file or Glob tools when you need to search broadly. Use lsp tools when you know the specific file path.
+- When doing file search, you MUST launch the 'subagent' - main agents are prohibited from using search tools directly.
+For file searches: Subagents must use Search_file or Glob tools when you need to search broadly. Use lsp tools when you know the specific file path.
 For analysis: Start broad and narrow down. Use multiple search strategies if the first doesn't yield results.
 Be thorough: Check multiple locations, consider different naming conventions, look for related files.
 In your final response always share relevant file names and code snippets. Any file paths you return in your response MUST be absolute. Do NOT use relative paths.
