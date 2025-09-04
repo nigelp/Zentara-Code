@@ -30,6 +30,7 @@ import {
 	markdownFormattingSection,
 } from "./sections"
 import { getSubagentSection } from "./subagent"
+import { getMainAgentSection } from "./mainagent"
 
 // Cache for subagent descriptions by taskId
 // This ensures each task only generates the subagent description once
@@ -142,6 +143,7 @@ async function generatePrompt(
 
 ${markdownFormattingSection()}
 ${getSubagentSection(subagent)}
+${getMainAgentSection(!subagent)}
 ${getSharedToolUseSection()}
 
 ${await getOptimizedToolDescriptionsForMode(
