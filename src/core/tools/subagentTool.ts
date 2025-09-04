@@ -19,8 +19,6 @@ interface SubAgentParams {
 	_text?: string // For JSON-style parameters
 }
 
-const SUBAGENT_SYSTEM_MESSAGE =
-	"You are a subagent. You work autonomously and return the result to the parent agent. You cannot ask any questions to the user or parent agent.\nYou cannot ask follow up questions."
 
 export async function subagentTool(
 	cline: Task,
