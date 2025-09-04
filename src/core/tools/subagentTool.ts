@@ -3,6 +3,7 @@ import { Task } from "../task/Task"
 import { formatResponse } from "../prompts/responses"
 import { t } from "../../i18n"
 import { validateSubAgentParams } from "../../zentara_subagent/src/subagentValidation"
+import { getSubagentSection } from "../prompts/subagent"
 import delay from "delay"
 
 interface SubAgentParams {
@@ -135,20 +136,20 @@ export async function subagentTool(
 		for (let i = 0; i < subagentParams.length; i++) {
 			const params = subagentParams[i]
 
-			// Base task message with necessary unescaping
-			let finalMessage = params.message!.replace(/\\\\@/g, "\\@")
-
-			// If a specific agent type is specified, find and prepend its system prompt
+			// Start with subagent section at the beginning
+			let finalMessage = getSubagentSection(true)
+	
+			// Add predefined agent system prompt if specified
 			if (params.subagent_type && discovered) {
 				try {
 					// Dynamic import to get the findAgentByName function
 					const mod = await import("../../zentara_subagent/src/agentDiscovery")
 					const foundAgent = mod.findAgentByName(discovered.agents, params.subagent_type)
-
+	
 					if (foundAgent && foundAgent.systemPrompt) {
 						const systemPrompt = String(foundAgent.systemPrompt).trim()
 						if (systemPrompt.length > 0) {
-							finalMessage = `${systemPrompt}\n\n${finalMessage}`
+							finalMessage += `${systemPrompt}\n\n`
 							console.log(`[SubagentTool] Using predefined agent '${params.subagent_type}' system prompt`)
 						}
 					} else {
@@ -160,6 +161,9 @@ export async function subagentTool(
 					console.warn("[SubagentTool] Error composing predefined agent prompt. Using task message only.", e)
 				}
 			}
+	
+			// Add the task message with necessary unescaping at the end
+			finalMessage += params.message!.replace(/\\\\@/g, "\\@")
 
 			try {
 				// Add a small random delay to stagger the start of subtasks
