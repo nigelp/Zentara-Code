@@ -18,6 +18,8 @@ Watch Zentara Code in action:
 
 Zentara Code is a VS Code extension. Here's how you can get started:
 
+> **Quick Start Tip**: Once installed, try the `/init` command in any project to automatically analyze your codebase and generate AI-friendly documentation. This helps Zentara understand your project's patterns and conventions for better assistance. See the [/init Command Guide](docs/init-command-overview.md) for details.
+
 **1. Install from VS Code Marketplace (Recommended for Users)**
 
 - Install latest VS Code. The extension is build for VS Code 1.96.4 and later
@@ -124,6 +126,7 @@ We recommend subscribe for Claude Max plan  to use Zentara Code. If you have Cla
 
 For comprehensive information on Zentara's advanced features:
 
+- **[`/init` Command Guide](docs/init-command-overview.md)** - Complete overview of the `/init` slash command for intelligent project analysis and AI documentation generation
 - **[LSP Tools Guide](docs/lsp-tools-overview.md)** - Complete reference for all 25+ Language Server Protocol tools, including discovery, navigation, analysis, and modification operations
 - **[Subagent System Guide](docs/subagent-tool-overview.md)** - In-depth guide to parallel task execution, scope separation, and performance optimization
 - **[Predefined Agents Guide](docs/predefined-agents-user-guide.md)** - How to create, use, and manage template-based subagents for standardized workflows
