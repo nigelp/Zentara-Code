@@ -1,5 +1,6 @@
 import { DiffStrategy } from "../../../shared/tools"
 import { CodeIndexManager } from "../../../services/code-index/manager"
+import { Linux_rules, Coding_rules } from "./coding_rules"
 
 function getEditingInstructions(diffStrategy?: DiffStrategy): string {
 	const instructions: string[] = []
@@ -201,7 +202,16 @@ ALWAYS prefer editing an existing file to creating a new one.
 NEVER proactively create documentation files (*.md) or README files. Only create documentation files if explicitly requested by the User.
 IMPORTANT: this context may or may not be relevant to your tasks. You should not respond to this context or otherwise consider it in your response unless it is highly relevant to your task. Most of the time, it is not relevant.
 
+## Core Principles You Will Adhere to:
+
+
+${Linux_rules()}
+
+${Coding_rules()}
+
 `
 
 
 }
+
+
