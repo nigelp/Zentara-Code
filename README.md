@@ -72,6 +72,9 @@ If you want to contribute or run the latest development version:
     3.  Select "Install from VSIX..."
     4.  Navigate to and select the generated `.vsix` file.
 
+## LLM Provider
+We recommend subscribe for Claude Max plan  to use Zentara Code. If you have Claude Max subscription already, in the Setting > API Provider, choose Claude Max (not Claude Code option) to get the best and fastest performance
+
 
 ## Workflow Model
 
