@@ -425,6 +425,18 @@ graph TD
 □ Doesn't require conversation context?
 ```
 
+### Real-Time Debugging
+
+**Monitor Subagent Execution in Real-Time:**
+
+For the best debugging experience when working with subagents, monitor their execution in real-time through VS Code's Output panel:
+
+1. **Open Output Panel**: `View` → `Output` (or `Ctrl+Shift+U` / `Cmd+Shift+U`)
+2. **Select Zentara Channel**: In the dropdown, select "Zentara Code"
+3. **Watch Live Logs**: See detailed subagent execution logs, tool usage, and error messages as they happen
+
+This is especially valuable for subagents since they work in parallel and you can see exactly what each agent is doing, which tools they're using, and any issues they encounter during execution.
+
 ## Performance Considerations
 
 ### Optimization Strategies

@@ -462,6 +462,16 @@ The system agent will be used due to highest priority.
 
 ### Debugging Tips
 
+**Real-Time Monitoring:**
+
+For the best debugging experience when working with predefined agents, monitor their execution in real-time through VS Code's Output panel:
+
+1. **Open Output Panel**: `View` → `Output` (or `Ctrl+Shift+U` / `Cmd+Shift+U`)
+2. **Select Zentara Channel**: In the dropdown, select "Zentara Code"
+3. **Watch Live Logs**: See detailed agent execution logs, tool usage, and error messages as they happen
+
+This is especially valuable for predefined agents since they follow complex workflows and you can see exactly which steps they're executing, what tools they're using, and any issues they encounter during their specialized processes.
+
 **Check Agent Registry:**
 ```xml
 <subagent>

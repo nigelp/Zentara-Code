@@ -127,6 +127,7 @@ For comprehensive information on Zentara's advanced features:
 - **[LSP Tools Guide](docs/lsp-tools-overview.md)** - Complete reference for all 25+ Language Server Protocol tools, including discovery, navigation, analysis, and modification operations
 - **[Subagent System Guide](docs/subagent-tool-overview.md)** - In-depth guide to parallel task execution, scope separation, and performance optimization
 - **[Predefined Agents Guide](docs/predefined-agents-user-guide.md)** - How to create, use, and manage template-based subagents for standardized workflows
+- **[Slash Commands Guide](docs/SLASH_COMMANDS_DOCUMENTATION.md)** - Complete guide to creating and customizing slash commands, including AI-driven execution, configuration system, and best practices
 - **[Debugging Guide](docs/Debugging.md)** - Comprehensive debugging operations, session management, and runtime validation techniques
 - **[Tool Integration Guide](docs/integrating-new-tools.md)** - Developer guide for extending Zentara with custom tools and integrations
 
@@ -171,6 +172,30 @@ For comprehensive information on Zentara's advanced features:
 - **Embrace iteration**: accept partial progress and refine.
 - **Let Zentara plan**: approve or edit its proposed steps rather than dictating line‑level changes.
 
+## Debugging & Troubleshooting
+
+### Viewing Zentara Debug Logs
+
+To observe all conversations between the LLM and Zentara, including detailed execution logs and debugging information:
+
+1. **Open the Output Panel**:
+   - **Method 1**: Use the keyboard shortcut `Ctrl+Shift+U` (Windows/Linux) or `Cmd+Shift+U` (Mac)
+   - **Method 2**: Go to the top menu bar → **View** → **Output**
+   - **Method 3**: Open the Command Palette (`Ctrl+Shift+P` or `Cmd+Shift+P`) and type "View: Toggle Output"
+
+2. **Select Zentara Debug Channel**:
+   - In the Output panel (usually appears at the bottom of VS Code), look for a dropdown menu on the right side
+   - Click the dropdown and select **"Zentara Debug"** from the list of available output channels
+   - If you don't see "Zentara Debug", make sure Zentara Code extension is active and try interacting with it first
+
+3. **What You'll See**:
+   - Real-time conversation logs between you and the AI
+   - Tool execution details and results
+   - Error messages and debugging information
+   - Subagent communications and parallel task execution logs
+   - LSP operation details and responses
+
+**Tip**: Keep the Output panel open while working with Zentara to monitor its operations and troubleshoot any issues in real-time.
 
 ## Roadmap & Changelog
 
