@@ -64,22 +64,52 @@ Humans efficiently manage limited working memory through:
 
 ```mermaid
 graph TB
-    A[User Query] --> B[Context Intelligence Layer]
-    B --> C[Active Working Memory]
-    B --> D[Conversation Headers]
-    B --> E[Semantic Summaries]
-    B --> F[Reference Index]
-    B --> G[Full Archive]
+    UI[User Input<br/>User Query, Tool Response,<br/>or User Feedback]
+    B[Context Intelligence Layer]
     
-    C --> H[LLM Processing]
-    D --> H
-    E --> H
-    F --> I[Selective Retrieval]
-    I --> H
+    subgraph "Hierarchical Context Layers"
+        L0[Layer 0: Current Context Summary<br/>Always Included - Complete Story Narrative<br/>200-500 tokens]
+        L1[Layer 1: Active Working Memory<br/>Always Included - Recent Exchanges<br/>5-10 turns]
+        L2[Layer 2: Conversation Headers<br/>Always Included - Timeline Awareness<br/>Compact headers for all conversations]
+        L3[Layer 3: Semantic Summaries<br/>Conversation-Based Inclusion<br/>Conversations 6-10 summaries only]
+        L4[Layer 4: Reference Index<br/>On-Demand - Lightweight Pointers<br/>File paths, function names]
+        L5[Layer 5: Flexible Archive<br/>Retrieval-Based - Token-Economical<br/>Header/Summary/Full based on LLM request]
+    end
     
-    H --> J[Response + Housekeeping]
-    J --> K[Context Update]
-    K --> B
+    B --> L0
+    B --> L1
+    B --> L2
+    B --> L3
+    B --> L4
+    B --> L5
+    
+    L0 --> CP[Context Prompt]
+    L1 --> CP
+    L2 --> CP
+    L3 --> CP
+    L4 --> SR[Selective Retrieval]
+    L5 --> SR
+    SR --> CP
+    
+    SP[System Prompt<br/>Tool Descriptions, Environment,<br/>Guardrails, Other System Info]
+    
+    CP --> OM[Outgoing Message]
+    SP --> OM
+    UI --> OM
+    OM --> LLM[LLM Response]
+    
+    LLM --> Content[Content]
+    LLM --> ToolUse[Tool Use]
+    LLM --> Housekeeping[Housekeeping]
+    LLM --> ContextRequest[Context Request]
+    
+    ToolUse --> TR[Tool Response]
+    TR --> UI
+    
+    Content --> UI
+    
+    Housekeeping --> B
+    ContextRequest --> B
 ```
 
 ---
@@ -129,24 +159,63 @@ interface ConversationHeader {
 }
 ```
 
-#### Layer 3: Semantic Summaries (Selective Inclusion)
-- **Size**: Condensed summaries of conversation clusters
-- **Content**: Key decisions, code changes, problem resolutions
-- **Purpose**: Maintains awareness of major developments
+#### Layer 3: Semantic Summaries (Conversation-Based Inclusion)
+- **Size**: Summaries of conversations 6-10 only
+- **Content**: Summary format for conversations 6-10 (Layer 1 contains 1-5 full, Layer 2 contains headers)
+- **Purpose**: Maintains awareness of recent major developments beyond immediate working memory
 
 #### Layer 4: Reference Index (On-Demand)
 - **Size**: Lightweight pointers to detailed information
 - **Content**: File paths, function names, error patterns
 - **Purpose**: Enables precise retrieval when needed
 
-#### Layer 5: Full Archive (Retrieval-Based)
-- **Size**: Complete conversation history
-- **Content**: Full context for any conversation
-- **Purpose**: Deep context when specifically requested
+#### Layer 5: Flexible Archive (Retrieval-Based)
+- **Size**: Complete conversation history with flexible retrieval options
+- **Content**: Full text, summaries, or headers for any conversation based on LLM request
+- **Purpose**: Token-economical retrieval - LLM can request specific format (header/summary/full) for optimal context
 
-### 2. Intelligent Context Orchestration
+### 2. Conversation Storage Architecture
 
-#### Smart Context Assembly
+#### Trio Format for Each Conversation
+
+Each conversation in the system is stored in three formats to enable flexible, token-economical retrieval:
+
+1. **Header**: Compact metadata (≤12 tokens) - timestamp, topic, key entities, outcome
+2. **Summary**: Condensed key information (≤120 tokens) - decisions, code changes, resolutions  
+3. **Full Text**: Complete conversation content - entire context when needed
+
+This trio approach allows the LLM to request the most appropriate format based on context needs:
+- **Headers** for timeline awareness and conversation mapping
+- **Summaries** for understanding key developments without full detail
+- **Full Text** for deep context when specifically required
+
+```typescript
+interface ConversationTrio {
+  conversation_id: string
+  header: ConversationHeader      // Always available in Layer 2
+  summary: ConversationSummary    // Available in Layer 3 (for 6-10) or Layer 5 (on-demand)
+  fullText: FullConversation      // Available in Layer 1 (for 1-5) or Layer 5 (on-demand)
+}
+
+interface FlexibleRetrievalRequest {
+  conversation_ids: string[]
+  format: 'header' | 'summary' | 'full' | 'mixed'  // Token-economical choice
+  priority: 'recent' | 'relevant' | 'specific'
+}
+```
+
+### 3. Intelligent Context Orchestration
+
+#### Three-Branch Message Architecture
+
+The architecture implements a three-branch message composition system where each branch serves a distinct purpose:
+
+1. **Context Prompt Branch**: The hierarchical context layers (0-5) are assembled into a cohesive context prompt providing historical awareness
+2. **System Prompt Branch**: Tool descriptions, environment details, guardrails, and other system information maintained separately for consistency
+3. **User Input Branch**: Consolidated input containing user queries, tool responses, or user feedback that directly triggers the conversation turn
+4. **Message Composition**: All three branches combine to form the complete outgoing message to the LLM
+5. **Response Processing**: LLM responses are structured into four distinct outputs that feed back into the system
+
 ```typescript
 interface ContextAssembly {
   // CRITICAL: Always included first - the complete story
@@ -156,13 +225,41 @@ interface ContextAssembly {
   activeMemory: ConversationTurn[]
   headers: ConversationHeader[]
   
-  // Intelligently selected
-  relevantSummaries: SemanticSummary[]
+  // Conversation-based summaries
+  conversationSummaries: ConversationSummary[]
   requestedConversations: string[]  // LLM-requested full context
   
   // Metadata
   contextBudget: TokenBudget
   retrievalCapacity: number
+}
+
+interface ThreeBranchMessageComposition {
+  // Branch 1: Historical context and awareness
+  contextPrompt: ContextAssembly
+  
+  // Branch 2: System configuration and capabilities
+  systemPrompt: SystemConfiguration
+  
+  // Branch 3: Consolidated user input (queries, tool responses, feedback)
+  userInput: ConsolidatedUserInput
+  
+  // Final composition
+  outgoingMessage: CombinedPrompt   // All three branches merged
+}
+
+interface SystemConfiguration {
+  toolDescriptions: ToolDefinition[]
+  environmentDetails: EnvironmentInfo
+  guardrails: SafetyRule[]
+  otherSystemInfo: SystemMetadata
+}
+
+interface ConsolidatedUserInput {
+  type: 'user_query' | 'tool_response' | 'user_feedback'
+  content: string
+  metadata: InputMetadata
+  timestamp: number
 }
 ```
 
@@ -193,6 +290,16 @@ interface TokenBudget {
 
 #### Smart Summarization Strategies
 ```typescript
+interface ConversationSummary {
+  conversation_id: string
+  position: number                    // Position in conversation sequence (6-10 range)
+  content: string                     // Summary content only (Layer 3 contains summaries only)
+  key_decisions: string[]
+  code_changes: CodeChange[]
+  open_questions: string[]
+  retrievable: boolean                // Can LLM request full content if needed
+}
+
 interface SummarizationStrategy {
   // Preserve critical information
   codeChanges: CodeChange[]
@@ -201,7 +308,7 @@ interface SummarizationStrategy {
   
   // Compress verbose content
   toolResults: CompressedToolResult[]
-  exploratoryConversations: Summary[]
+  conversationSummaries: ConversationSummary[]  // Updated to use conversation-based approach
   debuggingSessions: ProblemSolution[]
 }
 ```
@@ -210,39 +317,80 @@ interface SummarizationStrategy {
 
 ## 🔄 Proposed Response Format Revolution
 
-### Minimal Turn Protocol (adds current_context and retrieval-by-id)
+### Three-Branch Message Flow Architecture
 
-Assistant → Extension (each turn)
-- a) Response: normal content/tool calls
-- b) Housekeeping:
-  - LLM: response_header, response_summary
-  - User/Extension: query_header, prev_query_summary
-- c) Retrieval requests: conversation_ids[] explicitly listing full threads needed next turn
-- d) current_context: 200–500 token narrative linking the whole story for continuity
+The architecture implements a three-branch message composition system with structured feedback loops:
 
-Extension → Assistant (next turn)
-- a) System: tools, env, guardrails
-- b) Current prompt: only the immediate request
-- c) History pack (compressed-first):
-  - All headers
-  - Summaries of last n=10
-  - Full of first conversation and last m=5
-  - Full for requested conversation_ids[]
-- d) current_context: the last assistant-produced narrative summary
+#### Message Composition Flow
+1. **Context Prompt Assembly**: Hierarchical layers (0-5) assembled into cohesive historical context
+2. **System Prompt Preparation**: Tools, environment, guardrails maintained separately for consistency
+3. **User Input Processing**: Consolidated user input (queries, tool responses, or feedback) that triggered this conversation turn
+4. **Three-Branch Combination**: Context + System + User Input → Outgoing Message → LLM
+5. **Structured Response**: Four distinct outputs with complete feedback cycles
 
-Schema sketch
-- Response fields: content, housekeeping{ llm{response_header,response_summary}, user{query_header,prev_query_summary} }, context_requests{ conversation_ids[] }, next_context{ current_context }
-- Request fields: content, context{ current_context, headers[], recent[], summaries[], retrieved[] }
+#### Assistant → Extension (each turn)
+- **Content**: Normal response content → Consolidated User Input
+- **Tool Use**: Tool calls → Tool Responses → Consolidated User Input
+- **Housekeeping**: Context management metadata → Context Intelligence Layer
+- **Context Requests**: Explicit retrieval needs → Context Intelligence Layer
 
-### Enhanced LLM Response Structure
+#### Extension → Assistant (next turn)
+- **Branch 1 - Context Prompt**: Assembled from hierarchical layers (historical awareness)
+- **Branch 2 - System Prompt**: Tools, environment, guardrails (system capabilities)
+- **Branch 3 - User Input**: Consolidated user queries, tool responses, or feedback (immediate trigger)
+- **Combined Message**: All three branches merged for comprehensive LLM processing
+
+#### Three-Branch Schema Architecture
+```typescript
+// Three-branch outbound message structure
+interface ThreeBranchOutgoingMessage {
+  // Branch 1: Historical context and awareness
+  contextPrompt: ContextAssembly
+  
+  // Branch 2: System capabilities and configuration
+  systemPrompt: SystemConfiguration
+  
+  // Branch 3: Consolidated user input (flows directly to outgoing message)
+  userInput: ConsolidatedUserInput
+  
+  // Final merged message
+  combinedMessage: string  // All three branches integrated
+}
+
+// Response structure with feedback loops
+interface StructuredResponse {
+  content: string           // → User Input (consolidated)
+  toolUse: ToolUse[]       // → User Input (consolidated)
+  housekeeping: Metadata   // → Direct to Context Intelligence Layer
+  contextRequest: Request  // → Direct to Context Intelligence Layer
+}
+
+// Consolidated user input types (flows directly to outgoing message)
+interface ConsolidatedUserInput {
+  type: 'user_query' | 'tool_response' | 'user_feedback'
+  content: string
+  metadata?: {
+    toolId?: string
+    attachments?: Attachment[]
+    errors?: string[]
+  }
+  timestamp: number
+}
+```
+
+### Enhanced LLM Response Structure and Feedback Cycle
+
+The LLM response is structured into four distinct outputs that create complete feedback loops back to the Context Intelligence Layer:
 
 ```typescript
 interface SmartAssistantResponse {
-  // Standard response
+  // 1. Content Output - Goes to user, generates user feedback
   content: string
+  
+  // 2. Tool Use Output - Triggers tool execution, generates tool responses
   toolUses?: ToolUse[]
   
-  // Housekeeping intelligence
+  // 3. Housekeeping Output - Updates context management directly
   housekeeping: {
     // LLM's self-awareness
     llm: {
@@ -260,32 +408,51 @@ interface SmartAssistantResponse {
     }
   }
   
-  // Context management requests
+  // 4. Context Request Output - Requests specific context for next turn
   contextRequests: {
-    retrieveConversations: string[]     // Specific conversation IDs needed
-    summarizeTopics: string[]           // Topics needing summarization
-    archiveConversations: string[]      // Conversations ready for archiving
+    retrieveConversations: FlexibleRetrievalRequest[]  // Specific conversations with format choice
+    summarizeTopics: string[]                          // Topics needing summarization
+    archiveConversations: string[]                     // Conversations ready for archiving
   }
-  
-  // Next context preparation
-  nextContext: {
-    summary: string                     // Current state summary
-    activeEntities: string[]            // Files, functions, concepts in play
-    continuationContext: string         // What to remember for next turn
-  }
+}
+
+// Feedback cycle interfaces
+interface ToolResponse {
+  toolId: string
+  result: any
+  summary: string
+  errors?: string[]
+  metadata: ToolMetadata
+}
+
+interface UserFeedback {
+  response: string
+  satisfaction: 'positive' | 'negative' | 'neutral'
+  corrections?: string[]
+  additionalContext?: string
+}
+
+// All feedback flows back to Context Intelligence Layer
+interface FeedbackIntegration {
+  toolResponses: ToolResponse[]      // From tool executions
+  userFeedback: UserFeedback[]       // From user interactions
+  housekeeping: HousekeepingData     // From LLM self-awareness
+  contextRequests: ContextRequest[]  // From LLM context needs
 }
 ```
 
-### User Query Enhancement
+### Three-Branch Message Assembly and Processing Flow
+
+The complete message flow demonstrates the three-branch architecture with feedback integration:
 
 ```typescript
-interface SmartUserQuery {
-  // Current query
-  content: string
-  attachments?: Attachment[]
+interface ThreeBranchMessageAssemblyFlow {
+  // Input processing - consolidated user input handling
+  inputType: 'user_query' | 'tool_response' | 'user_feedback'
+  contextIntelligenceLayer: ContextLayer
   
-  // Smart context assembly
-  context: {
+  // Branch 1: Context Prompt Assembly (Historical Awareness)
+  contextPrompt: {
     // CRITICAL: Complete story awareness (always included first)
     currentContext: CurrentContextSummary
     
@@ -295,12 +462,62 @@ interface SmartUserQuery {
     // Recent context (always included)
     recentConversations: ConversationTurn[]  // Last 5 turns
     
-    // Semantic understanding (intelligently selected)
-    relevantSummaries: SemanticSummary[]     // Last 10 summaries
+    // Conversation-based summaries (conversations 6-10 only)
+    conversationSummaries: ConversationSummary[]  // Conversations 6-10 as summaries
     
-    // Specific context (LLM-requested)
-    retrievedConversations: FullConversation[]
+    // Specific context (LLM-requested with flexible format)
+    retrievedConversations: ConversationTrio[]  // Headers, summaries, or full text based on request
   }
+  
+  // Branch 2: System Prompt (Capabilities and Configuration)
+  systemPrompt: {
+    toolDescriptions: ToolDefinition[]
+    environmentDetails: EnvironmentInfo
+    guardrails: SafetyRule[]
+    otherSystemInfo: SystemMetadata
+  }
+  
+  // Branch 3: Consolidated User Input (flows directly to Outgoing Message)
+  userInput: {
+    type: 'user_query' | 'tool_response' | 'user_feedback'
+    content: string
+    metadata?: {
+      toolId?: string
+      attachments?: Attachment[]
+      errors?: string[]
+    }
+    timestamp: number
+  }
+  
+  // Three-branch message composition
+  outgoingMessage: ThreeBranchCombinedPrompt
+  
+  // Response processing with feedback loops
+  llmResponse: {
+    content: string        // → Consolidated User Input
+    toolUse: ToolUse[]    // → Consolidated User Input
+    housekeeping: Metadata // → Direct to Context Intelligence Layer
+    contextRequest: Request // → Direct to Context Intelligence Layer
+  }
+}
+
+// Enhanced feedback integration matching the corrected scheme
+interface ThreeBranchFeedbackCycle {
+  // All user-facing outputs flow to consolidated User Input
+  userFacingOutputs: {
+    content: string[]        // Content responses → User Input
+    toolResponses: ToolResponse[]  // Tool execution results → User Input
+  }
+  
+  // Context management outputs flow to Context Intelligence Layer
+  contextManagementOutputs: {
+    housekeepingUpdates: Metadata    // Updates Context Intelligence Layer
+    contextRequests: ContextRequest  // Updates Context Intelligence Layer
+  }
+  
+  // Next cycle preparation
+  nextCycleInput: ConsolidatedUserInput
+  updatedContextLayer: ContextLayer
 }
 ```
 
@@ -452,7 +669,7 @@ interface ContextProfile {
 
 ### Schemas and Token Caps
 - ConversationHeader: id, timestamp, topic, keyEntities[], outcome, tokenCount, summary (cap: ≤12 tokens)
-- SemanticSummary: conversation_id, turn_range, key_decisions[], code_changes[], open_questions[], summary (cap: ≤120 tokens)
+- ConversationSummary: conversation_id, position(6-10), content(summary only), key_decisions[], code_changes[], open_questions[], retrievable (cap: ≤120 tokens)
 - CurrentContextSummary: overallNarrative, currentObjective, keyAchievements[], activeEntities{files[],functions[],concepts[]}, contextualState, nextSteps[] (cap: ≤300 tokens)
 - CompressedToolResult: blob_ref(sha256,size,mime), summary (≤60 tokens), entities[], pointers[]
 
@@ -474,7 +691,7 @@ function assemblePack(input, budget, seed) {
   include(current_context, alloc.currentContext);         // must include
   include(all_headers, alloc.headers);                     // must include
   include(recent_turns, alloc.activeMemory);
-  include(relevant_summaries, alloc.summaries);
+  include(conversation_summaries, alloc.summaries);
   include(requested_fulls, alloc.retrieved);
 
   // Drop-order when oversize
@@ -487,7 +704,7 @@ function assemblePack(input, budget, seed) {
 ```
 
 ### Default Policy and Knobs
-- n=10 summaries, m=5 trailing fulls, first full always included
+- Layer 1: Conversations 1-5 (full content), Layer 2: All conversation headers, Layer 3: Conversations 6-10 (summaries only), Layer 5: Flexible retrieval (header/summary/full) for any conversation based on LLM token-economical requests
 - Max headers: 200; header summary ≤12 tokens; current_context ≤300 tokens
 - Per-turn retrieval quota: ≤3 full threads; LRU cache for hot fulls
 - Strict dedup: blobs/content addressed by sha256; no raw logs in summaries
