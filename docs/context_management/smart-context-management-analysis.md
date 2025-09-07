@@ -21,7 +21,7 @@ The existing system suffers from **unsustainable memory growth** that creates ca
 
 ### Current Architecture Limitations
 
-Based on analysis of the codebase, the current system has several architectural weaknesses:
+Based on comprehensive analysis of the codebase, the current system has several architectural weaknesses:
 
 ```typescript
 // Current problematic pattern
@@ -45,6 +45,27 @@ class Task {
 - **Tool Result Accumulation**: No compression of large outputs
 - **Metadata Overhead**: Rich UI state stored in conversation history
 - **No Semantic Understanding**: Truncation ignores content importance
+
+### Current Implementation Reality: Full Tool Response Inclusion
+
+**Critical Finding**: The current implementation includes **complete tool responses** in conversation history without filtering:
+
+- **Tool Use Messages**: Stored as assistant messages with full `tool_use` content blocks
+- **Tool Result Messages**: Stored as user messages with complete `tool_result` content blocks
+- **No Selective Filtering**: All tool interactions preserved regardless of verbosity
+- **Hybrid Storage Pattern**: Tool blocks stored in Anthropic format but transformed to XML text when sent to API
+- **Complete Conversation Preservation**: Full conversation context including all tool executions maintained
+
+This creates significant context bloat as tool responses (file contents, LSP outputs, command results) can be extremely verbose, contributing directly to the exponential token growth problem.
+
+**Current Message Flow:**
+1. Tool execution results stored as complete `tool_result` blocks
+2. No compression or summarization of verbose tool outputs
+3. All tool interactions included when constructing prompts for LLM
+4. Context management only reacts when 75% of token limit reached
+5. Emergency truncation loses entire conversation segments rather than compressing tool results
+
+This analysis confirms that the proposed smart context management architecture's focus on **tool result compression** and **selective inclusion** directly addresses the primary source of context window bloat in the current implementation.
 
 ---
 
@@ -261,32 +282,11 @@ interface ConsolidatedUserInput {
   metadata: InputMetadata
   timestamp: number
 }
-```
 
-#### Dynamic Context Budget Management
-```typescript
-interface TokenBudget {
-  total: number           // Model's context window
-  reserved: number        // System prompt, tools, environment
-  available: number       // For conversation context
-  
-  allocation: {
-    currentContext: number  // 15% - complete story narrative
-    activeMemory: number    // 25% - immediate context
-    headers: number         // 10% - conversation awareness
-    summaries: number       // 35% - semantic understanding
-    retrieved: number       // 15% - on-demand details
-  }
-}
-```
 
 ### 3. Proactive Context Intelligence
 
-#### Predictive Context Management
-- **Token Monitoring**: Track context growth in real-time
-- **Semantic Clustering**: Group related conversations for efficient summarization
-- **Relevance Scoring**: Prioritize context based on current task
-- **Preemptive Summarization**: Summarize before hitting limits
+
 
 #### Smart Summarization Strategies
 ```typescript
@@ -411,26 +411,9 @@ interface SmartAssistantResponse {
   // 4. Context Request Output - Requests specific context for next turn
   contextRequests: {
     retrieveConversations: FlexibleRetrievalRequest[]  // Specific conversations with format choice
-    summarizeTopics: string[]                          // Topics needing summarization
-    archiveConversations: string[]                     // Conversations ready for archiving
   }
 }
 
-// Feedback cycle interfaces
-interface ToolResponse {
-  toolId: string
-  result: any
-  summary: string
-  errors?: string[]
-  metadata: ToolMetadata
-}
-
-interface UserFeedback {
-  response: string
-  satisfaction: 'positive' | 'negative' | 'neutral'
-  corrections?: string[]
-  additionalContext?: string
-}
 
 // All feedback flows back to Context Intelligence Layer
 interface FeedbackIntegration {
@@ -590,73 +573,6 @@ The Current Context Summary evolves with each conversation turn:
 
 ---
 
-## 🚀 Advanced Context Intelligence Features
-
-### 1. Semantic Context Clustering
-
-Group conversations by semantic similarity:
-- **Code Feature Development**: All conversations about a specific feature
-- **Bug Investigation**: Related debugging sessions
-- **Refactoring Projects**: Architectural changes and their discussions
-- **Learning Sessions**: Explanatory conversations about concepts
-
-### 2. Intelligent Context Compression
-
-#### Tool Result Compression
-```typescript
-interface CompressedToolResult {
-  tool: string
-  summary: string              // Key findings
-  keyFiles: string[]          // Important files discovered
-  errorPatterns: string[]     // Issues encountered
-  fullResultId: string        // Reference to full result
-}
-```
-
-#### Code Change Tracking
-```typescript
-interface CodeChange {
-  files: string[]
-  changeType: 'create' | 'modify' | 'delete' | 'refactor'
-  summary: string
-  impact: 'low' | 'medium' | 'high'
-  relatedConversations: string[]
-}
-```
-
-### 3. Context Relevance Scoring
-
-Score context relevance based on:
-- **Temporal Proximity**: Recent conversations more relevant
-- **Semantic Similarity**: Related topics and entities
-- **Dependency Relationships**: Code files and functions mentioned
-- **Error Correlation**: Related problems and solutions
-- **User Patterns**: Frequently referenced conversations
-
-### 4. Adaptive Context Strategies
-
-#### Context Profiles
-```typescript
-interface ContextProfile {
-  name: string
-  strategy: {
-    activeMemorySize: number      // How much recent context to keep
-    summaryDepth: number          // How detailed summaries should be
-    retrievalThreshold: number    // When to request full conversations
-    compressionLevel: number      // How aggressively to compress
-  }
-  
-  triggers: {
-    codeIntensive: ContextStrategy    // Heavy coding sessions
-    debugging: ContextStrategy        // Problem-solving mode
-    exploration: ContextStrategy      // Learning/discovery mode
-    maintenance: ContextStrategy      // Routine tasks
-  }
-}
-```
-
----
-
 ## 📐 Design Principles, Schemas, and Budgets
 
 ### Design Principles
@@ -664,146 +580,35 @@ interface ContextProfile {
 - Retrieval-by-id: LLM explicitly requests deeper threads by conversation_id
 - Deterministic assembly: stable, seeded packer; reproducible under same inputs
 - Small-first: prefer headers/summaries; fulls only when requested or essential
-- Explicit budgets: fixed allocations with preflight sizing and graceful degradation
-- Privacy-first: PII scrubbing, redaction, allowlists, auditable decisions
 
 ### Schemas and Token Caps
 - ConversationHeader: id, timestamp, topic, keyEntities[], outcome, tokenCount, summary (cap: ≤12 tokens)
 - ConversationSummary: conversation_id, position(6-10), content(summary only), key_decisions[], code_changes[], open_questions[], retrievable (cap: ≤120 tokens)
 - CurrentContextSummary: overallNarrative, currentObjective, keyAchievements[], activeEntities{files[],functions[],concepts[]}, contextualState, nextSteps[] (cap: ≤300 tokens)
-- CompressedToolResult: blob_ref(sha256,size,mime), summary (≤60 tokens), entities[], pointers[]
 
 Caps are enforced pre-send; overflow triggers trimming by sentences, then by key points.
 
-### Token Budget Allocator (Deterministic)
-```ts
-function assemblePack(input, budget, seed) {
-  const alloc = {
-    currentContext: Math.floor(budget * 0.15),
-    activeMemory:   Math.floor(budget * 0.25),
-    headers:        Math.floor(budget * 0.10),
-    summaries:      Math.floor(budget * 0.35),
-    retrieved:      budget - (/*sum above*/)
-  }
-  const rng = seeded(seed);
-  const pick = deterministicOrder(input, rng);
 
-  include(current_context, alloc.currentContext);         // must include
-  include(all_headers, alloc.headers);                     // must include
-  include(recent_turns, alloc.activeMemory);
-  include(conversation_summaries, alloc.summaries);
-  include(requested_fulls, alloc.retrieved);
-
-  // Drop-order when oversize
-  for (const tier of ['nonRequestedFulls','summaries','headers']) {
-    while (overBudget()) dropLeastRelevant(tier, rng);
-    if (!overBudget()) break;
-  }
-  assert(!overBudget()); return packWithChecksum();
-}
-```
 
 ### Default Policy and Knobs
 - Layer 1: Conversations 1-5 (full content), Layer 2: All conversation headers, Layer 3: Conversations 6-10 (summaries only), Layer 5: Flexible retrieval (header/summary/full) for any conversation based on LLM token-economical requests
 - Max headers: 200; header summary ≤12 tokens; current_context ≤300 tokens
-- Per-turn retrieval quota: ≤3 full threads; LRU cache for hot fulls
-- Strict dedup: blobs/content addressed by sha256; no raw logs in summaries
-- Backpressure: if budget tight, defer low-priority retrievals; queue with TTL
 
-### Governance and Privacy
-- PII/secret scrubber on summaries and current_context
-- File path/domain allowlist for what can appear in summaries
-- Audit log: pack composition, drops, and reasons; pack checksum recorded
 
 ## ⚠️ Risks, Failure Modes, Mitigations
 
-- Summary drift: summaries may introduce or omit facts
-  - Mitigations: schema caps, factuality checks against canonical logs, diff-aware summarization, confidence scores, rollback to previous summary versions
+
 - ID granularity/versioning: ambiguity about what a conversation/turn means over edits
   - Mitigations: stable conversation_id with monotonic turn_id; versioned snapshots; deprecate superseded IDs via alias map
 - Latency spikes from on-demand retrieval
   - Mitigations: cache requested fulls; prefetch likely follow-ups; limit per-turn retrieval quota; background summarization
 - Tool-output bloat leaking into summaries
   - Mitigations: normalize/strip logs; content-addressed blobs with references; top-k findings only; deduplicate by hash
-- Nondeterminism across retries (different packs → different outcomes)
-  - Mitigations: deterministic selection policy with seeded ordering; explicit drop-order; pack checksum validation
-- Budget starvation when prompts grow (env/tools)
-  - Mitigations: budget allocator with guaranteed inclusions (current_context, headers); adaptive caps; early preflight sizing and graceful degradation
-- Privacy/security leakage into summaries
-  - Mitigations: PII scrubber, file path allowlist, redaction rules, audit trail and opt-out flags
 
-## 🔒 Deterministic Packaging and Token Budgeting
 
-```typescript
-interface ContextPack {
-  seed: string                    // derived from taskId + turn
-  selectionPolicy: 'deterministic-v1'
-  guaranteed: { currentContext: true; headers: true }
-  quotas: { summaries: number; fulls: number }
-  dropOrder: ('nonRequestedFulls'|'summaries'|'headers')[]
-  included: {
-    currentContext: CurrentContextSummary
-    headers: ConversationHeader[]
-    summaries: SemanticSummary[]
-    fulls: FullConversationRef[]  // requested + policy-based
-  }
-  checksum: string                // sha256 over canonicalized pack
-}
-```
 
-- Preflight sizing computes token costs, then fills allocations in fixed order.
-- Given same inputs and budget, the pack is reproducible bit-for-bit.
-- On retry, the same seed yields identical assembly unless inputs changed.
 
-## 🗂️ Reference Index, Compression, Deduplication
 
-```typescript
-interface BlobRef { sha256: string; size: number; mime: string; store: 'local'|'remote' }
-interface CompressedToolResult {
-  blob: BlobRef                 // raw payload stored out-of-band
-  summary: string               // distilled findings
-  entities: string[]            // files/functions
-  pointers: string[]            // clickable refs to code/errors
-}
-```
-
-- Store large tool outputs as blobs; pass only summaries + blob refs.
-- Deduplicate by sha256; reuse across turns; LRU cache for hot blobs.
-
-## 📏 Quality Metrics and Guardrails
-
-- Token efficiency: avg tokens/turn, reduction vs baseline
-- Latency: p50/p95 end-to-end and retrieval overhead
-- Retrieval efficacy: hit-rate of requested fulls, precision/recall of relevance
-- Summary fidelity: factual consistency vs canonical logs (spot checks)
-- Drift detection: delta in current_context vs last turn; alert on large swings
-- Re-ask rate: frequency the LLM requests already provided context
-- Budget adherence: violations/turn; count of forced drops
-
-Operational policies:
-- Hard caps per field (headers/summary/current_context) with validation
-- Quotas per turn for requested fulls; backpressure and deferral queue
-- Audit logs for pack composition and reasons for drops
-
-## 🚦 Phased Adoption Plan (with Rollback)
-
-1) Minimal Turn Protocol + current_context
-- Ship guaranteed inclusions; deterministic packer; strict caps
-- Exit: ≥60% token reduction, no coherence loss in evals
-
-2) Headers + last-N summaries (capped)
-- Add relevance scoring; drift checks; blob dedup
-- Exit: maintain latency within +10% p95; summary fidelity ≥95%
-
-3) Retrieval-by-id
-- Enable conversation_ids; caching; quotas; prefetch heuristics
-- Exit: retrieval precision ≥0.8, recall ≥0.8 on eval suites
-
-4) Adaptive strategies + metrics
-- Context profiles; adaptive budgets; continuous quality dashboards
-- Exit: stable KPIs over 2 weeks; zero critical regressions
-
-Rollback criteria: latency regression >20% p95, fidelity <90%, budget violations spike.
 
 ## 🎯 Implementation Benefits
 
@@ -833,28 +638,6 @@ Rollback criteria: latency regression >20% p95, fidelity <90%, budget violations
 
 ---
 
-## 🔮 Future Vision: Cognitive Context Management
-
-### Advanced Intelligence Features
-
-#### Conversation Memory Graphs
-- **Entity Relationships**: Track how files, functions, and concepts relate
-- **Temporal Patterns**: Understand user work patterns and preferences
-- **Problem-Solution Mapping**: Build knowledge base of common issues
-- **Context Prediction**: Anticipate what context will be needed
-
-#### Collaborative Context Intelligence
-- **Team Context Sharing**: Share relevant context across team members
-- **Project Context Inheritance**: New conversations inherit project context
-- **Cross-Repository Awareness**: Maintain context across related projects
-- **Organizational Memory**: Build institutional knowledge
-
-#### Self-Improving Context Management
-- **Usage Pattern Learning**: Optimize context strategies based on effectiveness
-- **Relevance Feedback**: Learn from user interactions what context matters
-- **Automatic Strategy Tuning**: Adjust parameters based on conversation outcomes
-- **Context Quality Metrics**: Measure and improve context usefulness
-
 ---
 
 ## 🎪 Conclusion: The Context Revolution
@@ -862,15 +645,6 @@ Rollback criteria: latency regression >20% p95, fidelity <90%, budget violations
 This smart context management architecture represents a fundamental shift from **reactive context crisis management** to **proactive context intelligence**. By mimicking human cognitive patterns of summarization, selective attention, and reference-based memory, we can create an AI assistant that maintains perfect situational awareness while operating within strict token budgets.
 
 The key insight is that **context intelligence is more valuable than context volume**. A well-structured, semantically-aware context of 10K tokens can be more effective than a bloated, unstructured context of 100K tokens.
-
 This architecture doesn't just solve the context window problem - it creates a foundation for truly intelligent, long-term AI assistance that gets smarter and more helpful over time while remaining fast, cost-effective, and reliable.
-
-### Next Steps
-
-1. **Prototype the layered context architecture**
-2. **Implement semantic summarization algorithms**
-3. **Build the context intelligence orchestration layer**
-4. **Create adaptive context management strategies**
-5. **Develop context quality metrics and feedback loops**
 
 The future of AI assistance lies not in bigger context windows, but in smarter context management. This architecture provides the blueprint for that future.
