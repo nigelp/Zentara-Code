@@ -117,27 +117,6 @@ All parameters are provided as key-value pairs within a single JSON object, whic
     <lsp_get_symbol_code_snippet>{"uri":"file:///src/utils/helpers.ts","line":50,"character":8,"includeCallHierarchy":false,"includeUsages":false}</lsp_get_symbol_code_snippet>
     \`\`\`
 
-3.  **Get snippet with call hierarchy but no usages:**
-    \`\`\`xml
-    <lsp_get_symbol_code_snippet>{"uri":"file:///src/models/Product.ts","line":10,"character":2,"includeUsages":false}</lsp_get_symbol_code_snippet>
-    \`\`\`
-
-4.  **Comprehensive analysis with higher limits:**
-    \`\`\`xml
-    <lsp_get_symbol_code_snippet>{"uri":"file:///src/core/Engine.ts","line":42,"character":12,"maxUsages":100,"maxCallHierarchyItems":50}</lsp_get_symbol_code_snippet>
-    \`\`\`
-
-5.  **Name-based lookup (find symbol by name):**
-    \`\`\`xml
-    <lsp_get_symbol_code_snippet>{"uri":"file:///src/services/UserService.ts","symbolName":"getUserById"}</lsp_get_symbol_code_snippet>
-    \`\`\`
-
-6.  **Name-based lookup with configuration:**
-    \`\`\`xml
-    <lsp_get_symbol_code_snippet>{"uri":"file:///src/models/Product.ts","symbolName":"ProductModel","includeUsages":false,"maxCallHierarchyItems":10}</lsp_get_symbol_code_snippet>
-    \`\`\`
-
-
 ### Common Workflow Patterns:
 
 1.  **Structure-First Analysis (RECOMMENDED):**
@@ -150,18 +129,6 @@ All parameters are provided as key-value pairs within a single JSON object, whic
     -   Use lsp_get_symbol_code_snippet with default settings to get code + relationships + usages in one call
     -   Perfect for understanding unfamiliar code or preparing for refactoring
     -   **WARNING**: Can be very token-expensive, use only after structure exploration
-
-3.  **Performance-Focused Code Review:**
-    -   Use with \`"includeUsages":false\` if you only need the code and call hierarchy
-    -   Faster execution when you don't need to see all references
-
-4.  **Impact Analysis Before Changes:**
-    -   Use with higher limits (maxUsages: 100) to see comprehensive usage patterns
-    -   Essential before making breaking changes to widely-used functions
-
-5.  **Debugging and Tracing:**
-    -   Use with call hierarchy to understand execution flow
-    -   Combine with usages to see all potential entry points
 
 This tool provides comprehensive semantic analysis with automatic boundary detection, making it ideal for intelligent code understanding and refactoring preparation.
 `

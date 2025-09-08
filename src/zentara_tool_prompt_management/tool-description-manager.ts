@@ -150,7 +150,6 @@ export const DEFAULT_OPTIMIZATION_CONFIG: ToolOptimizationConfig = {
 		"lsp_search_symbols",
 		"update_todo_list",
 		"list_files",
-		"list_code_definition_names",
 	]),
 	queueSize: 6,
 }

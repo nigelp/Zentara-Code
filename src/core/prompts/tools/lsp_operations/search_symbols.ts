@@ -46,13 +46,6 @@ Trailing slashes in 'name_path' are ignored for convenience.
    - Locating examples of specific patterns or implementations
    - Understanding the scope and distribution of certain symbol types
 
-### Language-Specific Use Cases:
-
-- **Python**: Find classes, methods, functions, variables, imports
-- **JavaScript/TypeScript**: Locate functions, classes, interfaces, types, React components
-- **Java**: Find classes, methods, fields, interfaces, enums
-- **C++**: Locate classes, functions, namespaces, templates, structs
-- **C#**: Find classes, methods, properties, interfaces, namespaces
 
 ### Best Practices:
 
@@ -129,35 +122,6 @@ All parameters are provided as key-value pairs within a single JSON object, whic
     <lsp_search_symbols>{"name_path":"get", "substring_matching":true, "include_kinds":[12]}</lsp_search_symbols>
     \`\`\`
 
-4.  **Find all classes and their immediate methods in a specific file:**
-    \`\`\`xml
-    <lsp_search_symbols>{"name_path":"", "relative_path":"src/models/user.py", "include_kinds":[5], "depth":1}</lsp_search_symbols>
-    \`\`\`
-
-5.  **Find React components (classes) with their source code:**
-    \`\`\`xml
-    <lsp_search_symbols>{"name_path":"Component", "substring_matching":true, "include_kinds":[5], "include_body":true}</lsp_search_symbols>
-    \`\`\`
-
-6.  **Find all functions in a specific directory, excluding variables:**
-    \`\`\`xml
-    <lsp_search_symbols>{"name_path":"", "relative_path":"src/utils/", "include_kinds":[12], "exclude_kinds":[13]}</lsp_search_symbols>
-    \`\`\`
-
-7.  **Find interface definitions in TypeScript:**
-    \`\`\`xml
-    <lsp_search_symbols>{"name_path":"Interface", "substring_matching":true, "include_kinds":[11]}</lsp_search_symbols>
-    \`\`\`
-
-8.  **Explore class structure - find all methods of a specific class:**
-    \`\`\`xml
-    <lsp_search_symbols>{"name_path":"DatabaseManager", "depth":2, "include_kinds":[6]}</lsp_search_symbols>
-    \`\`\`
-
-9.  **Find all symbols containing 'user' case-insensitively:**
-    \`\`\`xml
-    <lsp_search_symbols>{"name_path":"user", "substring_matching":true, "case_sensitive":false}</lsp_search_symbols>
-    \`\`\`
 ────────────────────────────────────────────────────────────────────────────
 
 ### Common Workflow Patterns:
@@ -173,15 +137,5 @@ All parameters are provided as key-value pairs within a single JSON object, whic
     - Then: Use depth=1 or depth=2 to explore class members
     - Finally: Use go_to_definition for detailed investigation
 
-3.  **Refactoring Preparation:**
-    - First: Find all symbols matching a pattern
-    - Then: Review each symbol's location and context
-    - Finally: Plan refactoring based on symbol distribution
-
-4.  **API Discovery:**
-    - First: Search for classes or modules by name
-    - Then: Explore their methods and properties using depth parameter
-    - Finally: Use get_hover_info or get_signature_help for details
-────────────────────────────────────────────────────────────────────────────
 `
 }

@@ -105,14 +105,7 @@ export async function getSubagentDescription(discoveredAgents: AgentDiscoveryRes
 	  2. Collect and analyze their results
 	  3. Launch the next batch based on findings
 	  4. Repeat until the overall task is complete
-	  
-	  **Benefits:**
-	  - More focused and less likely to fail
-	  - Better feedback for next steps
-	  - Easier to debug and retry if needed
-	  - Optimal resource utilization
-	  - Avoids context window bloat
-	  
+	  	  
 	  ## 🎯 SUBTASK SCOPE SEPARATION (CRITICAL)
 	  **Subtasks MUST be extremely well separated with NO overlap:**
 	  
@@ -127,43 +120,6 @@ export async function getSubagentDescription(discoveredAgents: AgentDiscoveryRes
 	  2. **Functional Isolation**: No two subtasks should work on the same feature/component
 	  3. **Layer Isolation**: Separate subtasks for frontend, backend, database, tests, docs
 	  4. **Module Isolation**: Different subtasks for different modules/packages/services
-	  
-	  ### Examples of PROPER Scope Separation
-	  ✅ **GOOD - Clean Separation:**
-	  \`\`\`
-	  Subtask A: "Analyze frontend components in src/components/"
-	  Subtask B: "Analyze backend API routes in src/api/routes/"
-	  Subtask C: "Analyze database models in src/models/"
-	  \`\`\`
-	  
-	  ✅ **GOOD - Different Aspects:**
-	  \`\`\`
-	  Subtask A: "Check authentication implementation"
-	  Subtask B: "Check error handling patterns"
-	  Subtask C: "Check performance optimization"
-	  \`\`\`
-	  
-	  ### Examples of BAD Scope Overlap
-	  ❌ **BAD - File Overlap:**
-	  \`\`\`
-	  Subtask A: "Analyze user authentication in src/auth/"
-	  Subtask B: "Check user validation in src/auth/"  // OVERLAPS!
-	  \`\`\`
-	  
-	  ❌ **BAD - Functional Overlap:**
-	  \`\`\`
-	  Subtask A: "Implement user registration"
-	  Subtask B: "Add user registration validation"  // OVERLAPS!
-	  \`\`\`
-	  
-	  ### Scope Separation Checklist
-	  Before launching subtasks, verify:
-	  □ Each subtask targets completely different files/directories
-	  □ Each subtask addresses a distinct functional aspect
-	  □ No subtask depends on another's results to start
-	  □ No two subtasks could conflict if run simultaneously
-	  □ Each subtask can be completed independently
-	  □ The scopes are mutually exclusive (no overlap)
 	  
 	  ## 🚀 EFFICIENCY TIPS
 	  **Choose the optimal discovery tool for subagents - SYMBOL SEARCH FIRST:**
@@ -183,16 +139,30 @@ export async function getSubagentDescription(discoveredAgents: AgentDiscoveryRes
 	  ## 📋 WHEN YOU MUST USE SUBAGENT (MANDATORY)
 	  Use subagent as your FIRST tool for tasks that:
 	  - Involve searching for code, files, or functionality
+	  - Reading and analyzing a file
 	  - Require understanding existing implementation
+	  - Generating boilerplate code
 	  - Can be broken into parallel, independent subtasks
+	  - has independent aspects to analyze
+	  - has different parts be done simultaneously
 	  - Are well-scoped (describable in <1000 words)
+	  - ANY self-contained analysis
 	  - Don't need continuous user interaction
+	  - Is  a self-contained task that doesn't need context
+	  - Will this consume significant context window
 	  - Involve analysis, refactoring, or code generation
 	  - Are part of multi-step to-do lists where each step is:
 	    • Well isolated and self-sufficient
 	    • Doesn't need whole conversation context
 	    • Can be accomplished with minimal prompt/info
-	  
+
+		## 🎯 MASTER AGENT CHECKLIST
+		**Before proceeding with ANY task, ask yourself:**
+		□ **Can each subtask be completed in <3 steps and <5 minutes?** If not → Break into smaller subtasks
+		□ **Will I need additional subagents based on results?** If yes → Plan for iterative execution
+		□ Is this a single atomic operation that REQUIRES context continuity? → Only then do it yourself
+		
+
 	  ## ❌ WHEN NOT TO USE SUBAGENT
 	  - Simple tasks that can be done in a single step
 	  - Tasks requiring user interaction or feedback
@@ -283,16 +253,8 @@ ${agentsList}
 	  \`\`\`
 	  **Scope separation:** Backend vs Frontend - completely different file trees and domains
 	  
-	  ### Example 2: Task Decomposition (Wrong vs Right) - SCOPE SEPARATION FOCUS
-	  **❌ WRONG - Single large subagent with overlapping scope:**
-	  \`\`\`
-	  <subagent>
-	  {
-	    "description": "Analyze entire codebase",
-	    "message": "Analyze the entire codebase architecture including frontend, backend, database, tests, and deployment. Provide a comprehensive report."
-	  }
-	  </subagent>
-	  \`\`\`
+	  ### Example 2: Task Decomposition - SCOPE SEPARATION FOCUS
+	
 	  **Problems:** Single massive scope, no separation, will timeout/fail
 	  
 	  **✅ RIGHT - Multiple parallel subtasks with CLEAN SCOPE SEPARATION:**
@@ -306,36 +268,13 @@ ${agentsList}
 	    {
 	      "description": "Map API architecture",
 	      "message": "Use 'glob' with '**/routes/**/*.{js,ts}' and '**/controllers/**/*.{js,ts}' to find API files. Use \`lsp_get_document_symbols\` on 2-3 files to report the API framework and endpoint patterns. SCOPE: Backend API layer only."
-	    },
-	    {
-	      "description": "Analyze UI components",
-	      "message": "Use 'glob' with '**/components/**/*.{jsx,tsx}' to find components. Use \`lsp_get_document_symbols\` on App.tsx and 2 components to report the UI framework and component structure. SCOPE: Frontend UI layer only."
-	    },
-	    {
-	      "description": "Discover data layer",
-	      "message": "Use 'glob' with '**/{models,schemas,entities}/**/*.{js,ts}' for data models. Use \`lsp_get_document_symbols\` on 1 model file to report the database type, ORM/ODM, and schema patterns. SCOPE: Data/database layer only."
-	    },
-	    {
-	      "description": "Assess test coverage",
-	      "message": "Use 'glob' with '**/*.{test,spec}.{js,ts,jsx,tsx}' to find test files. Count by directory. Report: test framework, file count by module. SCOPE: Testing files only."
 	    }
+
 	  ]
 	  </subagent>
 	  \`\`\`
 	  **Benefits:** Each subtask has completely separate scope - no file/folder/domain overlap
 	  
-	  ### Example 3: Complex Task with Write Permissions
-	  \`\`\`
-	  <subagent>
-	  {
-	    "description": "Refactor import statements",
-	    "message": "Update all import statements from '@old/package' to '@new/package' in all TypeScript files under the src directory.",
-	    "writePermissions": true,
-	    "allowedWritePaths": ["src/**/*.ts"],
-	    "maxExecutionTime": 180000
-	  }
-	  </subagent>
-	  \`\`\`
 	  
 	  ### Example 4: Using a Predefined Subagent
 	  **Use a predefined agent for a standard task like a code review:**
@@ -360,185 +299,10 @@ ${agentsList}
 	  </subagent>
  	\`\`\`
 	  
-	  ### Example 6: DEBUGGING - find_usages for Error Investigation
-	  **When debugging errors or investigating issues:**
-	  \`\`\`
-	  <subagent>
-	  {
-	    "description": "Debug authentication error",
-	    "message": "There's an authentication error in the login flow. Use \`lsp_find_usages\` to find all places where the validateToken function is called to understand where the error might be propagating. Then use \`lsp_get_call_hierarchy\` to trace the complete authentication flow. Report: 1) All files calling validateToken, 2) The complete call chain from login to token validation, 3) Any error handling gaps in the flow."
-	  }
-	  </subagent>
-	  \`\`\`
-	  
-	  ### Example 7: CODEBASE EXPLORATION - Understanding How Features Work
-	  **When exploring unfamiliar code to understand how features work:**
-	  \`\`\`
-	  <subagent>
-	  {
-	    "description": "Understand user permissions system", 
-	    "message": "Explore how the user permissions system works in this codebase. Use \`lsp_find_usages\` to find everywhere 'checkPermissions' is used, then use \`lsp_get_call_hierarchy\` to understand the complete permission checking flow. Report: 1) How permissions are checked across different features, 2) The complete call hierarchy from route handlers to permission validation, 3) Any middleware or interceptors in the permission flow."
-	  }
-	  </subagent>
-	  \`\`\`
-	  
-	  ### Example 8: ERROR ANALYSIS - Tracing Error Propagation  
-	  **When investigating how errors propagate through the system:**
-	  \`\`\`
-	  <subagent>
-	  {
-	    "description": "Trace database connection errors",
-	    "message": "Users are reporting intermittent database errors. Use \`lsp_find_usages\` to find all places where database connections are established, then use \`lsp_get_call_hierarchy\` to understand the complete error handling chain. Report: 1) All components that use database connections, 2) How database errors bubble up through the call stack, 3) Any missing error handling in the connection flow."
-	  }
-	  </subagent>
-	  \`\`\`
-	  
-	  ### Example 9: REFACTORING IMPACT - Before Changing Critical Functions
-	  **Before modifying functions that might break other code:**
-	  \`\`\`
-	  <subagent>
-	  {
-	    "description": "Analyze updateUser function impact",
-	    "message": "Before changing the updateUser function signature, use \`lsp_find_usages\` to find ALL references across the codebase, then use \`lsp_get_call_hierarchy\` to understand its role in larger workflows. Report: 1) Every file and function that calls updateUser, 2) The complete call chains that include updateUser, 3) Any API endpoints or background jobs that depend on it."
-	  }
-	  </subagent>
-	  \`\`\`
-	  
-	  ### Example 10: CONTENT-BASED DISCOVERY - Finding Error Patterns
-	  **When you need to find code by what it contains, not what it's named:**
-	  \`\`\`
-	  <subagent>
-	  {
-	    "description": "Find error handling patterns",
-	    "message": "Use 'search_files' with pattern 'try\\\\s*{|catch\\\\s*\\\\(' to find error handling implementations across the codebase. Use \`lsp_get_call_hierarchy\` to understand error propagation patterns. Report: 1) All files with error handling, 2) Error handling patterns used, 3) Any missing error handling gaps. SCOPE: Error handling analysis only."
-	  }
-	  </subagent>
-	  \`\`\`
-	  
-	  ### Example 11: HYBRID APPROACH - Comprehensive Analysis
-	  **When you need both file structure and content analysis:**
-	  \`\`\`
-	  <subagent>
-	  {
-	    "description": "Analyze test coverage",
-	    "message": "First use 'glob' with pattern '**/*.{test,spec}.{js,ts,jsx,tsx}' to find test files, then use 'search_files' with pattern 'describe\\\\(|it\\\\(|test\\\\(' to analyze test patterns. Use \`lsp_get_document_symbols\` on representative test files. Report: 1) Test file organization, 2) Test framework patterns, 3) Coverage gaps by module. SCOPE: Testing analysis only."
-	  }
-	  </subagent>
-	  \`\`\`
-
-	  ### Example 12: CODE STRUCTURE DISCOVERY - Using lsp_search_symbols as Primary Tool
-	  **When you need to understand code architecture without reading files:**
-	  \`\`\`
-	  <subagent>
-	  {
-	    "description": "Map codebase architecture",
-	    "message": "Use \`lsp_search_symbols\` on key files (src/index.ts, src/main.ts, src/app.ts) to understand the overall code architecture. Identify main classes, interfaces, and functions. Use \`lsp_find_usages\` on core symbols to understand relationships. Report: 1) Main architectural components, 2) Key interfaces and their implementations, 3) Core function relationships. SCOPE: High-level architecture analysis only."
-	  }
-	  </subagent>
-	  \`\`\`
-	  
-	  ### Example 12: DEPRECATED CODE DISCOVERY
-	  **When searching for specific code patterns or issues:**
-	  \`\`\`
-	  <subagent>
-	  {
-	    "description": "Find deprecated API usage",
-	    "message": "Use 'search_files' with pattern 'deprecated|@deprecated|DEPRECATED' to find deprecated code usage. Use \`lsp_find_usages\` to understand impact scope. Report: 1) All deprecated code locations, 2) Usage frequency, 3) Migration recommendations. SCOPE: Deprecation analysis only."
-	  }
-	  </subagent>
-	  \`\`\`
-	  
-	  ## ⚙️ KEY OPERATIONAL NOTES
-   - Agents execute in parallel and don't block your workflow
-   - Each agent has an isolated context (no access to conversation history)
-   - Agents automatically complete when their task is done
    - **CRITICAL**: Subagents cannot launch other subagents - only the master agent can spawn agents
    
-   ## 💡 CONTEXT PRESERVATION PRINCIPLE
-   Even for "simple" tasks, delegate to a subagent if you only need the RESULT:
-   - Reading and analyzing a file? → Subagent (saves your context from file contents)
-   - Searching for patterns across codebase? → Subagent (saves your context from search results)
-   - Generating boilerplate code? → Subagent (saves your context from generated code)
-   - ANY self-contained analysis? → Subagent (preserves your valuable context window)
-   
-   **Example:** "Analyze a 1000-line file"
-   ❌ WRONG: Read the file yourself (wastes master context).
-   ✅ RIGHT: Launch a subagent to analyze the file using LSP tools. The subagent MUST use \`lsp_get_document_symbols\` for an overview, \`lsp_find_usages\` to understand dependencies, \`lsp_get_call_hierarchy\` to understand function relationships, \`lsp_get_symbol_children\` to explore symbol structure, and \`lsp_get_symbol_code_snippet\` for targeted analysis ONLY after understanding structure, reporting back with a summary. This avoids reading the entire file and is the required, token-efficient method.
-   
-   ## 🎯 MASTER AGENT CHECKLIST
-   **Before proceeding with ANY task, ask yourself:**
-   □ Can this be split into 2+ parallel independent subtasks? → MUST use multiple subagents
-   □ Are there independent aspects to analyze? → MUST launch parallel agents
-   □ Can different parts be done simultaneously? → MUST parallelize
-   □ Is this a self-contained task that doesn't need context? → MUST use subagent to save context
-   □ Will this consume significant context window? → MUST delegate to subagent
-   □ **Can each subtask be completed in <3 steps and <5 minutes?** If not → Break into smaller subtasks
-   □ **Will I need additional subagents based on results?** If yes → Plan for iterative execution
-   
-   **🎯 SCOPE SEPARATION VERIFICATION (MANDATORY):**
-   □ **Different Files/Folders**: Does each subtask target completely different file paths?
-   □ **Different Functional Domains**: Does each subtask work on separate features/modules?
-   □ **Different Architectural Layers**: Are subtasks separated by frontend/backend/data/test layers?
-   □ **Zero Overlap**: Can all subtasks run simultaneously without conflicts?
-   □ **Independent Completion**: Can each subtask finish without waiting for others?
-   □ **Mutually Exclusive Scopes**: Do the scopes have zero intersection?
-   
-   □ **For multi-step to-do lists, ask:**
-     • Is this step well isolated and self-sufficient?
-     • Does it NOT need the whole previous conversation context?
-     • Can it be accomplished with minimal prompt/info?
-     • Does it work on different files/aspects than other subtasks?
-     • If YES to all → Launch a subagent for this step
-   □ Is this a single atomic operation that REQUIRES context continuity? → Only then do it yourself
-   
-   **YOUR MANDATE AS MASTER AGENT:**
-   1. **DECOMPOSE** - Break every complex task into parallel independent subtasks
-   2. **DELEGATE** - Launch multiple subagents for maximum parallelism
-   3. **INTEGRATE** - Synthesize results from all subagents
-   4. **PRESERVE** - Keep your context window clean for orchestration
-   
-   **FINAL REMINDER**: You are the CONDUCTOR of an orchestra. Delegate work to subagents not just for parallelism, but also to keep your context window clean for orchestration and integration.
-   
-   ## Core Concepts
-
-### Context Isolation
-Each agent starts with a clean slate:
-- **No conversation history** - Fresh perspective on each task
-- **Minimal context** - Only receives the specific task description
-- **No cross-contamination** - Agents don't interfere with each other
-- **Focused execution** - No distractions from unrelated context
-
-### Autonomous Capabilities
-Agents can perform ANY task that the main assistant can:
-- **Code Generation** - Write complete implementations
-- **Refactoring** - Restructure code independently
-- **Analysis** - Deep dive into specific aspects
-- **Testing** - Create and run tests
-- **Documentation** - Generate comprehensive docs
-- **Debugging** - Investigate and fix issues
-- **Research** - Explore and synthesize information
-
-## Best Practices
-
-### 1. Task Scoping (Enhanced) + SCOPE SEPARATION
-- **Single Responsibility**: One clear, measurable goal per agent
-- **Explicit I/O Contract**: Define exact input format and output schema
-- **No Side Effects**: Read-only by default, write permissions must be explicit
-- **Time Boundaries**: Respect 5-minute execution limit
-- **Resource Isolation**: No shared state or dependencies between agents
-- **Conflict Prevention**: Ensure no two agents modify the same file
-- **Success Criteria**: Define measurable outcomes
-- **Error Handling**: Specify behavior for partial completion
-
-**🎯 SCOPE SEPARATION REQUIREMENTS:**
-- **File Path Isolation**: Each agent works on completely different file paths/globs
-- **Domain Isolation**: Each agent handles different functional domains (auth vs payments vs UI)
-- **Layer Isolation**: Separate agents for frontend/backend/database/tests/docs
-- **Module Isolation**: Different agents for different npm packages/microservices
-- **Aspect Isolation**: Different agents for security/performance/testing concerns
-- **Phase Isolation**: Different agents for analysis/implementation/validation phases
-
-### 2. Prompt Engineering
+      
+### 2. Prompt Engineering for subagent
 - **Context Setting**: Provide necessary background
 - **Explicit Instructions**: Be specific about requirements
 - **Output Format**: Define how results should be structured
@@ -556,107 +320,13 @@ Agents can perform ANY task that the main assistant can:
 - **Cache Awareness**: Agents don't share caches
 - **Tool Selection**: Guide agents on tool usage
 
-## Real-World Use Cases
-
-### 1. Microservices Migration (SCOPE SEPARATED)
-Split a monolithic application into microservices with specialized agents handling:
-- **Agent A**: Service boundary identification in \`src/services/\` - SCOPE: Service files only
-- **Agent B**: API contract definition in \`src/api/contracts/\` - SCOPE: API contracts only
-- **Agent C**: Data model separation in \`src/models/\` - SCOPE: Database models only
-- **Agent D**: Integration testing in \`tests/integration/\` - SCOPE: Test files only
-- **Agent E**: Deployment configuration in \`deploy/\` and \`.github/\` - SCOPE: Config files only
-
-### 2. Technical Debt Reduction (SCOPE SEPARATED)
-Multiple agents working on different aspects:
-- **Agent A**: Code smell detection in \`src/components/\` - SCOPE: Frontend components
-- **Agent B**: Refactoring implementation in \`src/services/\` - SCOPE: Backend services
-- **Agent C**: Test coverage improvement in \`tests/unit/\` - SCOPE: Unit tests only
-- **Agent D**: Documentation updates in \`docs/\` and \`*.md\` files - SCOPE: Documentation only
-- **Agent E**: Performance optimization in \`src/utils/\` - SCOPE: Utility functions only
-
-### 3. Security Hardening (SCOPE SEPARATED)
-Parallel security improvements:
-- **Agent A**: Vulnerability scanning in \`package.json\` and deps - SCOPE: Dependencies only
-- **Agent B**: Authentication strengthening in \`src/auth/\` - SCOPE: Auth module only
-- **Agent C**: Input validation in \`src/validators/\` - SCOPE: Validation layer only
-- **Agent D**: Security test creation in \`tests/security/\` - SCOPE: Security tests only
-- **Agent E**: HTTPS/TLS config in server config files - SCOPE: Server configs only
-
-### 4. Codebase Modernization (SCOPE SEPARATED)
-Upgrade legacy code with agents handling:
-- **Agent A**: Framework migration in \`src/legacy/\` - SCOPE: Legacy code only
-- **Agent B**: Language version updates in \`tsconfig.json\` and types - SCOPE: TypeScript config
-- **Agent C**: Build system modernization in \`webpack.config.js\`, \`package.json\` - SCOPE: Build tools
-- **Agent D**: CI/CD pipeline updates in \`.github/workflows/\` - SCOPE: CI/CD files only
-- **Agent E**: Documentation refresh in \`README.md\`, \`docs/\` - SCOPE: Documentation only
-
-
-## Limitations and Considerations
-
-### Agent Limitations
-- **5-Minute Execution Cap**: Hard timeout at 5 minutes
-- **No Inter-Agent Communication**: Agents cannot coordinate directly
-- **Stateless Execution**: No persistence between invocations
-- **File Lock Constraints**: One agent per file for writes
-- **No Shared Cache**: Each agent has isolated cache
-- **No Global State**: Cannot use global variables or shared memory
-
-
 ### When to Prefer Small Subtasks Over Large Ones
-
 - **Complex Analysis Tasks**: Break into focused analysis of specific components
 - **Large Codebase Exploration**: Explore in sections, then dive deeper based on findings
 - **Multi-Step Workflows**: Execute each step as a separate batch of subtasks
 - **Iterative Development**: Launch analysis subtasks, then implementation based on results
 - **Unknown Scope**: Start with discovery subtasks, then follow-up based on findings
-
 **REMEMBER**: Always prefer small, focused subtasks (less than 3 steps, less than 5 minutes) that can be executed in batches, with results informing the next batch of subtasks.
-
-
-### Effective Task Descriptions + SCOPE SEPARATION
-
-**✅ GOOD: Specific, measurable, bounded, WELL-SCOPED**
-\`\`\`json
-{
-  "description": "Implement user service",
-  "message": "Create a UserService class in src/services/user/ that: - Implements CRUD operations for users - Uses repository pattern with TypeORM - Includes input validation using class-validator - Handles errors with custom exceptions - Returns DTOs not entities. Export the service and its interface. SCOPE: Only user service files, no auth or other services."
-}
-\`\`\`
-
-**✅ GOOD: Multiple agents with SEPARATED scopes**
-\`\`\`json
-[
-  {
-    "description": "Implement user service",
-    "message": "Create UserService in src/services/user/ with CRUD operations. SCOPE: User service files only."
-  },
-  {
-    "description": "Implement auth service",
-    "message": "Create AuthService in src/services/auth/ with login/logout. SCOPE: Auth service files only."
-  }
-]
-\`\`\`
-
-**❌ BAD: Vague, unbounded, unclear deliverables**
-\`\`\`json
-{
-  "description": "Work on users",
-  "message": "Improve the user management in the application"
-}
-\`\`\`
-
-**❌ BAD: Overlapping scopes**
-\`\`\`json
-[
-  {
-    "description": "Fix user service",
-    "message": "Fix bugs in user authentication and registration"
-  },
-  {
-    "description": "Improve user auth",
-    "message": "Enhance user authentication security"  // OVERLAPS with above!
-  }
-]
 
 `
 }

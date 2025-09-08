@@ -76,26 +76,6 @@ Examples:
 <pattern>**/components/**/*.{jsx,tsx}</pattern>
 </glob>
 
-4. Find all configuration files:
-<glob>
-<pattern>**/{package.json,tsconfig.json,.eslintrc*,.prettierrc*}</pattern>
-</glob>
-
-5. Find files in specific directories:
-<glob>
-<pattern>{src,lib,test}/**/*.js</pattern>
-</glob>
-
-6. Find React hooks:
-<glob>
-<pattern>**/use*.{js,ts,jsx,tsx}</pattern>
-</glob>
-
-7. Find all index files:
-<glob>
-<pattern>**/index.{js,ts,jsx,tsx}</pattern>
-</glob>
-
 Performance tips:
 - Be specific: More specific patterns are faster
 - Limit scope: Use the path parameter to narrow search

@@ -90,30 +90,7 @@ All parameters are provided as key-value pairs within a single JSON object, whic
    <search_files>{"pattern": "error", "path": "src/components", "-i": true, "output_mode": "content"}</search_files>
    \`\`\`
 
-4. **Search TypeScript files with context:**
-   \`\`\`xml
-   <search_files>{"pattern": "interface\\\\s+\\\\w+", "type": "ts", "output_mode": "content", "-n": true, "-C": 3}</search_files>
-   \`\`\`
 
-5. **Search with glob pattern and limit results:**
-   \`\`\`xml
-   <search_files>{"pattern": "console\\\\.log", "glob": "*.{js,ts}", "output_mode": "content", "head_limit": 10}</search_files>
-   \`\`\`
-
-6. **Multiline search for React components:**
-   \`\`\`xml
-   <search_files>{"pattern": "<\\\\w+[\\\\s\\\\S]*?>", "multiline": true, "glob": "*.{jsx,tsx}", "output_mode": "content"}</search_files>
-   \`\`\`
-
-7. **Count matches in Python files:**
-   \`\`\`xml
-   <search_files>{"pattern": "def\\\\s+\\\\w+", "type": "py", "output_mode": "count"}</search_files>
-   \`\`\`
-
-8. **Search with before/after context:**
-   \`\`\`xml
-   <search_files>{"pattern": "throw\\\\s+new\\\\s+Error", "output_mode": "content", "-B": 2, "-A": 5, "-n": true}</search_files>
-   \`\`\`
 
 ### Pattern Syntax:
 Uses Rust regex syntax (similar to PCRE):

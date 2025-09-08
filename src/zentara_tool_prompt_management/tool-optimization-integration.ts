@@ -15,7 +15,7 @@ import "../utils/path"
 
 // Additional configuration for integration layer
 const INTEGRATION_CONFIG = {
-	briefDescriptionLength: 1000, // characters
+	briefDescriptionLength: 500, // characters
 }
 
 // Cache structures for optimization
