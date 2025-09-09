@@ -110,23 +110,6 @@ All parameters are provided as key-value pairs within a single JSON object, whic
     \`\`\`
     *Use case: Understanding complete class structure including methods and properties*
 
-3.  **Compact analysis without hover information:**
-    \`\`\`xml
-    <lsp_get_document_symbols>{"textDocument":{"uri":"file:///src/components/Dashboard.tsx"}, "include_hover": false}</lsp_get_document_symbols>
-    \`\`\`
-    *Use case: Quick structural overview without documentation details*
-
-4.  **Large file analysis with automatic hierarchy control:**
-    \`\`\`xml
-    <lsp_get_document_symbols>{"textDocument":{"uri":"file:///src/main/java/com/example/Controller.java"}, "return_children": "auto"}</lsp_get_document_symbols>
-    \`\`\`
-    *Use case: Let the tool decide whether to include children based on file complexity*
-
-5.  **Configuration file quick scan:**
-    \`\`\`xml
-    <lsp_get_document_symbols>{"textDocument":{"uri":"file:///config/webpack.config.js"}, "return_children": "no", "include_hover": false}</lsp_get_document_symbols>
-    \`\`\`
-    *Use case: Minimal output for finding specific configuration sections*
 
 ### Table Format Example Output:
 
@@ -140,13 +123,7 @@ getUser | 11 | 20:4-25:5 | 20:11-18 | UserService | async getUser(id: string): P
 createUser | 11 | 27:4-35:5 | 27:11-21 | UserService | async createUser(userData: CreateUserRequest): Promise<User> - Creates a new user | <<<
 \`\`\`
 
-This format provides:
-- **Immediate symbol identification** via NAME column
-- **Type classification** via KIND column (5=Class, 11=Method, 13=Constructor)
-- **Precise location** via RANGE and SELECTION columns
-- **Hierarchy understanding** via PARENT column
-- **Rich context** via HOVER_INFO column with types, parameters, and documentation
-- **Clear separation** via EOL markers
+
 
 ### Symbol Kind Reference:
 
