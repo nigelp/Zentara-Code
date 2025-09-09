@@ -45,6 +45,100 @@ function withTimeout<T>(
 			})
 	})
 }
+/**
+ * Checks if the LSP server response indicates it's not ready
+ * @param result The result from the LSP operation
+ * @returns true if the server appears not ready, false otherwise
+ */
+function isLspServerNotReady(result: any): boolean {
+	// Check if success is false
+	if (result && typeof result === 'object' && result.success === false) {
+		return true
+	}
+	
+	// Check if the total length of return is less than threshold (30 letters)
+	const resultString = JSON.stringify(result)
+	if (resultString.length < 30) {
+		return true
+	}
+	
+	return false
+}
+
+/**
+ * Executes an LSP operation with retry logic and exponential backoff
+ * @param operation Function that returns the LSP operation promise
+ * @param timeoutMs Timeout in milliseconds for each attempt
+ * @param operationName Name of the operation for error messages
+ * @param nTrials Number of retry attempts (default: 3)
+ * @param delayInterval Base delay interval in seconds (default: 1)
+ * @returns Promise that resolves with the operation result or rejects after all retries
+ */
+async function withTimeoutAndRetry<T>(
+	operation: () => Promise<T>,
+	timeoutMs: number = DEFAULT_LSP_TIMEOUT,
+	operationName: string,
+	nTrials: number = 3,
+	delayInterval: number = 1
+): Promise<T> {
+	let lastError: Error | null = null
+	
+	for (let trial = 0; trial < nTrials; trial++) {
+		try {
+			const result = await withTimeout(operation(), timeoutMs, operationName)
+			
+			// Check if LSP server is not ready
+			if (isLspServerNotReady(result)) {
+				if (trial === nTrials - 1) {
+					// Last trial, return the result as it's likely a legitimate empty result
+					outputChannel.appendLine(
+						`[LSP Tool] LSP server still appears not ready after ${nTrials} attempts for '${operationName}', but returning last result as it may be legitimate`
+					)
+					return result
+				}
+				
+				// Calculate delay: 2^n * delayInterval (in milliseconds)
+				const delayMs = Math.pow(2, trial) * delayInterval * 1000
+				outputChannel.appendLine(
+					`[LSP Tool] LSP server not ready for '${operationName}' (trial ${trial + 1}/${nTrials}). Retrying in ${delayMs}ms...`
+				)
+				
+				// Wait before retry
+				await new Promise(resolve => setTimeout(resolve, delayMs))
+				continue
+			}
+			
+			// Success - return the result
+			return result
+		} catch (error) {
+			lastError = error as Error
+			
+			// If this is a timeout or server not ready error and we have more trials, retry
+			if (trial < nTrials - 1 && (
+				lastError.message.includes('timeout') || 
+				lastError.message.includes('not ready') ||
+				lastError.message.includes('server')
+			)) {
+				// Calculate delay: 2^n * delayInterval (in milliseconds)
+				const delayMs = Math.pow(2, trial) * delayInterval * 1000
+				outputChannel.appendLine(
+					`[LSP Tool] Error in '${operationName}' (trial ${trial + 1}/${nTrials}): ${lastError.message}. Retrying in ${delayMs}ms...`
+				)
+				
+				// Wait before retry
+				await new Promise(resolve => setTimeout(resolve, delayMs))
+				continue
+			}
+			
+			// If it's the last trial or a non-retryable error, throw
+			throw lastError
+		}
+	}
+	
+	// This should never be reached, but just in case
+	throw lastError || new Error(`Failed to execute LSP operation '${operationName}' after ${nTrials} attempts`)
+}
+
 
 // Type for the operation map values
 type LspOperationFn = (args?: any) => Promise<any>
@@ -257,8 +351,8 @@ export async function lspTool(
 				let rawResult: any = null
 				try {
 					// Wrap the LSP operation with timeout
-					rawResult = await withTimeout(
-						targetMethod(transformedArgs),
+					rawResult = await withTimeoutAndRetry(
+						() => targetMethod(transformedArgs),
 						DEFAULT_LSP_TIMEOUT,
 						lsp_operation
 					)
